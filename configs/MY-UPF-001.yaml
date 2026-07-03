@@ -1,0 +1,54 @@
+campaign: MY-UPF-001
+reset_between_suites: true
+sut:
+  cpu: N vCPU (VM)
+  nic: virtio (VM)
+upf:
+  adapter: sdcore_bess
+  mode: af_packet
+  n3_iface: access
+  n6_iface: core
+  namespace: aether-5gc
+  pod: upf-0
+  bessd_container: bessd
+  gen_iface: access
+  n3_remote_ip: 192.168.252.3
+  n3_remote_mac: ''
+  gen_cpu_affinity: auto
+  ue_ip: 10.250.0.1
+  burst_pps: 5000
+suite: all
+profile: conformance
+performance:
+  control: pybess
+  generator: tcpreplay
+  frame_sizes:
+  - 128
+  - 512
+  - 1024
+  - 1518
+  max_rate_mpps: 0.02
+  search_resolution_mpps: 0.0005
+  search_max_iters: 8
+  trial_duration_s: 5
+  latency_frame_size: 512
+  latency_load_mpps: 0.01
+  latency_duration_s: 8
+load:
+  control: pfcpsim
+  generator: tcpreplay
+  ue_counts:
+  - 10
+  - 100
+  - 1000
+  - 5000
+pfcp:
+  procedures:
+  - association
+  - establish
+  - modify
+  - delete
+  - error_handling
+n3neg:
+  control: pfcpsim
+  generator: tcpreplay

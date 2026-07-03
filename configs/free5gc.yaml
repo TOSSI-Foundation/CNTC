@@ -1,0 +1,69 @@
+# free5GC-UPF campaign — fourth UPF (gtp5g datapath, like Open5GS).
+# free5GC runs via docker-compose (~/free5gc-compose); the UPF container is `upf` on the
+# br-free5gc bridge (10.100.200.0/24). pfcpsim drives N4, tcpreplay drives N3.
+#
+# IMPORTANT — addresses are PER-DEPLOYMENT. Read them live before running:
+#   docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' upf   # UPF IP
+#   ip -br addr | grep 10.100.200                                                      # host bridge IP
+# Then update n4_addr / pfcp_remote_addr / n3_remote_ip / pfcpsim_iface / gen_iface below.
+#
+# UPF-isolated benchmarking: stop free5GC's own SMF so pfcpsim is the sole N4 peer:
+#   sudo docker stop smf      (restart with: sudo docker start smf)
+campaign: UPF-BM-FREE5GC-001
+report_commands: false
+reset_between_suites: true       # docker restart upf before each suite (clean state)
+
+sut:
+  cpu: "12 vCPU (VM)"
+  host: "free5gc-compose bridge 10.100.200.0/24"
+  note: "free5GC-UPF (gtp5g) driven via pfcpsim (N4) + tcpreplay (N3)"
+
+upf:
+  adapter: free5gc_upf
+  n3_iface: eth0                 # container iface carrying N3 (GTP-U)
+  n6_iface: upfgtp               # gtp5g TUN — decapsulated UE/N6 traffic
+  n4_addr: "10.100.200.3:8805"   # free5GC UPF PFCP (verify from upfcfg.yaml / container IP)
+  container: upf
+  docker_cmd: "sudo docker"
+  # pfcpsim control knobs:
+  pfcp_remote_addr: "10.100.200.3"  # free5GC UPF N4 IP
+  pfcpsim_iface: br-free5gc         # host iface on the free5gc bridge (source 10.100.200.1)
+  pfcpsim_no_urr: true              # most gtp5g/lean UPFs reject pfcpsim's URR IEs -> omit
+  pfcp_no_assoc_release: true       # free5GC has no graceful Association Release (like OAI/Open5GS)
+  # NOTE: free5GC's PFCP parser quirks are not yet characterised. If Suite 3 establish
+  # fails, try the Open5GS-style knobs one at a time (see configs/open5gs.yaml):
+  #   pfcp_no_assoc_release / pfcpsim_apply_action_2b / pfcpsim_dnn / pfcpsim_fteid_choose / pfcpsim_qfi
+  ue_pool: "10.60.0.0/24"           # within free5GC's UE pool (10.60.0.0/16)
+  gnb_addr: "10.100.200.1"          # host IP on the free5gc bridge
+  # tcpreplay N3 generator:
+  gen_iface: br-free5gc
+  n3_remote_ip: "10.100.200.3"      # free5GC UPF N3 (outer GTP-U dst)
+  n3_mac_via: arp                   # UPF on a docker bridge -> host ARP
+  gnb_ip: "10.100.200.1"            # outer GTP-U src
+  inner_dst_ip: "8.8.8.8"           # inner dst (UE -> DN); UPF NATs it out
+  gen_cpu_affinity: "2-11"
+  n6_fwd_field: rx_pkts             # upfgtp TUN -> decapsulated uplink shows as rx_pkts
+
+# Start with conformance (cleanest portability proof; works regardless of whether the
+# pfcpsim-driven data plane forwards). Switch to performance/load/all once Suite 3 passes
+# and you've confirmed forwarding (free5GC may program gtp5g for external PFCP; verify).
+suite: pfcp
+
+pfcp:
+  procedures: [association, establish, modify, delete, error_handling]
+
+performance:
+  control: pfcpsim
+  generator: tcpreplay
+  frame_sizes: [128, 512, 1024, 1400]
+  max_rate_mpps: 0.15
+  search_resolution_mpps: 0.005
+  search_max_iters: 7
+  trial_duration_s: 4
+load:
+  control: pfcpsim
+  generator: tcpreplay
+  ue_counts: [10, 50, 100, 200]
+  lt02_ue_count: 100
+  lt02_load_mpps: 0.1
+  lt03_ue_counts: [1, 10, 100]

@@ -1,0 +1,44 @@
+# SD-Core BESS-UPF — RAW MAX-FORWARDING profile (apples-to-apples vs OAI).
+# Same method as oai-rawmax.yaml: drive the UPF over N4 with pfcpsim (real PFCP
+# sessions) and set the QER MBR effectively unlimited, so BESS is measured at its
+# raw datapath ceiling instead of the 20 Mbps subscriber AMBR. NOT the validated
+# per-UE profile — use sdcore-bess.yaml for that.
+campaign: UPF-BM-SDCORE-RAWMAX
+
+sut:
+  cpu: "12 vCPU (VM)"
+  nic: "virtio eth0 (VM, single NIC)"
+  note: "raw max-forwarding: pfcpsim sessions, QER MBR unlimited (no AMBR cap)"
+
+upf:
+  adapter: sdcore_bess
+  mode: af_packet
+  n3_iface: access
+  n6_iface: core
+  n4_addr: "127.0.0.1:8805"
+  namespace: aether-5gc
+  pod: upf-0
+  bessd_container: bessd
+  gen_iface: access
+  n3_remote_ip: "192.168.252.3"
+  gen_cpu_affinity: auto
+  pfcpsim_mbr_kbps: 1000000        # 1 Gbps (real config max) -> known-good for BESS QoS meter, > generator ceiling
+
+suite: performance
+
+performance:
+  control: pfcpsim                 # SAME control plane as OAI (not the pybess fast path)
+  generator: tcpreplay
+  frame_sizes: [512, 1024, 1400]   # incl. MTU-sized (what a real UE sends)
+  trial_duration_s: 5
+  max_rate_mpps: 0.12              # = host generator ceiling on this VM
+  pdr_tolerance: 0.001
+  search_resolution_mpps: 0.005
+  search_max_iters: 7
+  burst_frame_size: 1400
+  burst_load_mpps: 0.12
+  burst_duration_s: 5
+  multiflow_frame_size: 1400
+  multiflow_flows: 16
+  multiflow_load_mpps: 0.12
+  multiflow_duration_s: 5

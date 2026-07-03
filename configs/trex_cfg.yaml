@@ -1,0 +1,27 @@
+# TRex config for the SD-Core DPDK/AF_XDP/CNDP benchmark rig on server `three`.
+# Pinned to ONLY the two free generator VFs on enp24s0f1 (the same PF as the UPF's
+# access/core VFs), so DPDK EAL never probes the UPF's VFIO groups (170/171).
+#
+#   port 0 = 0000:18:0a.2 (gen VF2, MAC ...35) -> UPF access VF (MAC 00:11:22:33:44:33) = N3 uplink
+#   port 1 = 0000:18:0a.3 (gen VF3, MAC ...36) -> UPF core   VF (MAC 00:11:22:33:44:34) = N6 downlink
+#
+# The NIC's internal switch (VEB) hairpins a frame whose dst MAC = the UPF VF's MAC
+# straight to that VF (same PF, intra-NIC) — this is the paper-testbed injection method.
+# TRex threads are node0 cores 2-9, deliberately OFF the UPF bessd worker cores (16-19).
+- version: 2
+  interfaces: ['0000:18:0a.2', '0000:18:0a.3']
+  port_info:
+    - dest_mac: '00:11:22:33:44:33'   # UPF access VF (N3 ingress)
+      src_mac:  '00:11:22:33:44:35'   # gen VF2
+    - dest_mac: '00:11:22:33:44:34'   # UPF core VF (N6)
+      src_mac:  '00:11:22:33:44:36'   # gen VF3
+  # Cap TRex hugepage use to 2 GiB so node0 pages remain for the UPF bessd (needs 2Gi).
+  # Without this, TRex's DPDK EAL grabs ALL hugepages on the socket -> bessd starves and
+  # crash-loops on its next restart (HugePages_Free -> 0). 2048 MB is ample for this rig.
+  limit_memory: 2048
+  platform:
+    master_thread_id: 2
+    latency_thread_id: 3
+    dual_if:
+      - socket: 0
+        threads: [4, 5, 6, 7, 8, 9, 10, 11]
