@@ -1,0 +1,72 @@
+% Multi-UE Load Report — Suite 2 (UPF-isolated)
+\documentclass[11pt,a4paper]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{booktabs,longtable,xcolor,hyperref,listings}
+\hypersetup{colorlinks=true,linkcolor=blue,urlcolor=blue}
+\lstset{basicstyle=\ttfamily\footnotesize,breaklines=true,columns=fullflexible,frame=single}
+\newcommand{\fillin}[1]{\textcolor{red}{#1}}
+
+\title{\textbf{UPF Multi-UE Load Report}\\[2pt]\large (((  c.sut.upf | default("System under test") | tex  )))}
+\author{Campaign (((  c.campaign | tex  )))}
+\date{(((  c.started  )))}
+
+\begin{document}
+\maketitle
+\noindent\small UPF-isolated multi-UE load: \texttt{pfcpsim} installs N real PFCP sessions
+(one PDR/FAR/QER per UE); GTP-U is driven on the matching per-UE TEIDs. Measures session
+capacity, per-UE throughput, and latency under load.\normalsize
+
+\section{Executive Summary}
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+\textbf{Headline KPI} & \textbf{Result} \\
+\midrule
+Max concurrent sessions   & (((  c.kpis.max_sessions | default("--")  ))) \\
+Aggregate throughput      & (((  c.kpis.load_aggregate_mpps | default("--")  ))) Mpps \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{System Under Test}
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+((* for k, v in c.sut.items() *))
+\textbf{(((  k | tex  )))} & (((  v | tex  ))) \\
+((* endfor *))
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{Results}
+((* for t in suite.tests *))
+\subsection{(((  t.id | tex  ))) — (((  t.name | tex  )))}
+((* if t.status == "error" *))
+\textit{\fillin{(((  t.notes | tex  )))}}
+((* else *))
+\textbf{Status:} (((  t.status | tex  ))). (((  t.notes | tex  )))\\[4pt]
+((* for tbl_name, rows in t.tables.items() *))
+((* if rows *))
+\noindent\textbf{(((  tbl_name | tex  )))}\\
+\begin{longtable}{((* for _ in rows[0].keys() *))l((* endfor *))}
+\toprule
+((* for col in rows[0].keys() *))\textbf{(((  col | tex  )))}((* if not loop.last *)) & ((* endif *))((* endfor *)) \\
+\midrule \endhead
+((* for row in rows *))((* for v in row.values() *))(((  v | tex  )))((* if not loop.last *)) & ((* endif *))((* endfor *)) \\
+((* endfor *))
+\bottomrule
+\end{longtable}
+((* endif *))
+((* endfor *))
+((* endif *))
+((* endfor *))
+
+\section{Reproducibility Appendix}
+\begin{lstlisting}
+((* for cmd in c.commands *))
+(((  cmd  )))
+((* endfor *))
+\end{lstlisting}
+
+\end{document}
