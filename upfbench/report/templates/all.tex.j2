@@ -1,0 +1,158 @@
+% UPF Data-Plane Benchmark — COMBINED report (all suites in one document).
+% Jinja statements use parenthesised delimiters so they do not collide with LaTeX braces.
+\documentclass[11pt,a4paper]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{booktabs,longtable,xcolor,hyperref,listings}
+\hypersetup{colorlinks=true,linkcolor=blue,urlcolor=blue}
+\lstset{basicstyle=\ttfamily\footnotesize,breaklines=true,columns=fullflexible,frame=single}
+\newcommand{\fillin}[1]{\textcolor{red}{#1}}
+
+((* set suite_titles = {
+  "performance": "Suite 1 — Performance (throughput, latency, burst, multi-flow)",
+  "load": "Suite 2 — Load / Multi-UE (session capacity, per-UE throughput)",
+  "pfcp": "Suite 3 — PFCP / N4 Conformance (TS 29.244)"
+} *))
+
+((* set suite_intro = {
+  "performance": "This suite measures raw forwarding capacity --- how many packets per second the UPF moves --- across a range of Ethernet frame sizes (given in bytes). For each size it reports the \\textbf{NDR} (No-Drop Rate: the highest offered rate with zero packet loss) and the \\textbf{PDR} (Partial-Drop Rate: the highest rate with at most 0.1\\% loss), in millions of packets per second (Mpps). Frame size matters because a UPF does almost the same work on every packet regardless of its size: small frames (64--256\\,B) pack the most packets into a given bit-rate and are therefore the hardest, truest test of forwarding capacity, while large frames (1024--1518\\,B) resemble everyday user traffic and show the practical ceiling. For worst-case capacity, the small-frame row is the one to watch.",
+  "load": "This suite measures behaviour under many simultaneous users, where each user is one PFCP \\emph{session} (its own forwarding rules). It records how many sessions the UPF will hold at once and, with a realistic number of users active together, confirms that every individual user's traffic is actually carried --- not merely the combined total.",
+  "pfcp": "This suite checks the N4/PFCP control interface against 3GPP TS\\,29.244 --- the language the core uses to tell the UPF to set up, modify, delete, and error-handle user sessions. These are pass/fail conformance checks rather than performance numbers; all five should pass for a standards-compliant UPF."
+} *))
+
+\title{\textbf{UPF Data-Plane Benchmark Report}\\[4pt]\large All Suites — (((  c.sut.upf | default("System under test") | tex  )))}
+\author{Campaign (((  c.campaign | tex  )))}
+\date{(((  c.started  )))}
+
+\begin{document}
+\maketitle
+\noindent\small This combined report covers all benchmark suites that were run for this
+campaign. It follows the NDR/PDR methodology of IETF RFC 2544 and ETSI GS NFV-TST 009
+(performance), plus 3GPP TS 29.244 (PFCP/N4 conformance). All results are reproducible
+from the appendix.\normalsize
+
+\tableofcontents
+\vspace{1em}
+
+\section{Executive Summary}
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+\textbf{Headline KPI} & \textbf{Result} & \textbf{Condition} \\
+\midrule
+Peak throughput (NDR)    & (((  c.kpis.ndr | default("--")  ))) Mpps & single tunnel, 0\% loss \\
+Throughput (PDR 0.1\%)   & (((  c.kpis.pdr | default("--")  ))) Mpps & $\leq$0.1\% loss \\
+Latency avg / p99        & (((  c.kpis.lat | default("--") | tex  ))) \textmu s & in-pipeline, low load \\
+Max concurrent sessions  & (((  c.kpis.max_sessions | default("--")  ))) & control-plane ramp \\
+Aggregate load           & (((  c.kpis.load_aggregate_mpps | default("--")  ))) Mpps & N UEs at saturation \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+((* if c.verdict *))
+\section{CNTC Verdict — (((  c.verdict.profile | tex  ))) profile}
+\noindent A standards-aligned verdict graded by the CNTC verdict layer against catalog
+v(((  c.verdict.catalog_version | tex  ))). \textbf{Result:}
+\textcolor{((* if c.verdict.result == "PASS" *))green((* elif c.verdict.result == "FAIL" *))red((* else *))orange((* endif *))}{\textbf{(((  c.verdict.result | tex  )))}}
+\quad (essential gate ``(((  c.verdict.gate.policy | tex  )))'':
+(((  c.verdict.essential.passed  )))/(((  c.verdict.essential.total  ))) passed,
+(((  c.verdict.essential.failed  ))) failed, (((  c.verdict.essential.na  ))) n/a).
+((* for w in c.verdict.warnings *))
+\\[2pt]\textcolor{orange}{Warning: (((  w | tex  )))}
+((* endfor *))
+\begin{center}
+\begin{longtable}{llll}
+\toprule
+\textbf{Test} & \textbf{Essential} & \textbf{Outcome} & \textbf{Detail} \\
+\midrule
+((* for r in c.verdict.tests *))
+(((  r.id | tex  ))) (((  r.name | tex  ))) & ((* if r.class == "essential" *))yes((* endif *)) & (((  r.outcome | tex  ))) & (((  r.detail | tex  ))) \\
+((* endfor *))
+\bottomrule
+\end{longtable}
+\end{center}
+((* endif *))
+
+\section{System Under Test}
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+((* for k, v in c.sut.items() *))
+\textbf{(((  k | tex  )))} & (((  v | tex  ))) \\
+((* endfor *))
+\bottomrule
+\end{tabular}
+\end{center}
+
+% ---- one section per suite, rendering that suite's tests ----
+((* for suite in c.suites *))
+\section{(((  suite_titles[suite.suite] | default(suite.suite) | tex  )))}
+((* if suite_intro[suite.suite] *))
+\noindent (((  suite_intro[suite.suite]  )))\\[6pt]
+((* endif *))
+((* if not suite.tests *))
+\textit{No tests recorded for this suite.}
+((* endif *))
+((* for t in suite.tests *))
+\subsection{(((  t.id | tex  ))) — (((  t.name | tex  )))}
+((* if t.status == "error" *))
+\textit{\fillin{(((  t.notes | tex  )))}}
+((* else *))
+\textbf{Status:} (((  t.status | tex  ))). (((  t.notes | tex  )))\\[4pt]
+((* for tbl_name, rows in t.tables.items() *))
+((* if rows *))
+\noindent\textbf{(((  tbl_name | tex  )))}\\
+\begin{longtable}{((* for _ in rows[0].keys() *))l((* endfor *))}
+\toprule
+((* for col in rows[0].keys() *))\textbf{(((  col | tex  )))}((* if not loop.last *)) & ((* endif *))((* endfor *)) \\
+\midrule \endhead
+((* for row in rows *))((* for v in row.values() *))(((  v | tex  )))((* if not loop.last *)) & ((* endif *))((* endfor *)) \\
+((* endfor *))
+\bottomrule
+\end{longtable}
+((* endif *))
+((* endfor *))
+((* endif *))
+((* endfor *))
+((* endfor *))
+
+((* if c.e2e *))
+\section{Real End-to-End Test (UERANSIM gNB + UE)}
+\noindent The suites above drive the UPF's data plane directly. To validate the full chain,
+a simulated 5G phone and radio (UERANSIM) was attached to the live core and real traffic was
+pushed through this UPF --- the same path a production subscriber's data takes
+(radio $\rightarrow$ N3 $\rightarrow$ UPF $\rightarrow$ N6 $\rightarrow$ internet).\\[4pt]
+\noindent\textbf{Connectivity:} (((  c.e2e.ping | tex  ))).\\[6pt]
+\noindent\textbf{Measured throughput}
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+\textbf{Test} & \textbf{Download} & \textbf{Upload} \\
+\midrule
+((* for r in c.e2e.rows *))
+(((  r.test | tex  ))) & (((  r.download | tex  ))) & (((  r.upload | tex  ))) \\
+((* endfor *))
+\bottomrule
+\end{tabular}
+\end{center}
+\noindent (((  c.e2e.note  )))\\[4pt]
+\noindent\small A \emph{single-connection} test (iperf3) and a \emph{many-connection} test
+(a normal speed test) are both shown because one TCP connection cannot always fill a link on
+its own, whereas everyday devices and apps open many connections at once.\normalsize
+((* endif *))
+
+((* if cfg.report_commands *))
+\section{Reproducibility Appendix}
+\subsection{Exact commands captured during the run}
+\begin{lstlisting}
+((* for cmd in c.commands *))
+(((  cmd  )))
+((* endfor *))
+\end{lstlisting}
+((* else *))
+\section{Reproducibility}
+\noindent The full per-command execution log for this run (kubectl / pfcpctl /
+tcpreplay / bessctl, etc.) is preserved in the campaign's \texttt{results.json} and in
+the per-suite reports, for audit and reproduction.
+((* endif *))
+
+\end{document}

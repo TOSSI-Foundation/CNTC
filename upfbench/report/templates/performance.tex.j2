@@ -1,0 +1,92 @@
+% UPF Data-Plane Benchmark Report — Suite 1 (performance)
+% Jinja statements use parenthesised delimiters so they do not collide with LaTeX braces.
+\documentclass[11pt,a4paper]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{booktabs,longtable,xcolor,hyperref,listings}
+\hypersetup{colorlinks=true,linkcolor=blue,urlcolor=blue}
+\lstset{basicstyle=\ttfamily\footnotesize,breaklines=true,columns=fullflexible,frame=single}
+\newcommand{\fillin}[1]{\textcolor{red}{#1}}
+
+\title{\textbf{UPF Data-Plane Benchmark Report}\\[2pt]\large (((  c.sut.upf | default("System under test") | tex  )))}
+\author{Campaign (((  c.campaign | tex  )))}
+\date{(((  c.started  )))}
+
+\begin{document}
+\maketitle
+\noindent\small This report follows the NDR/PDR benchmarking methodology of IETF RFC 2544
+and ETSI GS NFV-TST 009. All results are reproducible from the appendix.\normalsize
+
+\section{Executive Summary}
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+\textbf{Headline KPI} & \textbf{Result} & \textbf{Condition} \\
+\midrule
+Peak throughput (NDR)    & (((  c.kpis.ndr | default("--")  ))) Mpps & single tunnel, 0\% loss \\
+Throughput (PDR 0.1\%)   & (((  c.kpis.pdr | default("--")  ))) Mpps & $\leq$0.1\% loss \\
+Latency avg / p99        & (((  c.kpis.lat | default("--") | tex  ))) \textmu s & in-pipeline, low load \\
+((* if c.kpis.eff *))Per-core efficiency      & (((  c.kpis.eff  ))) Mpps/core & \\((* endif *))
+\bottomrule
+\end{tabular}
+\end{center}
+
+((* if baseline *))
+\section{Comparison vs Baseline}
+\noindent Baseline campaign: \texttt{(((  baseline.campaign | default("?") | tex  )))}.
+\begin{center}
+\begin{tabular}{lrrr}
+\toprule
+\textbf{KPI} & \textbf{Current} & \textbf{Baseline} & \textbf{$\Delta$} \\
+\midrule
+((* for key in ["ndr", "pdr"] *))
+(((  key | upper  ))) (Mpps) & (((  c.kpis[key] | default("--")  ))) & (((  baseline.kpis[key] | default("--")  ))) &
+((* if c.kpis[key] is number and baseline.kpis[key] is number *))(((  (c.kpis[key] - baseline.kpis[key]) | round(4)  )))((* else *))--((* endif *)) \\
+((* endfor *))
+\bottomrule
+\end{tabular}
+\end{center}
+((* endif *))
+
+\section{System Under Test}
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+((* for k, v in c.sut.items() *))
+\textbf{(((  k | tex  )))} & (((  v | tex  ))) \\
+((* endfor *))
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{Results}
+((* for t in suite.tests *))
+\subsection{(((  t.id | tex  ))) — (((  t.name | tex  )))}
+((* if t.status == "error" *))
+\textit{\fillin{(((  t.notes | tex  )))}}
+((* else *))
+\textbf{Status:} (((  t.status | tex  ))). (((  t.notes | tex  )))\\[4pt]
+((* for tbl_name, rows in t.tables.items() *))
+((* if rows *))
+\noindent\textbf{(((  tbl_name | tex  )))}\\
+\begin{longtable}{((* for _ in rows[0].keys() *))l((* endfor *))}
+\toprule
+((* for col in rows[0].keys() *))\textbf{(((  col | tex  )))}((* if not loop.last *)) & ((* endif *))((* endfor *)) \\
+\midrule \endhead
+((* for row in rows *))((* for v in row.values() *))(((  v | tex  )))((* if not loop.last *)) & ((* endif *))((* endfor *)) \\
+((* endfor *))
+\bottomrule
+\end{longtable}
+((* endif *))
+((* endfor *))
+((* endif *))
+((* endfor *))
+
+\section{Reproducibility Appendix}
+\subsection{Exact commands captured during the run}
+\begin{lstlisting}
+((* for cmd in c.commands *))
+(((  cmd  )))
+((* endfor *))
+\end{lstlisting}
+
+\end{document}

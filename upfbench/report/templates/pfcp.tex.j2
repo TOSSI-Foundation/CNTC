@@ -1,0 +1,56 @@
+% PFCP Conformance Report — Suite 3 (3GPP TS 29.244)
+\documentclass[11pt,a4paper]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{booktabs,longtable,xcolor,hyperref,listings}
+\hypersetup{colorlinks=true,linkcolor=blue,urlcolor=blue}
+\lstset{basicstyle=\ttfamily\footnotesize,breaklines=true,columns=fullflexible,frame=single}
+\newcommand{\pass}{\textcolor{green!50!black}{\textbf{pass}}}
+\newcommand{\fail}{\textcolor{red}{\textbf{fail}}}
+\newcommand{\fillin}[1]{\textcolor{red}{#1}}
+
+\title{\textbf{UPF PFCP Conformance Report}\\[2pt]\large (((  c.sut.upf | default("System under test") | tex  )))}
+\author{Campaign (((  c.campaign | tex  )))}
+\date{(((  c.started  )))}
+
+\begin{document}
+\maketitle
+\noindent\small N4/PFCP conformance per 3GPP TS 29.244, driven by omec-project/pfcpsim.\normalsize
+
+\section{Summary}
+(((  suite.tests | selectattr("status", "equalto", "pass") | list | length  ))) of
+(((  suite.tests | length  ))) procedures passed.
+
+\section{Conformance Matrix}
+\begin{center}
+\begin{longtable}{llp{8cm}}
+\toprule
+\textbf{ID} & \textbf{Result} & \textbf{Procedure / notes} \\
+\midrule \endhead
+((* for t in suite.tests *))
+(((  t.id | tex  ))) &
+((* if t.status == "pass" *))\pass((* elif t.status == "fail" *))\fail((* else *))\fillin{(((  t.status | tex  )))}((* endif *)) &
+(((  t.name | tex  )))((* if t.notes *)) --- \textit{\footnotesize (((  t.notes | tex  )))}((* endif *)) \\[2pt]
+((* endfor *))
+\bottomrule
+\end{longtable}
+\end{center}
+
+\section{System Under Test}
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+((* for k, v in c.sut.items() *))
+\textbf{(((  k | tex  )))} & (((  v | tex  ))) \\
+((* endfor *))
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{Reproducibility Appendix}
+\begin{lstlisting}
+((* for cmd in c.commands *))
+(((  cmd  )))
+((* endfor *))
+\end{lstlisting}
+
+\end{document}

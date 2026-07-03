@@ -1,0 +1,38 @@
+% N3 data-plane negative / robustness report
+\documentclass[11pt,a4paper]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{booktabs,xcolor}
+\newcommand{\fillin}[1]{\textcolor{red}{#1}}
+\title{\textbf{UPF N3 Data-Plane Robustness Report}\\[2pt]\large ((( c.sut.upf | default("System under test") | tex )))}
+\author{Campaign ((( c.campaign )))}\date{((( c.started )))}
+\begin{document}\maketitle
+\noindent\small N3 GTP-U negative testing: malformed packets, unknown TEID, and PSC (0x85)
+extension-header robustness. Pass = bad packets dropped, the UPF stays up, and valid traffic
+still forwards.\normalsize
+\section{Robustness Matrix}
+\begin{center}\begin{tabular}{lll}
+\toprule \textbf{ID} & \textbf{Test} & \textbf{Result} \\ \midrule
+((* for t in suite.tests *))
+((( t.id ))) & ((( t.name | tex ))) & ((* if t.status == "error" *))\fillin{pending}((* elif t.status == "fail" *))\textcolor{red}{\textbf{FAIL}}((* else *))((( t.status )))((* endif *)) \\
+((* endfor *))
+\bottomrule \end{tabular}\end{center}
+
+\section{Findings}
+((* for t in suite.tests *))
+\subsection*{((( t.id ))) — ((( t.name | tex )))}
+\noindent ((( t.notes | default("") | tex )))
+
+((* if t.tables *))
+((* for tname, rows in t.tables.items() *))
+((* if rows *))
+\begin{center}\begin{tabular}{l((* for col in rows[0].keys() if not loop.first *))r((* endfor *))}
+\toprule ((* for col in rows[0].keys() *))\textbf{((( col | tex )))}((* if not loop.last *)) & ((* endif *))((* endfor *)) \\ \midrule
+((* for row in rows *))
+((* for v in row.values() *))((( v | tex )))((* if not loop.last *)) & ((* endif *))((* endfor *)) \\
+((* endfor *))
+\bottomrule \end{tabular}\end{center}
+((* endif *))
+((* endfor *))
+((* endif *))
+((* endfor *))
+\end{document}
