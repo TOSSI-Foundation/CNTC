@@ -1,0 +1,15 @@
+# keep the build context small + deterministic
+.git
+campaigns/*/raw/
+campaigns/*/*.pdf
+campaigns/*/*.aux
+campaigns/*/*.log
+**/__pycache__/
+*.pyc
+.venv/
+*.egg-info/
+# the pfcpsim binaries are rebuilt in-image; don't ship host-built ones
+third_party/pfcpsim/pfcpsim
+third_party/pfcpsim/pfcpctl
+._*
+.DS_Store

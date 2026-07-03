@@ -1,0 +1,25 @@
+__pycache__/
+*.pyc
+campaigns/*/raw/
+campaigns/*/*.pdf
+campaigns/*/*.aux
+campaigns/*/*.log
+.venv/
+*.egg-info/
+
+# built pfcpsim Go binaries (source is vendored; build locally)
+third_party/pfcpsim/pfcpsim
+third_party/pfcpsim/pfcpctl
+
+campaigns/
+
+# dashboard build artifacts + design handoff zips
+dashboard/static_export/
+dashboard/assets/*.orig
+*.zip
+*.bak
+*.bak.*
+
+# OS cruft
+.DS_Store
+._*
