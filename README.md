@@ -1,21 +1,70 @@
-# CNTC — Cloud Native Telecom Certification Framework
+# CNTC — Cloud Native Telecom Certification
 
-CNTC tests open-source 5G network functions and turns the raw results into a **graded,
-standards-aligned verdict** — inspired by the CNTI (Cloud Native Telecom Initiative) model of
+**CNTC** (*Cloud Native Telecom Certification*) is an open framework that tests open-source
+telecom network functions and turns the raw results into a **graded, standards-aligned verdict
+and certificate** — modelled on the CNTI (Cloud Native Telecom Initiative) idea of
 *a published standard → automated tests → a pass/fail certification gate → a scorecard*.
+
+## Objective
+
+Give the whole cloud-native telecom stack **one reproducible “test → grade → certify” pipeline**:
+one requirement catalog, one verdict engine, one scorecard — so any open-source NF can be measured
+against a versioned standard on any rig and earn (or be refused) a certificate.
+
+We are building it **outward from the data plane**, one layer at a time:
+
+| Stage | Scope | Status |
+|-------|-------|--------|
+| 1 | **UPF** — 5G user plane over N3/N4 (performance, load, PFCP conformance, N3 robustness) | ✅ **available today** |
+| 2 | **5G Core control plane** — AMF / SMF / … (NGAP · PFCP · SBI) | 🔜 next |
+| 3 | **RAN** — gNB · O-CU / O-DU / O-RU | 🗺️ roadmap |
+| 4 | **SMO** — Service Management & Orchestration | 🗺️ roadmap |
+| 5 | **RIC** — Near-RT / Non-RT RIC · xApps / rApps (E2 · A1 · O1) | 🗺️ roadmap |
+| 6 | **Full O-RAN ecosystem** — end-to-end certification across the stack | 🎯 vision |
+
+Everything below is **Stage 1 (UPF)** — in production today. The engine that measures
+(`upfbench`) and the umbrella that judges (`cntc`) are deliberately decoupled, so each later
+stage adds a new engine + a requirement catalog **without touching the grading core**.
 
 CNTC has two layers:
 
 | Layer | What it is | Where |
 |-------|-----------|-------|
 | **Engine** (`upfbench`) | The UPF test engine — drives any open-source 5G UPF over N3/N4 and measures it (performance, load, PFCP conformance, N3 robustness). | [`upfbench/`](upfbench/) |
-| **Verdict** (`cntc`) | The umbrella: a **requirement catalog** per profile (`cntc/standards/*.yaml`, the `points.yml` analog) + a pure **verdict engine** that grades results and emits a **scorecard**. | [`cntc/`](cntc/) |
+| **Verdict** (`cntc`) | The umbrella: a **requirement catalog** per profile (`cntc/standards/*.yaml`) + a pure **verdict engine** that grades results and emits a **scorecard** + certificate. | [`cntc/`](cntc/) |
 
 The engine measures; the umbrella judges. They're decoupled — `cntc.verdict` grades the
 serialized `results.json`, so it can also **re-grade any past campaign** without re-running it.
 
-> Design rationale, data model, and the phased plan behind this layer:
-> `../upfbench-analysis/05-cnti-verdict-layer-plan.md`.
+---
+
+## Automation — one `make` entrypoint
+
+Every step of the pipeline is wrapped in a Makefile, so a full certification is a handful of
+commands. Run `make` on its own to print the menu.
+
+```bash
+make prereqs                                        # deps + build pfcpsim + doctor   (needs sudo)
+make configure                                      # wizard -> configs/<campaign>.yaml
+make run     CONFIG=configs/my-upf.yaml CAMPAIGN=SDCORE-AF-001   # run all + n3neg -> verdict -> certify
+make certify CAMPAIGN=SDCORE-AF-001                 # issue the certificate iff the verdict is PASS
+make dashboard                                      # live web UI over campaigns/   (or: make dashboard-bg)
+```
+
+| Target | What it does |
+|--------|--------------|
+| `make prereqs` | install deps, build the vendored pfcpsim, run the `doctor` preflight (sudo) |
+| `make configure` | interactive wizard → writes `configs/<campaign>.yaml` |
+| `make run` | **full e2e**: all suites + n3neg → merge → verdict → certify |
+| `make run-conformance` | pfcp + n3neg only (the certification set) + grade |
+| `make run-perf` · `make run-n3neg` | performance + load + pfcp · N3 robustness only |
+| `make verdict` | (re)grade a campaign → scorecard (`--write-back`) |
+| `make certify` | issue a certificate **iff** the verdict is `PASS` |
+| `make dashboard` · `dashboard-bg` · `dashboard-stop` | live Plotly dashboard: foreground · tmux · stop |
+| `make profiles` · `make lint` · `make test` | list profiles · validate catalogs · run verdict unit tests |
+| `make k8s-deploy` · `make k8s-run` · `make k8s-clean` | dashboard in Kubernetes · in-cluster run Job · teardown |
+
+Override the vars inline, e.g. `make run CONFIG=configs/sdcore-bess.yaml CAMPAIGN=MY-UPF-001`.
 
 ---
 
@@ -141,5 +190,5 @@ campaign — see the plan.)*
     loud warnings when `baseline`/`rig_class` are missing (never a faked performance PASS).
   - **M4** governance — `cntc lint` catalog linter, [requirements rulebook](docs/CNTC-REQUIREMENTS.md)
     + [governance note](docs/CNTC-GOVERNANCE.md). **14/14 unit tests pass** (`tests/test_verdict.py`).
-- **Next:** metric-key drift check in `cntc lint`; more NF engines under the umbrella. See
-  `../upfbench-analysis/05-cnti-verdict-layer-plan.md`.
+- **Next:** metric-key drift check in `cntc lint`; **Stage 2** — a 5G Core control-plane engine
+  under the same umbrella (see the [Objective](#objective) roadmap and [docs/PLAN.md](docs/PLAN.md)).
