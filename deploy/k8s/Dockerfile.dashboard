@@ -1,0 +1,19 @@
+# Lightweight image for the CNTC dashboard pod (view-only web UI over campaigns/).
+# It only needs Python + dash/plotly + the dashboard/cntc/upfbench packages — no pfcpsim,
+# kubectl, tcpreplay (those are for the test RUNNER, not the dashboard). Builds in ~1 min.
+#   docker build -t cntc-dashboard:v1 -f deploy/k8s/Dockerfile.dashboard .
+FROM python:3.10-slim-bookworm
+WORKDIR /opt/upfbench
+RUN pip install --no-cache-dir pyyaml jinja2 dash plotly
+# the packages the dashboard imports (dashboard -> cntc.certification, reads results.json)
+COPY dashboard/ ./dashboard/
+COPY cntc/ ./cntc/
+COPY upfbench/ ./upfbench/
+COPY pyproject.toml README.md ./
+ENV UPFBENCH_DASH_PORT=8050 \
+    UPFBENCH_DASH_HOST=0.0.0.0 \
+    UPFBENCH_DASH_LIVE_MS=15000 \
+    PYTHONPATH=/opt/upfbench
+EXPOSE 8050
+# campaigns/ is mounted at runtime (shared with the test runs)
+CMD ["python3", "-m", "dashboard.app"]

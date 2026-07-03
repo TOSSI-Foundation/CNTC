@@ -1,0 +1,62 @@
+# CNTC test-runner — run the WHOLE suite from inside the cluster as a Job.
+#
+# Datapath tests inject af_packet GTP-U into the UPF's access macvlan and kubectl-exec into
+# the UPF pod, so the runner needs, on the UPF's node:
+#   * hostNetwork: true      (see the host access macvlan that reaches the UPF N3)
+#   * privileged: true       (raw send / tcpreplay)
+#   * nodeName == UPF node   (same L2 as the UPF's access interface)
+#   * kube access to exec into the UPF namespace (RBAC below) + a kubeconfig
+#
+# EDIT: <IMAGE>, <UPF_NODE>, <CAMPAIGNS_HOST_DIR>, the --config path, and the exec target
+# namespace in the Role. This is the "advanced" path — the host CLI (scripts/cntc-run-all.sh)
+# is simpler; use this when you want runs triggered in-cluster.
+apiVersion: v1
+kind: ServiceAccount
+metadata: { name: cntc-runner, namespace: cntc }
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata: { name: cntc-runner }
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "pods/log"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["pods/exec"]
+    verbs: ["create", "get"]          # bessctl / MAC read / crash detection via exec
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata: { name: cntc-runner }
+roleRef: { apiGroup: rbac.authorization.k8s.io, kind: ClusterRole, name: cntc-runner }
+subjects: [{ kind: ServiceAccount, name: cntc-runner, namespace: cntc }]
+---
+apiVersion: batch/v1
+kind: Job
+metadata: { name: cntc-run, namespace: cntc }
+spec:
+  backoffLimit: 0
+  template:
+    spec:
+      serviceAccountName: cntc-runner
+      hostNetwork: true                 # reach the UPF's access macvlan
+      nodeName: <UPF_NODE>              # pin to the UPF's node (same L2)
+      restartPolicy: Never
+      containers:
+        - name: runner
+          image: <IMAGE>
+          securityContext: { privileged: true }   # raw send
+          command: ["bash", "-lc"]
+          args:
+            - |
+              export KUBECONFIG=/kube/config
+              export PATH=$PATH:/var/lib/rancher/rke2/bin:$HOME/.local/bin
+              ./scripts/cntc-run-all.sh configs/my-upf.yaml MY-UPF-K8S
+          volumeMounts:
+            - { name: campaigns, mountPath: /app/campaigns }
+            - { name: kubeconfig, mountPath: /kube, readOnly: true }
+      volumes:
+        - name: campaigns
+          hostPath: { path: <CAMPAIGNS_HOST_DIR>, type: DirectoryOrCreate }
+        - name: kubeconfig
+          hostPath: { path: /etc/rancher/rke2, type: Directory }   # or a Secret with a scoped kubeconfig
