@@ -1,0 +1,60 @@
+# Open5GS-UPF campaign — third UPF, proving the framework is UPF-agnostic.
+# Open5GS 5G UPF runs as a Docker container on the docker_open5gs bridge (172.22.0.0/24);
+# pfcpsim drives N4 and tcpreplay drives N3. For UPF-isolated benchmarking, stop the
+# Open5GS SMF first so pfcpsim is the sole SMF over N4:
+#   sudo docker stop smf      (restart with: sudo docker start smf)
+campaign: UPF-BM-O5GS-001
+report_commands: false           # clean combined report-all.pdf for sharing
+reset_between_suites: true   # reset the UPF to a clean state before each suite (avoids cross-suite datapath degradation)
+
+sut:
+  cpu: "12 vCPU (VM)"
+  host: "docker_open5gs bridge 172.22.0.0/24"
+  note: "Open5GS-UPF (gtp5g + ogstun) driven via pfcpsim (N4) + tcpreplay (N3)"
+  # upf / image / mode / ifaces filled live by the open5gs_upf adapter
+
+upf:
+  adapter: open5gs_upf
+  n3_iface: eth0                 # container iface carrying N3 (GTP-U)
+  n6_iface: ogstun               # decapsulated UE/N6 traffic (TUN)
+  n4_addr: "172.22.0.8:8805"     # Open5GS UPF N4 (PFCP)
+  container: upf
+  docker_cmd: "sudo docker"
+  # pfcpsim control knobs:
+  pfcp_remote_addr: "172.22.0.8" # Open5GS UPF N4 IP (skip k8s svc resolution)
+  pfcpsim_iface: br-7a1e4a910da5 # host iface on the Open5GS bridge (source 172.22.0.1)
+  pfcpsim_no_urr: true           # Open5GS parser rejects pfcpsim's URR IEs -> omit them
+  pfcp_no_assoc_release: true    # Open5GS UPF: "Not implemented PFCP message type[9]" (release)
+  pfcpsim_apply_action_2b: true  # Open5GS needs the 2-octet Apply Action IE (Rel-16)
+  pfcpsim_dnn: internet          # Open5GS allocates UE IP per-DNN; PDRs must carry the Network Instance
+  ue_pool: "10.45.1.0/24"        # within the Open5GS internet APN (10.45.0.0/16), off the .0.1 gw
+  gnb_addr: "172.22.0.1"
+  # tcpreplay N3 generator:
+  gen_iface: br-7a1e4a910da5
+  n3_remote_ip: "172.22.0.8"     # Open5GS UPF N3 (outer GTP-U dst)
+  n3_mac_via: arp                # UPF on a docker bridge -> host ARP (not k8s pod)
+  gnb_ip: "172.22.0.1"           # outer GTP-U src
+  inner_dst_ip: "8.8.8.8"        # inner dst (UE -> DN); UPF NATs it out
+  gen_cpu_affinity: "2-11"
+  n6_fwd_field: rx_pkts          # provisional; confirmed by the datapath probe during bring-up
+
+suite: pfcp                      # start with conformance (cleanest portability proof)
+
+pfcp:
+  procedures: [association, establish, modify, delete, error_handling]
+
+performance:
+  control: pfcpsim
+  generator: tcpreplay
+  frame_sizes: [128, 512, 1024, 1400]
+  max_rate_mpps: 0.15
+  search_resolution_mpps: 0.005
+  search_max_iters: 7
+  trial_duration_s: 4
+load:
+  control: pfcpsim
+  generator: tcpreplay
+  ue_counts: [10, 50, 100, 200]
+  lt02_ue_count: 100
+  lt02_load_mpps: 0.1
+  lt03_ue_counts: [1, 10, 100]

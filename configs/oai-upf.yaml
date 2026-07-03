@@ -1,0 +1,64 @@
+# OAI-UPF campaign — second UPF, proving the framework is UPF-agnostic.
+# OAI-UPF runs as a Docker container on the demo-oai bridge; pfcpsim drives N4
+# (PFCPSIM_NO_URR, since OAI rejects URRs) and tcpreplay drives N3.
+# For UPF-isolated testing, stop oai-smf first so pfcpsim is the sole SMF:
+#   sudo docker stop oai-smf   (restart it afterwards)
+campaign: UPF-BM-OAI-001
+report_commands: false   # clean combined report-all.pdf for sharing (commands kept in results.json)
+reset_between_suites: true   # reset the UPF to a clean state before each suite (avoids cross-suite datapath degradation)
+
+sut:
+  cpu: "12 vCPU (VM)"
+  host: "docker demo-oai bridge 192.168.70.0/26"
+  note: "OAI-UPF driven via pfcpsim (N4) + tcpreplay (N3)"
+  # upf / image / mode / ifaces filled live by the oai_upf adapter
+
+upf:
+  adapter: oai_upf
+  n3_iface: eth0                 # container iface carrying N3 (GTP-U)
+  n6_iface: tun0                 # container iface carrying UE traffic
+  n4_addr: "192.168.70.135:8805" # OAI-UPF N4 (PFCP)
+  # docker location of the UPF (adapter shells in via docker exec):
+  container: oai-upf
+  docker_cmd: "sudo docker"
+  # pfcpsim control knobs:
+  pfcp_remote_addr: "192.168.70.135"   # OAI-UPF N4 IP (skip k8s svc resolution)
+  pfcpsim_iface: demo-oai              # host bridge iface pfcpsim sends PFCP from
+  pfcpsim_no_urr: true                 # OAI-UPF rejects URRs -> omit them
+  pfcp_no_assoc_release: true          # OAI-UPF never answers Association Release (heartbeat-loss teardown only)
+  ue_pool: "12.1.1.0/24"               # matches OAI DNN subnet
+  gnb_addr: "192.168.70.200"
+  # tcpreplay N3 generator (Suite 1/2). TEID + UE IP per flow come from the pfcpsim
+  # control's aligned_flows() (baseID+10k / pool+1+k), so they are not hardcoded here.
+  gen_iface: demo-oai
+  n3_remote_ip: "192.168.70.135"   # OAI-UPF N3 (outer GTP-U dst)
+  n3_mac_via: arp                  # OAI is on a normal Docker bridge -> host ARP (not k8s pod)
+  gnb_ip: "192.168.70.200"         # outer GTP-U src (emulated gNB)
+  inner_dst_ip: "8.8.8.8"          # inner dst (UE -> DN); OAI NATs it out N6
+  gen_cpu_affinity: "2-11"         # keep the sender off core 0/1; OAI datapath runs there
+
+suite: pfcp                      # start with conformance (cleanest portability proof)
+
+pfcp:
+  procedures: [association, establish, modify, delete, error_handling]
+
+# Suite 1/2 on OAI use pfcpsim control (no pybess backdoor) + tcpreplay. Note: their
+# traffic TEIDs must match the pfcpsim session TEIDs (baseID+10k) — wired like Suite 2.
+performance:
+  control: pfcpsim
+  generator: tcpreplay
+  # OAI's userspace simpleswitch saturates far below BESS, so search a low rate band.
+  frame_sizes: [128, 512, 1024]
+  max_rate_mpps: 0.12
+  search_resolution_mpps: 0.005
+  search_max_iters: 7
+  trial_duration_s: 4
+load:
+  control: pfcpsim
+  generator: tcpreplay
+  # OAI DNN is 12.1.1.0/24 (254 usable UE IPs), so cap UE counts inside the pool —
+  # beyond it pfcpsim assigns IPs OAI's PDR won't match and the batch fails.
+  ue_counts: [10, 50, 100, 200, 250]   # LT-01 capacity ramp
+  lt02_ue_count: 100                    # LT-02 aggregate + per-UE
+  lt02_load_mpps: 0.1
+  lt03_ue_counts: [1, 10, 100]          # LT-03 skips on OAI (no in-pipeline probe)

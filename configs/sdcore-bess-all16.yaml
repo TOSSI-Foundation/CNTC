@@ -1,0 +1,80 @@
+campaign: UPF-CNTT-ALL16
+reset_between_suites: true
+sut:
+  cpu: 12 vCPU (VM)
+  nic: virtio eth0 (VM, single NIC)
+  kernel: 5.15.0-105-generic
+upf:
+  adapter: sdcore_bess
+  mode: af_packet
+  n3_iface: access
+  n6_iface: core
+  n4_addr: 127.0.0.1:8805
+  namespace: aether-5gc
+  pod: upf-0
+  bessd_container: bessd
+  gen_iface: access
+  n3_remote_ip: 192.168.252.3
+  gen_cpu_affinity: auto
+suite: all
+performance:
+  control: pybess
+  generator: tcpreplay
+  frame_sizes:
+  - 128
+  - 512
+  - 1024
+  - 1518
+  trial_duration_s: 5
+  max_rate_mpps: 0.02
+  pdr_tolerance: 0.001
+  search_resolution_mpps: 0.0005
+  search_max_iters: 8
+  latency_frame_size: 512
+  latency_load_mpps: 0.01
+  latency_duration_s: 8
+  latency_percentiles:
+  - 50
+  - 90
+  - 99
+  - 99.9
+  jitter_percentiles:
+  - 50
+  - 99
+  burst_frame_size: 512
+  burst_load_mpps: 0.15
+  burst_duration_s: 5
+  multiflow_frame_size: 512
+  multiflow_flows: 16
+  multiflow_load_mpps: 0.15
+  multiflow_duration_s: 5
+load:
+  control: pfcpsim
+  generator: tcpreplay
+  ue_counts:
+  - 10
+  - 100
+  - 1000
+  - 5000
+  per_ue_rate_mbps: 5
+  lt02_ue_count: 100
+  lt02_frame_size: 512
+  lt02_load_mpps: 0.15
+  lt02_duration_s: 6
+  lt02_verify_ues: 8
+  lt02_verify_rate_mpps: 0.005
+  lt02_verify_dur_s: 2
+  lt03_ue_counts:
+  - 1
+  - 10
+  - 100
+  lt03_frame_size: 512
+  lt03_load_mpps: 0.03
+  lt03_duration_s: 6
+pfcp:
+  procedures:
+  - association
+  - establish
+  - modify
+  - delete
+  - error_handling

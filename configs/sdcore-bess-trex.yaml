@@ -1,0 +1,102 @@
+# SD-Core BESS-UPF — kernel-bypass modes (DPDK / AF_XDP / CNDP) via the TRex generator.
+#
+# Use this config whenever the UPF is deployed in a mode whose access port is a
+# DPDK/XDP-owned VF (no host kernel socket). The adapter reads the LIVE mode from the pod
+# and stamps it in the report, so you don't set the mode here — deploy the mode in
+# aether-onramp, then run this config. Distinguish runs with --campaign:
+#
+#   sudo -E python3 -m upfbench.cli run --config configs/sdcore-bess-trex.yaml \
+#        --suite all --campaign UPF-BM-SDCORE-DPDK
+#
+# Injection: TRex on gen VF 0000:18:0a.2 (enp24s0f1) hairpins GTP-U through the NIC VEB
+# into the UPF access VF (MAC 00:11:22:33:44:33). See configs/trex_cfg.yaml.
+campaign: UPF-BM-SDCORE-DPDK
+reset_between_suites: true         # fresh bessd per suite — clears WildcardMatch tuple saturation
+
+sut:
+  cpu: "2x Xeon Gold 6148 (40c)"
+  nic: "Intel XXV710 25GbE (i40e), SR-IOV VF hairpin"
+  platform: "x86_64, Canonical k8s (RKE2)"
+  # upf_image / mode / ports are filled live by the sdcore_bess adapter (describe()).
+
+upf:
+  adapter: sdcore_bess
+  mode: dpdk                       # informational; adapter reads the live mode from upf.jsonc
+  n3_iface: access
+  n6_iface: core
+  n4_addr: "10.42.0.13:8805"       # UPF pod IP : PFCP port (pfcpsim, Suites 2/3) — see note
+  namespace: aether-5gc
+  pod: upf-0
+  bessd_container: bessd
+  # --- TRex generator (kernel-bypass injection) ---
+  trex_root: "/home/three/trex-v3.08"
+  trex_cfg: "configs/trex_cfg.yaml"
+  trex_tx_port: 0
+  n3_remote_mac: "00:11:22:33:44:33"   # UPF access VF MAC (VEB hairpin target)
+  trex_src_mac: "00:11:22:33:44:35"    # gen VF2 MAC
+  n6_remote_mac: "00:11:22:33:44:34"   # UPF core VF (N6) MAC — downlink VEB target (TC-02)
+  trex_dl_src_mac: "00:11:22:33:44:36" # gen VF3 MAC (downlink injector, on the core PF)
+  trex_dl_port: 1                      # TRex port that hairpins into the UPF core VF
+  gnb_ip: "192.168.252.10"
+  n3_remote_ip: "192.168.252.3"
+  ue_ip: "192.168.100.5"
+  inner_dst_ip: "8.8.8.8"
+  # --- pfcpsim (N4 control for Suites 2 & 3) ---
+  pfcpsim_iface: "eno1"            # node interface the UPF pod can reply to (node IP 192.168.1.113)
+  n3_addr: "192.168.252.3"        # UPF N3 IP advertised in F-TEIDs
+  gnb_addr: "192.168.252.10"
+  ue_pool: "10.250.0.0/24"        # UE pool for created sessions
+  pfcpsim_mbr_kbps: 10000000      # ~10 Gbps: make QER effectively unlimited (measure raw ceiling)
+
+suite: performance
+
+performance:
+  control: pybess                  # white-box forward-all rules (same as af_packet path)
+  generator: trex                  # DPDK/AF_XDP/CNDP injection
+  frame_sizes: [128, 256, 512, 1024, 1518]
+  trial_duration_s: 8
+  max_rate_mpps: 15.0              # ceiling above the reference 4w NDR (~9.4-10.3 Mpps @ small frames)
+  pdr_tolerance: 0.001             # PDR @ 0.1% loss
+  search_resolution_mpps: 0.1      # 100 kpps precision
+  search_max_iters: 7
+  latency_frame_size: 512
+  latency_load_mpps: 0.5           # <= NDR so latency reflects pipeline cost, not queueing
+  latency_duration_s: 8
+  latency_percentiles: [50, 90, 99, 99.9]
+  jitter_percentiles: [50, 99]
+  burst_frame_size: 512
+  burst_load_mpps: 6.0             # >> capacity, to saturate
+  burst_duration_s: 5
+  multiflow_frame_size: 512
+  multiflow_flows: 16
+  multiflow_load_mpps: 6.0
+  multiflow_duration_s: 5
+  # TC-02 bidirectional (UL GTP-U on N3 + DL plain-IP on N6, simultaneously)
+  tc02_ul_mpps: 3.0
+  tc02_dl_mpps: 3.0
+  tc02_duration_s: 6
+  tc02_frame_sizes: [128, 256, 512, 1024, 1518]
+
+load:
+  control: pfcpsim
+  generator: trex
+  ue_counts: [10, 100, 1000, 5000]
+  per_ue_rate_mbps: 5
+  lt02_ue_count: 100
+  lt02_frame_size: 512
+  lt02_load_mpps: 8.0
+  lt02_duration_s: 6
+  lt02_verify_ues: 8
+  lt02_verify_rate_mpps: 0.5
+  lt02_verify_dur_s: 2
+  lt03_ue_counts: [1, 10, 100]
+  lt03_frame_size: 512
+  lt03_load_mpps: 2.0
+  lt03_duration_s: 6
+
+pfcp:
+  procedures: [association, establish, modify, delete, error_handling]
+
+n3neg:                             # N3 data-plane negative / robustness (malformed/unknown/PSC)
+  burst_pkts: 20000                # packets per negative variant
+  frame_size: 256

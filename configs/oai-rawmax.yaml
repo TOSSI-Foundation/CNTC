@@ -1,0 +1,50 @@
+# OAI-UPF — RAW MAX-FORWARDING profile (apples-to-apples vs SD-Core).
+# Same method as sdcore-rawmax.yaml: pfcpsim real PFCP sessions, QER MBR unlimited.
+# OAI's simpleswitch ignores QER anyway, but we set it explicitly so both UPFs are
+# driven identically. Compare against configs/sdcore-rawmax.yaml.
+campaign: UPF-BM-OAI-RAWMAX
+
+sut:
+  cpu: "12 vCPU (VM)"
+  host: "docker demo-oai bridge 192.168.70.0/26"
+  note: "raw max-forwarding: pfcpsim sessions, QER MBR unlimited"
+
+upf:
+  adapter: oai_upf
+  n3_iface: eth0
+  n6_iface: tun0
+  n4_addr: "192.168.70.135:8805"
+  container: oai-upf
+  docker_cmd: "sudo docker"
+  pfcp_remote_addr: "192.168.70.135"
+  pfcpsim_iface: demo-oai
+  pfcpsim_no_urr: true
+  pfcp_no_assoc_release: true
+  pfcpsim_mbr_kbps: 2000000        # 2 Gbps >> host generator ceiling (~1.2 Gbps@MTU) -> effectively unlimited, sane for BESS QoS meter
+  ue_pool: "12.1.1.0/24"
+  gnb_addr: "192.168.70.200"
+  gen_iface: demo-oai
+  n3_remote_ip: "192.168.70.135"
+  n3_mac_via: arp
+  gnb_ip: "192.168.70.200"
+  inner_dst_ip: "8.8.8.8"
+  gen_cpu_affinity: "2-11"
+
+suite: performance
+
+performance:
+  control: pfcpsim
+  generator: tcpreplay
+  frame_sizes: [512, 1024, 1400]   # identical sweep to sdcore-rawmax.yaml
+  trial_duration_s: 5
+  max_rate_mpps: 0.12              # = host generator ceiling on this VM
+  pdr_tolerance: 0.001
+  search_resolution_mpps: 0.005
+  search_max_iters: 7
+  burst_frame_size: 1400
+  burst_load_mpps: 0.12
+  burst_duration_s: 5
+  multiflow_frame_size: 1400
+  multiflow_flows: 16
+  multiflow_load_mpps: 0.12
+  multiflow_duration_s: 5

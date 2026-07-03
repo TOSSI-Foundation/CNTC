@@ -1,0 +1,77 @@
+# SD-Core BESS-UPF — example campaign.
+# Phase 0/1 assumes the UPF pod is already deployed (aether-onramp / charmed sd-core);
+# the framework connects to it. `upfbench run --config configs/sdcore-bess.yaml`
+campaign: UPF-BM-2026-001
+reset_between_suites: true
+
+sut:                              # static facts; the adapter overlays live facts (mode,
+  cpu: "12 vCPU (VM)"             # image, ports) read from the running UPF at run time
+  nic: "virtio eth0 (VM, single NIC)"
+  kernel: "5.15.0-105-generic"
+  # upf_image / upf / mode are filled live by the sdcore_bess adapter (describe()).
+
+upf:
+  adapter: sdcore_bess
+  mode: af_packet                # informational; adapter reads the live mode from upf.jsonc
+  n3_iface: access               # BESS access port (N3 ingress)
+  n6_iface: core                 # BESS core port (N6 egress)
+  n4_addr: "127.0.0.1:8805"      # UPF PFCP agent (used by pfcpsim in Suites 2/3)
+  # Kubernetes location of the BESS-UPF pod (adapter shells in via kubectl exec):
+  namespace: aether-5gc
+  pod: upf-0
+  bessd_container: bessd
+  # Host-side GTP-U generator (tcpreplay into the pod's access macvlan = real af_packet RX):
+  gen_iface: access              # host send interface
+  n3_remote_ip: "192.168.252.3"  # UPF access/N3 IP (outer dst); MAC read from the pod
+  gen_cpu_affinity: auto         # auto = pin generator off bessd's worker cores (~3x on this VM)
+
+suite: performance               # performance | load | pfcp | all
+
+performance:
+  control: pybess                # white-box forward-all rules
+  generator: tcpreplay           # host-side GTP-U injector (no spare NIC for testpmd)
+  frame_sizes: [128, 512, 1024, 1518]   # GTP-U min frame ~78B, so 64 is omitted
+  trial_duration_s: 5            # per-trial steady-state seconds (raise for final runs)
+  max_rate_mpps: 0.12            # search ceiling — af_packet RX tops out ~20-40 kpps
+  pdr_tolerance: 0.001           # PDR @ 0.1% loss
+  search_resolution_mpps: 0.005  # 5 kpps precision on the no-drop rate
+  search_max_iters: 7            # cap trials per search (keep first sweeps quick)
+  # TC-03 latency (in-pipeline pktParse->executeFAR, measured at low load):
+  latency_frame_size: 512
+  latency_load_mpps: 0.01        # <= NDR so latency reflects pipeline cost, not queueing
+  latency_duration_s: 8
+  latency_percentiles: [50, 90, 99, 99.9]
+  jitter_percentiles: [50, 99]
+  # TC-04 burst (saturating blast):
+  burst_frame_size: 512
+  burst_load_mpps: 0.15          # >> capacity, to saturate
+  burst_duration_s: 5
+  # TC-08 multi-flow (N distinct TEID+UE-IP flows):
+  multiflow_frame_size: 512
+  multiflow_flows: 16
+  multiflow_load_mpps: 0.15
+  multiflow_duration_s: 5
+
+load:
+  control: pfcpsim                   # real per-UE PFCP sessions
+  generator: tcpreplay               # GTP-U multi-flow (TRex is the future hardware path)
+  ue_counts: [10, 100, 1000, 5000]   # LT-01 session-capacity ramp
+  per_ue_rate_mbps: 5
+  # LT-02 per-UE throughput:
+  lt02_ue_count: 100
+  lt02_frame_size: 512
+  lt02_load_mpps: 0.15               # saturate the aggregate
+  lt02_duration_s: 6
+  lt02_verify_ues: 8                 # per-UE forwarding check: first N UEs, one at a time
+  lt02_verify_rate_mpps: 0.005       # low (no-drop) so each UE should forward 100%
+  lt02_verify_dur_s: 2
+  # LT-03 latency under load:
+  lt03_ue_counts: [1, 10, 100]       # latency as UE count rises
+  lt03_frame_size: 512
+  lt03_load_mpps: 0.03               # near capacity (a bit of pressure)
+  lt03_duration_s: 6
+
+pfcp:
+  procedures: [association, establish, modify, delete, error_handling]
+
+# baseline: campaigns/UPF-BM-2026-000/results.json   # enables the comparison section
