@@ -1,0 +1,42 @@
+# CNTC requirement catalog — PERFORMANCE profile
+# Hardware-DEPENDENT. A raw Mpps number is meaningless without the rig it was earned on
+# (af_packet on a shared VM is ~1/5 of a dedicated DPDK box, and af_packet throughput is
+# even non-monotonic). Therefore this profile does NOT use absolute Mpps thresholds:
+#   - throughput/latency are graded RELATIVE to a trusted baseline on the same rig_class
+#     (verdict.kind: baseline_rel) — requires `baseline:` in the campaign config.
+#   - only genuinely absolute properties (e.g. a session-capacity floor) use `kind: metric`.
+# Until a baseline is supplied, baseline_rel tests grade 'na' (reported, never faked).
+#
+# Metric keys below are the REAL per-test keys emitted by the engine:
+#   TC-01 -> peak_ndr_mpps    TC-03 -> p99_us / avg_us    LT-01 -> capacity_sessions
+version: "0.1.0"
+profile: performance
+title: "5G UPF Data-plane Performance & Scale"
+standards:
+  - "RFC 2544 (throughput / NDR-PDR)"
+  - "RFC 8219 (latency / jitter)"
+  - "ETSI NFV-TST 009 (load / capacity methodology)"
+requires:
+  rig_class: true     # verdict is invalid unless the run records a rig_class
+  baseline: true      # baseline_rel tests need a trusted baseline results.json
+defaults:
+  class: normal
+gate:
+  essential: all
+
+tests:
+  - id: TC-01
+    name: Throughput (NDR/PDR sweep)
+    category: performance
+    class: normal
+    verdict: { kind: baseline_rel, metric: peak_ndr_mpps, op: ">=", pct_of_baseline: 90 }
+  - id: TC-03
+    name: Latency / jitter under low load
+    category: performance
+    class: essential
+    verdict: { kind: baseline_rel, metric: p99_us, op: "<=", pct_of_baseline: 110 }
+  - id: LT-01
+    name: Max concurrent UE sessions (capacity ceiling)
+    category: scale
+    class: normal
+    verdict: { kind: metric, metric: capacity_sessions, op: ">=", value: 1000 }
