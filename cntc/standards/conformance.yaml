@@ -23,7 +23,7 @@ defaults:
   class: normal
 gate:
   # 'all' = every essential must pass (strict, recommended for a correctness profile).
-  # Alternatively set `min_essential: <n>` to allow a threshold (CNTI-style "15 of 19").
+  # Alternatively set `min_essential: <n>` to allow a threshold (e.g. "15 of 19").
   essential: all
 
 tests:

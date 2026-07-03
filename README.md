@@ -2,7 +2,7 @@
 
 **CNTC** (*Cloud Native Telecom Certification*) is an open framework that tests open-source
 telecom network functions and turns the raw results into a **graded, standards-aligned verdict
-and certificate** — modelled on the CNTI (Cloud Native Telecom Initiative) idea of
+and certificate** — the model is simple:
 *a published standard → automated tests → a pass/fail certification gate → a scorecard*.
 
 ## Objective
@@ -112,7 +112,7 @@ Every run/verdict writes `campaigns/<id>/scorecard.md` and embeds a `verdict` bl
   `{kind: baseline_rel,…}` (relative). A test that didn't run / errored / is missing a metric
   is **`na`** — *never silently promoted to pass*.
 - **Result:** `PASS` (all essentials passed) · `FAIL` (an essential failed) · `INCOMPLETE`
-  (an essential didn't run). The gate can also be `min_essential: N` (CNTI-style "15 of 19").
+  (an essential didn't run). The gate can also be `min_essential: N` (e.g. "15 of 19").
 
 To change the bar, edit the YAML catalog — no engine code changes. Add a profile by dropping
 a new `cntc/standards/<name>.yaml`. Validate catalogs with `cntc lint`. The human-readable

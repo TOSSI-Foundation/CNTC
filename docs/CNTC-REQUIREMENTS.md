@@ -2,8 +2,7 @@
 
 This is the human-readable standard that the machine-checkable catalogs in
 [`cntc/standards/`](../cntc/standards/) encode. For each requirement: **what** it checks,
-**why** it matters, and **how to remediate** a failure. It is the CNTC analog of CNTI's
-`TEST_DOCUMENTATION.md`.
+**why** it matters, and **how to remediate** a failure.
 
 A UPF is graded against a **profile**. The verdict per test is `pass` / `fail` / `na`
 (*not judged* — did not run, errored, or a needed metric was absent; **never** silently a

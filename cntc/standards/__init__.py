@@ -1,6 +1,6 @@
 """Requirement catalogs — the machine-checkable standard a UPF is graded against.
 
-Each ``<profile>.yaml`` here is CNTC's analog of CNTI's ``points.yml``: it lists, per test
+Each ``<profile>.yaml`` here is a versioned requirement catalog: it lists, per test
 ID, the category, the weight class (essential / normal / bonus), and the *verdict rule* that
 turns a test's output into pass/fail. The catalogs are data, not code, so the bar can be
 reviewed and tuned without touching the engine.

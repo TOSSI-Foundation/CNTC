@@ -1,15 +1,13 @@
 """Issue a formal CNTC conformance certificate from a graded verdict.
 
-This is the automated analog of CNTI's "Certified CNF / Certified CNTi" program: where CNTI
-grants a certificate after a vendor self-certifies and a reviewer verifies the test results,
 CNTC issues a **technical conformance certificate** automatically **iff every essential test
 in the profile passed** (verdict.result == "PASS"). A FAIL or INCOMPLETE verdict yields no
 certificate — you cannot certify a UPF that failed an essential test (e.g. one that crashes
 on malformed input).
 
 NOTE ON SCOPE: this certifies *technical conformance to a versioned CNTC profile on a stated
-rig*. It is NOT a governance-backed brand like "Certified CNTi" (which requires an LFN review
-board + terms). The certificate records exactly what was verified so it is auditable.
+rig* — a technical result, not a governance-backed brand. The certificate records exactly
+what was verified so it is auditable.
 """
 from __future__ import annotations
 
@@ -44,7 +42,7 @@ def issue(verdict: dict[str, Any], sut: dict[str, Any], stamp: str) -> dict[str,
         "categories": verdict.get("categories", {}),
         "issued": stamp or "(unstamped)",
         "scope": "Technical conformance to the stated CNTC profile on the stated rig. "
-                 "Not an LFN-governed brand.",
+                 "A technical result, not a governance-backed brand.",
     }
 
 
