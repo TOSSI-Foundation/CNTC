@@ -1,0 +1,37 @@
+[project]
+name = "cntc"
+version = "0.1.0"
+description = "CNTC — Cloud Native Telecom Certification Framework: standards-graded testing of 5G network functions (UPF engine first). Wraps the upfbench engine with a requirement-catalog verdict layer."
+authors = [{ name = "coRAN Labs" }]
+requires-python = ">=3.10"
+dependencies = [
+    "PyYAML>=6.0",
+    "Jinja2>=3.1",
+    "scapy>=2.5",        # crafts the GTP-U pcap for the tcpreplay generator (Suites 1 & 2)
+]
+
+[project.scripts]
+cntc = "cntc.cli:main"              # umbrella CLI: profiles / verdict / run
+upfbench = "upfbench.cli:main"      # the UPF test engine (still usable standalone)
+
+[project.optional-dependencies]
+# Suite 1 (performance) — BESS white-box path
+bess = []          # pybess is vendored with the BESS image; imported at runtime
+# Traffic generators / metrics helpers are driven as external processes (TRex, testpmd,
+# pidstat, tcpdump), so they are system deps, not Python deps.
+# Dashboard — interactive results/showcase web app (reads campaigns/, view-only).
+dashboard = [
+    "dash>=2.16",
+    "plotly>=5.20",
+]
+
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["cntc*", "upfbench*", "dashboard*"]
+
+[tool.setuptools.package-data]
+dashboard = ["assets/*.css"]
+cntc = ["standards/*.yaml"]
