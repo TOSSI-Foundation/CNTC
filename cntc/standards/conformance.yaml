@@ -1,0 +1,75 @@
+# CNTC requirement catalog — CONFORMANCE profile
+# Hardware-INDEPENDENT correctness. Certifiable on any rig, because these outcomes do not
+# depend on the packet-per-second capacity of the box: either the UPF implements the N4/PFCP
+# procedures correctly and survives malformed N3 input, or it does not.
+#
+# Grading rule for this profile: every ESSENTIAL test must PASS -> verdict PASS.
+#   - an essential FAIL  -> verdict FAIL
+#   - an essential not run / errored / skipped -> 'na' -> verdict INCOMPLETE (never a silent pass)
+#
+# All CF and NT tests already return TestResult.status in {"pass","fail"} (the NT "ok" flag
+# encodes "no crash AND forwarded AND recovered"), so the verdict rule is `status_pass`.
+# v0.2.0 (2026-07-02): NT-03 (PSC ext-header robustness) demoted essential -> normal by
+# request of the standard owner. It still runs and is scored, but no longer gates
+# certification. NOTE: a UPF that crashes on a malformed PSC packet (a remote DoS) can now
+# be CERTIFIED under this profile. Essential set is now 7 (CF-01..05 + NT-01 + NT-02).
+version: "0.2.0"
+profile: conformance
+title: "5G UPF N4/PFCP Conformance + N3 GTP-U Robustness"
+standards:
+  - "3GPP TS 29.244 (PFCP / N4)"
+  - "3GPP TS 29.281 (GTP-U / N3)"
+defaults:
+  class: normal
+gate:
+  # 'all' = every essential must pass (strict, recommended for a correctness profile).
+  # Alternatively set `min_essential: <n>` to allow a threshold (CNTI-style "15 of 19").
+  essential: all
+
+tests:
+  # --- PFCP / N4 conformance (3GPP TS 29.244) ------------------------------------------
+  - id: CF-01
+    name: PFCP association setup / release
+    category: conformance
+    class: essential
+    verdict: status_pass
+  - id: CF-02
+    name: PFCP session establishment
+    category: conformance
+    class: essential
+    verdict: status_pass
+  - id: CF-03
+    name: PFCP session modification
+    category: conformance
+    class: essential
+    verdict: status_pass
+  - id: CF-04
+    name: PFCP session deletion
+    category: conformance
+    class: essential
+    verdict: status_pass
+  - id: CF-05
+    name: PFCP error handling (unknown SEID / missing IE -> correct cause)
+    category: conformance
+    class: essential
+    verdict: status_pass
+
+  # --- N3 GTP-U robustness / security (a crash = a remote user-plane DoS) ---------------
+  # NOTE: crash detection is currently reliable only for adapters that can observe a UPF
+  # process restart (SD-Core BESS today). For an adapter that cannot detect a crash the
+  # test returns status="error" -> graded 'na' here, NOT 'pass'. Do not weaken this.
+  - id: NT-01
+    name: Unknown-TEID robustness
+    category: robustness
+    class: essential
+    verdict: status_pass
+  - id: NT-02
+    name: Malformed GTP-U robustness (no crash)
+    category: robustness
+    class: essential
+    verdict: status_pass
+  - id: NT-03
+    name: PDU-Session-Container extension-header robustness
+    category: robustness
+    class: normal          # v0.2.0: demoted from essential (no longer gates certification)
+    verdict: status_pass
