@@ -1,0 +1,46 @@
+# CNTC dashboard — runs IN the cluster, LIVE over a shared campaigns/ volume.
+# Whatever writes to that volume (host CLI runs, or the test-runner Job) shows up here.
+# The dashboard auto-refreshes the runs list every 15s (UPFBENCH_DASH_LIVE_MS).
+#
+# EDIT before applying:  <IMAGE>  and the hostPath  <CAMPAIGNS_HOST_DIR>  (the campaigns/
+# directory on the node where you run tests). For multi-node, swap hostPath for an RWX PVC.
+apiVersion: v1
+kind: Namespace
+metadata: { name: cntc }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cntc-dashboard
+  namespace: cntc
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: cntc-dashboard } }
+  template:
+    metadata: { labels: { app: cntc-dashboard } }
+    spec:
+      containers:
+        - name: dashboard
+          image: <IMAGE>                 # cntc-dashboard:v1 (built from deploy/k8s/Dockerfile.dashboard)
+          imagePullPolicy: Never         # image is loaded locally into containerd, not pulled
+          command: ["python3", "-m", "dashboard.app"]
+          env:
+            - { name: UPFBENCH_DASH_PORT, value: "8050" }
+            - { name: UPFBENCH_DASH_LIVE_MS, value: "15000" }   # live auto-refresh (0=off)
+          ports: [{ containerPort: 8050 }]
+          volumeMounts:
+            - { name: campaigns, mountPath: /opt/upfbench/campaigns }   # matches Dockerfile WORKDIR
+      volumes:
+        - name: campaigns
+          hostPath:
+            path: <CAMPAIGNS_HOST_DIR>    # e.g. /home/ubuntu/Shiva/upf-benchmark-framework/campaigns
+            type: DirectoryOrCreate
+---
+apiVersion: v1
+kind: Service
+metadata: { name: cntc-dashboard, namespace: cntc }
+spec:
+  type: NodePort
+  selector: { app: cntc-dashboard }
+  ports:
+    - { port: 8050, targetPort: 8050, nodePort: 30850 }   # http://<node-ip>:30850
