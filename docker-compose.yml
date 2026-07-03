@@ -1,0 +1,21 @@
+# Convenience wrapper for the containerized tester. Equivalent to scripts/upfbench-docker.sh.
+#   docker compose build
+#   docker compose run --rm upfbench run --config configs/oai-upf.yaml --suite pfcp
+#
+# host networking is required so the container sources PFCP/GTP-U from the host interfaces
+# and reaches the UPFs (docker bridges + k8s on 127.0.0.1) like the host-based deployment.
+services:
+  upfbench:
+    build: .
+    image: upfbench:latest
+    network_mode: host
+    cap_add: [NET_ADMIN, NET_RAW]
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock     # OAI / Open5GS (host docker daemon)
+      - ./configs:/opt/upfbench/configs
+      - ./campaigns:/opt/upfbench/campaigns
+      - ${KUBECONFIG:-~/.kube/config}:/root/.kube/config:ro   # SD-Core (k8s)
+    environment:
+      - KUBECONFIG=/root/.kube/config
+    # override the entrypoint args at the CLI, e.g. `docker compose run --rm upfbench run ...`
+    command: ["list"]
