@@ -1,0 +1,24 @@
+domain: control-plane
+campaign: FREE5GC-K8S-001
+target_nf: all
+core:
+  adapter: free5gc_k8s
+  namespace: free5gc
+  svc_prefix: free5gc-helm-free5gc
+  nf_label: app.kubernetes.io/name
+  webui: http://localhost:30500
+drivers:
+  gnb: ueransim_k8s
+  ue_pod_match: ueransim-ue
+  gnb_pod_match: ueransim-gnb
+  amf_n2_addr: 192.168.6.90
+  amf_n2_port: 31412
+  k8s_drive: true
+subscribers:
+- supi: imsi-208930000000001
+  ki: 8baf473f2f8fd09487cccbd7097c6862
+  opc: 8e27b6af0e692e750f32667a3b14605d
+  dnn: internet
+sut:
+  rig_class: k8s-microk8s
+  core_release: free5GC helm (k8s)

@@ -99,21 +99,24 @@ class NrfDisc01(NfTestCase):
         if ctx.sbi is None:
             return TestResult(self.id, self.name, "na", notes="no SBI client wired")
         base = _base(ctx)
-        tok = ctx.sbi.get_access_token(base, nf_type="SMF", target_nf_type="NRF",
-                                       scope="nnrf-disc")
-        if not tok["ok"]:
-            return TestResult(self.id, self.name, "na",
-                              notes=f"could not obtain OAuth2 token (NRF enforces OAuth2, "
-                                    f"grant rejected: HTTP {tok['status']} {tok['detail']}); "
-                                    f"discovery not exercisable without registered-NF creds")
-        url = (f"{base}/nnrf-disc/v1/nf-instances?target-nf-type=AMF&requester-nf-type=SMF")
-        r = ctx.sbi.request("GET", url, token=tok["token"])
+        url = f"{base}/nnrf-disc/v1/nf-instances?target-nf-type=AMF&requester-nf-type=SMF"
+        # Try with an OAuth2 token if the NRF will grant us one; otherwise fall back to a
+        # token-less request (some deployments don't enforce SBI authorization — whether they
+        # *should* is NRF-SEC-02's concern; here we test that discovery itself works).
+        tok = ctx.sbi.get_access_token(base, nf_type="SMF", target_nf_type="NRF", scope="nnrf-disc")
+        r = ctx.sbi.request("GET", url, token=tok.get("token"))
         body = r.get("body") or {}
         insts = body.get("nfInstances") if isinstance(body, dict) else None
         if r.get("status") == 200 and isinstance(insts, list):
             return TestResult(self.id, self.name, "pass",
-                              metrics={"status": 200, "nf_instances": len(insts)},
-                              notes=f"discovered {len(insts)} AMF instance(s)")
+                              metrics={"status": 200, "nf_instances": len(insts),
+                                       "with_token": bool(tok.get("token"))},
+                              notes=f"discovered {len(insts)} AMF instance(s) "
+                                    f"({'with' if tok.get('token') else 'without'} OAuth2 token)")
+        if r.get("status") in (401, 403):
+            return TestResult(self.id, self.name, "na",
+                              notes=f"discovery requires a token we can't obtain (HTTP {r.get('status')}) "
+                                    f"— not exercisable without registered-NF creds")
         return TestResult(self.id, self.name, "fail",
                           metrics={"status": r.get("status")},
                           notes=f"discovery returned HTTP {r.get('status')} without an NF list")

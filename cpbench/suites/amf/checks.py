@@ -43,12 +43,16 @@ def _obs(ctx: RunContext) -> dict:
 
 def _from_obs(ctx, tid, name, key, ok_note, spec) -> TestResult:
     o = _obs(ctx)
-    if o.get("error") and not o.get(key):
+    if o.get("error") and o.get(key) is None:
         return TestResult(tid, name, "na", notes=f"UERANSIM attach unavailable: {o.get('error')}")
     val = o.get(key)
     if val is True:
         return TestResult(tid, name, "pass", metrics={key: True, "ue_ip": o.get("ue_ip", "")},
                           notes=f"{ok_note} [{spec}]")
+    if val is None:
+        # not driven on this deployment (e.g. observe-only k8s) -> 'na', never a fake fail
+        return TestResult(tid, name, "na",
+                          notes=f"{key} not exercised on this deployment (observe-only) [{spec}]")
     return TestResult(tid, name, "fail", metrics={key: val},
                       notes=f"observed {key}={val} (expected success) [{spec}]")
 
@@ -147,13 +151,14 @@ class AmfNeg01(NfTestCase):
     id, name, nf = "AMF-NEG-01", "Malformed NGAP PDU -> reject, no AMF crash", "amf"
     def run(self, ctx: RunContext):
         amf = ctx.cfg.drivers.get("amf_n2_addr", "") or (ctx.endpoint.split(":")[0] if ctx.endpoint else "")
+        port = int(ctx.cfg.drivers.get("amf_n2_port", 38412))   # NodePort on k8s (e.g. 31412)
         if not amf:
             return TestResult(self.id, self.name, "na", notes="no AMF N2 address (set drivers.amf_n2_addr)")
         alive_before = ctx.core.nf_alive("amf")
         if alive_before is None:
             return TestResult(self.id, self.name, "na",
                               notes="cannot observe AMF liveness (adapter can't detect a crash)")
-        sent, detail = _sctp_garbage(amf)
+        sent, detail = _sctp_garbage(amf, port)
         time.sleep(1.5)
         alive_after = ctx.core.nf_alive("amf")
         ok = alive_after is True

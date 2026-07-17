@@ -68,15 +68,16 @@ class SmfSess03(NfTestCase):
     id, name, nf = "SMF-SESS-03", "PDU session release", "smf"
     def run(self, ctx):
         o = _obs(ctx)
-        if o.get("error") and not o.get("pdu_released"):
+        if o.get("pdu_released") is True:
+            return TestResult(self.id, self.name, "pass", metrics={"pdu_released": True},
+                              notes="UE-initiated release -> SMF sent PDU Session Release Command "
+                                    "[TS 24.501 §6.4.3]")
+        if o.get("pdu_released") is None:
             return TestResult(self.id, self.name, "na",
-                              notes=f"UERANSIM attach unavailable: {o.get('error')}")
-        ok = o.get("pdu_released") is True
-        return TestResult(self.id, self.name, "pass" if ok else "fail",
+                              notes="release not driven on this deployment (observe-only) — not judged")
+        return TestResult(self.id, self.name, "na" if o.get("error") else "fail",
                           metrics={"pdu_released": o.get("pdu_released")},
-                          notes=("UE-initiated release -> SMF sent PDU Session Release Command "
-                                 "[TS 24.501 §6.4.3]" if ok else
-                                 f"pdu_released={o.get('pdu_released')}"))
+                          notes=o.get("error") or "release did not complete")
 
 
 def _n4(ctx, tid, name, key, msg, spec) -> TestResult:
