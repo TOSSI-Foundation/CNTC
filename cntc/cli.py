@@ -81,7 +81,16 @@ def _rig_from_results(data: dict) -> dict:
 
 
 def _cmd_run(args) -> int:
-    # Delegate to the upfbench engine; it invokes the verdict layer itself at the end.
+    # Route by campaign domain: the user-plane engine (upfbench) or the control-plane
+    # engine (cpbench). Both emit the same results.json schema, so `verdict`/`certify`
+    # below are engine-agnostic.
+    import yaml
+    raw = yaml.safe_load(Path(args.config).read_text()) or {}
+    if raw.get("domain") == "control-plane":
+        from cpbench import runner as cprunner
+        cprunner.run(args.config, nf=args.nf, campaign=args.campaign)
+        return 0
+    # Default: user-plane. The upfbench engine invokes the verdict layer itself at the end.
     from upfbench import runner
     runner.run(args.config, suite=args.suite, campaign=args.campaign, profile=args.profile)
     return 0
@@ -133,7 +142,10 @@ def main(argv=None) -> int:
     r = sub.add_parser("run", help="run a campaign (delegates to the upfbench engine) then grade")
     r.add_argument("--config", required=True)
     r.add_argument("--suite", choices=["performance", "load", "pfcp", "n3neg",
-                                       "conformance", "all"])
+                                       "conformance", "all"],
+                   help="user-plane (upfbench) suite selector")
+    r.add_argument("--nf", choices=["amf", "smf", "nrf", "ausf", "udm", "all"], default=None,
+                   help="control-plane (cpbench) NF selector — used when config domain is control-plane")
     r.add_argument("--campaign", default=None)
     r.add_argument("--profile", default="conformance")
     r.set_defaults(func=_cmd_run)

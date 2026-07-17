@@ -1,0 +1,42 @@
+# CNTC Stage 2 — control-plane campaign against free5GC (docker-compose).
+# Validated topology: docs/free5gc-ueransim-e2e-guide.md.
+#   cpbench doctor --config configs/free5gc-cp.yaml
+#   cpbench run    --config configs/free5gc-cp.yaml --nf amf
+#   cpbench run    --config configs/free5gc-cp.yaml --nf all
+#   cntc  verdict  campaigns/<id>/results.json --profile amf-conformance
+domain: control-plane
+campaign: FREE5GC-CP-001
+target_nf: all                # amf | smf | nrf | ausf | udm | all
+
+core:
+  adapter: free5gc
+  compose_dir: ~/free5gc-compose
+  sudo: true
+  webui: http://localhost:5000       # subscriber provisioning (login admin/free5gc)
+  # Explicit SBI endpoints (host:port). Leave blank to let the adapter resolve via docker.
+  endpoints:
+    amf: ""
+    smf: ""
+    nrf: ""
+    ausf: ""
+    udm: ""
+
+drivers:
+  gnb: ueransim
+  ueransim_dir: ~/UERANSIM
+  amf_n2_addr: 10.100.200.16          # AMF N2/NGAP (SCTP 38412) — read live from your bridge
+  gnb_link_ip: 10.100.200.1           # host IP on the free5GC docker bridge
+
+# 5G-AKA subscribers to provision into UDM/UDR (free5GC does not auto-add one).
+subscribers:
+  - supi: "imsi-208930000000001"
+    ki: "8baf473f2f8fd09487cccbd7097c6862"
+    opc: "8e27b6af0e692e750f32667a3b14605d"
+    dnn: "internet"
+
+sut:
+  rig_class: "shared-vm"        # required for the cp-performance profile (baseline-relative)
+  cpu: ""                       # fill from the host for the report
+  core_release: "free5GC v3.x"
+
+# baseline: campaigns/<ref>/results.json   # required to grade cp-performance
