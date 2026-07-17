@@ -1,0 +1,48 @@
+# CNTC requirement catalog — CONTROL-PLANE PERFORMANCE profile  (Stage 2)
+# Hardware-DEPENDENT signaling capacity/latency — same discipline as the UPF performance
+# profile: NEVER absolute thresholds (a shared VM signals far slower than a tuned cluster).
+# Graded RELATIVE to a trusted baseline on the same rig_class (kind: baseline_rel).
+# Until a baseline is supplied, baseline_rel tests grade 'na' (reported, never faked).
+# Real per-test metric keys emitted by cpbench:
+#   AMF-LP-01 -> reg_per_sec   AMF-LP-03 -> signaling_p99_ms   AMF-LP-02 -> max_registered_ue
+#   SMF-LP-01 -> session_setup_per_sec   SMF-LP-03 -> session_setup_p99_ms
+version: "0.1.0"
+profile: cp-performance
+title: "5G Core Control-Plane Signaling Performance & Scale"
+standards:
+  - "ETSI NFV-TST 009 (load / capacity methodology)"
+  - "3GPP TS 23.501 / 23.502 (procedures under load)"
+requires:
+  rig_class: true
+  baseline: true
+defaults:
+  class: normal
+gate:
+  essential: all
+
+tests:
+  - id: AMF-LP-01
+    name: Registration rate (registrations/sec)
+    category: performance
+    class: normal
+    verdict: { kind: baseline_rel, metric: reg_per_sec, op: ">=", pct_of_baseline: 90 }
+  - id: AMF-LP-02
+    name: Concurrent registered-UE capacity
+    category: scale
+    class: normal
+    verdict: { kind: baseline_rel, metric: max_registered_ue, op: ">=", pct_of_baseline: 90 }
+  - id: AMF-LP-03
+    name: Registration signaling latency (p99)
+    category: performance
+    class: essential
+    verdict: { kind: baseline_rel, metric: signaling_p99_ms, op: "<=", pct_of_baseline: 110 }
+  - id: SMF-LP-01
+    name: PDU session setup rate (sessions/sec)
+    category: performance
+    class: normal
+    verdict: { kind: baseline_rel, metric: session_setup_per_sec, op: ">=", pct_of_baseline: 90 }
+  - id: SMF-LP-03
+    name: PDU session setup latency (p99)
+    category: performance
+    class: normal
+    verdict: { kind: baseline_rel, metric: session_setup_p99_ms, op: "<=", pct_of_baseline: 110 }

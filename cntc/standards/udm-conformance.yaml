@@ -1,0 +1,58 @@
+# CNTC requirement catalog — UDM CONFORMANCE profile  (Stage 2, control plane)
+# Per-NF, standard-anchored:
+#   protocol : TS 29.503 (Nudm — SDM / UECM / UEAuthentication)
+#   security : TS 33.514 (SCAS — UDM) + TS 33.501 (SUCI de-concealment / SIDF)
+# Driven via the SBI client (Nudm) and/or transitively via AMF/SMF procedures.
+version: "0.1.0"
+profile: udm-conformance
+title: "5G UDM Conformance (Nudm subscription / auth-vector / SCAS)"
+standards:
+  - "3GPP TS 29.503 (Nudm)"
+  - "3GPP TS 33.501 (SUCI / SIDF)"
+  - "3GPP TS 33.514 (SCAS — UDM)"
+defaults:
+  class: normal
+gate:
+  essential: all
+
+tests:
+  # --- protocol: subscription + UE context management (TS 29.503) -------------------
+  - id: UDM-SDM-01
+    name: Subscription data retrieval (Nudm_SDM_Get)
+    category: protocol
+    class: essential
+    verdict: status_pass
+  - id: UDM-SDM-02
+    name: Session-management subscription data (for SMF)
+    category: protocol
+    class: normal
+    verdict: status_pass
+  - id: UDM-UECM-01
+    name: AMF registration for UE (Nudm_UECM_Registration)
+    category: protocol
+    class: normal
+    verdict: status_pass
+  - id: UDM-AUTH-01
+    name: Authentication-vector generation (Nudm_UEAuthentication_Get)
+    category: protocol
+    class: essential
+    verdict: status_pass
+
+  # --- security assurance (TS 33.514) ----------------------------------------------
+  - id: UDM-SEC-01
+    name: SUCI de-concealment (SIDF) authorization
+    category: security
+    class: normal
+    verdict: status_pass
+  - id: UDM-SEC-02
+    name: SBI (Nudm) requires TLS + valid OAuth2 token
+    category: security
+    class: essential
+    verdict: status_pass
+
+  # --- robustness -------------------------------------------------------------------
+  - id: UDM-NEG-01
+    name: Unknown SUPI -> 404 ProblemDetails, no crash
+    category: robustness
+    class: essential
+    verdict: status_pass

@@ -7,12 +7,14 @@ requires-python = ">=3.10"
 dependencies = [
     "PyYAML>=6.0",
     "Jinja2>=3.1",
-    "scapy>=2.5",        # crafts the GTP-U pcap for the tcpreplay generator (Suites 1 & 2)
+    "scapy>=2.5",              # crafts the GTP-U pcap for the tcpreplay generator (Suites 1 & 2)
+    "httpx[http2]>=0.27",     # cpbench SBI client (HTTP/2 + TLS) — drives NRF/AUSF/UDM + NF SBI
 ]
 
 [project.scripts]
 cntc = "cntc.cli:main"              # umbrella CLI: profiles / verdict / run
 upfbench = "upfbench.cli:main"      # the UPF test engine (still usable standalone)
+cpbench = "cpbench.cli:main"        # the control-plane test engine (AMF/SMF/NRF/AUSF/UDM)
 
 [project.optional-dependencies]
 # Suite 1 (performance) — BESS white-box path
@@ -30,7 +32,7 @@ requires = ["setuptools>=64"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-include = ["cntc*", "upfbench*", "dashboard*"]
+include = ["cntc*", "cntc_common*", "upfbench*", "cpbench*", "dashboard*"]
 
 [tool.setuptools.package-data]
 dashboard = ["assets/*.css"]

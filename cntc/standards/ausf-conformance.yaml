@@ -1,0 +1,58 @@
+# CNTC requirement catalog — AUSF CONFORMANCE profile  (Stage 2, control plane)
+# Per-NF, standard-anchored:
+#   protocol : TS 29.509 (Nausf — UE authentication)
+#   security : TS 33.516 (SCAS — AUSF) + TS 33.501 (5G-AKA / EAP-AKA')
+# Driven via the SBI client (Nausf) and/or transitively via an AMF registration.
+version: "0.1.0"
+profile: ausf-conformance
+title: "5G AUSF Conformance (Nausf UE authentication / SCAS)"
+standards:
+  - "3GPP TS 29.509 (Nausf)"
+  - "3GPP TS 33.501 (5G-AKA / EAP-AKA')"
+  - "3GPP TS 33.516 (SCAS — AUSF)"
+defaults:
+  class: normal
+gate:
+  essential: all
+
+tests:
+  # --- protocol: UE authentication (TS 29.509 / TS 33.501) --------------------------
+  - id: AUSF-AUTH-01
+    name: UEAuthentication_Authenticate initiate (5G-AKA)
+    category: protocol
+    class: essential
+    verdict: status_pass
+  - id: AUSF-AUTH-02
+    name: Confirm RES* — successful authentication
+    category: protocol
+    class: normal
+    verdict: status_pass
+  - id: AUSF-AUTH-03
+    name: Wrong RES* -> authentication failure (correct rejection)
+    category: security
+    class: essential
+    verdict: status_pass
+  - id: AUSF-AUTH-04
+    name: EAP-AKA' authentication (if supported; else na)
+    category: protocol
+    class: bonus
+    verdict: status_pass
+
+  # --- security assurance (TS 33.516) ----------------------------------------------
+  - id: AUSF-SEC-01
+    name: SUPI / Kausf handling per spec
+    category: security
+    class: normal
+    verdict: status_pass
+  - id: AUSF-SEC-02
+    name: SBI (Nausf) requires TLS + valid OAuth2 token
+    category: security
+    class: essential
+    verdict: status_pass
+
+  # --- robustness -------------------------------------------------------------------
+  - id: AUSF-NEG-01
+    name: Malformed auth request -> reject, no crash
+    category: robustness
+    class: essential
+    verdict: status_pass
