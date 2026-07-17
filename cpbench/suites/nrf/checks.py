@@ -147,6 +147,60 @@ class NrfSec01(NfTestCase):
                           notes=f"token endpoint returned HTTP {st} (missing or misbehaving)")
 
 
+class NrfDisc02(NfTestCase):
+    id, name, nf = "NRF-DISC-02", "NFDiscover by service name", "nrf"
+
+    def run(self, ctx: RunContext) -> TestResult:
+        if ctx.sbi is None:
+            return TestResult(self.id, self.name, "na", notes="no SBI client wired")
+        base = _base(ctx)
+        url = (f"{base}/nnrf-disc/v1/nf-instances?target-nf-type=AMF&requester-nf-type=SMF"
+               "&service-names=namf-comm")
+        tok = ctx.sbi.get_access_token(base, nf_type="SMF", target_nf_type="NRF", scope="nnrf-disc")
+        r = ctx.sbi.request("GET", url, token=tok.get("token"))
+        body = r.get("body") or {}
+        insts = body.get("nfInstances") if isinstance(body, dict) else None
+        if r.get("status") == 200 and isinstance(insts, list):
+            return TestResult(self.id, self.name, "pass",
+                              metrics={"status": 200, "nf_instances": len(insts)},
+                              notes=f"discovered {len(insts)} instance(s) offering service namf-comm")
+        if r.get("status") in (401, 403):
+            return TestResult(self.id, self.name, "na",
+                              notes=f"discovery requires a token we can't obtain (HTTP {r.get('status')})")
+        return TestResult(self.id, self.name, "fail",
+                          metrics={"status": r.get("status")},
+                          notes=f"service-name discovery returned HTTP {r.get('status')} without an NF list")
+
+
+class NrfNeg02(NfTestCase):
+    id, name, nf = "NRF-NEG-02", "Discover unknown NF type -> empty/rejected, no crash", "nrf"
+
+    def run(self, ctx: RunContext) -> TestResult:
+        if ctx.sbi is None:
+            return TestResult(self.id, self.name, "na", notes="no SBI client wired")
+        base = _base(ctx)
+        url = f"{base}/nnrf-disc/v1/nf-instances?target-nf-type=BOGUSNF&requester-nf-type=SMF"
+        tok = ctx.sbi.get_access_token(base, nf_type="SMF", target_nf_type="NRF", scope="nnrf-disc")
+        r = ctx.sbi.request("GET", url, token=tok.get("token"))
+        st = r.get("status")
+        alive = ctx.core.nf_alive("nrf")
+        if st is None:
+            return TestResult(self.id, self.name, "na", notes=f"NRF unreachable: {r.get('error')}")
+        if alive is False:
+            return TestResult(self.id, self.name, "fail", notes=f"NRF not alive after bogus query (HTTP {st})")
+        body = r.get("body") or {}
+        empty = isinstance(body, dict) and not (body.get("nfInstances") or [])
+        # a well-formed handling of an invalid NF type: 400 reject, or 200 with an empty list
+        if st in (400, 404) or (st == 200 and empty):
+            return TestResult(self.id, self.name, "pass", metrics={"status": st, "nrf_alive": alive},
+                              notes=f"unknown NF type -> HTTP {st} (rejected/empty), NRF alive")
+        if st in (401, 403):
+            return TestResult(self.id, self.name, "na",
+                              notes=f"needs a token we can't obtain (HTTP {st}) — not exercisable")
+        return TestResult(self.id, self.name, "fail", metrics={"status": st},
+                          notes=f"unknown NF type -> HTTP {st} (expected 400/empty)")
+
+
 class NrfReg01(NfTestCase):
     id, name, nf = "NRF-REG-01", "A peer NF registers its profile (NFRegister)", "nrf"
 
@@ -173,4 +227,4 @@ class NrfReg01(NfTestCase):
                           notes=f"NFRegister -> HTTP {status}; inconclusive")
 
 
-TESTS = [NrfSec01, NrfSec02, NrfSec03, NrfNeg01, NrfDisc01, NrfReg01]
+TESTS = [NrfSec01, NrfSec02, NrfSec03, NrfNeg01, NrfNeg02, NrfDisc01, NrfDisc02, NrfReg01]

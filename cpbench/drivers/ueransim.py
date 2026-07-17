@@ -150,10 +150,12 @@ class Driver(BaseDriver):
             obs["initial_context_setup"] = "Initial Context Setup Request received" in gtxt
             obs["ue_context_release"] = "UE Context Release Command received" in gtxt
             obs["initial_nas_message"] = "Initial NAS message received from UE" in gtxt
-            # stop the capture; decode NAS security (AMF-SEC-01/02) + N4 PFCP (SMF-N4-*)
+            # stop the capture; decode NAS security (AMF-SEC-01/02), N4 PFCP (SMF-N4-*),
+            # and the SUCI protection scheme (AMF-SEC-06 SUPI confidentiality)
             self._stop_capture(cap)
             obs.update(self._decode_nas_security(pcap))
             obs.update(self._decode_pfcp(pcap))
+            obs.update(self._decode_suci(pcap))
             obs["ok"] = bool(obs.get("registered"))
             obs["gnb_log"] = str(gnb_log)
             obs["ue_log"] = str(ue_log)
@@ -274,6 +276,22 @@ class Driver(BaseDriver):
             "n4_session_establish": 50 in types,
             "n4_session_delete": 54 in types,
         }
+
+    def _decode_suci(self, pcap: Path) -> dict[str, Any]:
+        """Is the SUPI concealed on N2? Decode the Registration Request's 5GS mobile identity:
+        a real SUCI protection scheme (Profile A/B) means the SUPI is concealed; the NULL
+        scheme leaves the MSIN in cleartext (SUPI confidentiality NOT provided — AMF-SEC-06)."""
+        import re
+        if not shutil.which("tshark") or not pcap.exists():
+            return {}
+        r = self._run("tshark", "-r", str(pcap), "-Y", "nas_5gs.mm.message_type == 0x41",
+                      "-V", timeout=40)
+        txt = r.stdout
+        if "Protection scheme Id" not in txt:
+            return {}
+        m = re.search(r"Protection scheme Id:\s*(.+)", txt)
+        scheme = m.group(1).strip() if m else "?"
+        return {"suci_scheme": scheme, "supi_concealed": "NULL scheme" not in scheme}
 
     @staticmethod
     def _parse_ue_ip(log: Path) -> str:

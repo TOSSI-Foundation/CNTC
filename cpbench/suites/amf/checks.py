@@ -187,6 +187,22 @@ class AmfSec04(NfTestCase):
                                  f"(registered={o.get('registered')})"))
 
 
+class AmfSec06(NfTestCase):
+    id, name, nf = "AMF-SEC-06", "SUPI confidentiality (SUCI concealment on N2)", "amf"
+    def run(self, ctx):
+        o = _obs(ctx)
+        if "supi_concealed" not in o:
+            return TestResult(self.id, self.name, "na",
+                              notes="SUCI not captured/decoded (needs N2 capture) — cannot judge")
+        scheme = o.get("suci_scheme", "?")
+        if o["supi_concealed"]:
+            return TestResult(self.id, self.name, "pass", metrics={"suci_scheme": scheme},
+                              notes=f"SUPI concealed on N2 via SUCI ({scheme}) [TS 33.512 / 33.501 §6.12]")
+        return TestResult(self.id, self.name, "fail", metrics={"suci_scheme": scheme},
+                          notes=f"SUPI exposed on N2 — SUCI uses {scheme} (permanent identity "
+                                f"derivable in cleartext) [TS 33.512 / 33.501 §6.12]")
+
+
 class AmfSec07(NfTestCase):
     id, name, nf = "AMF-SEC-07", "SBI (Namf) requires TLS + valid OAuth2 token", "amf"
     def run(self, ctx):
@@ -196,4 +212,4 @@ class AmfSec07(NfTestCase):
 
 
 TESTS = [AmfNgap01, AmfNgap02, AmfNgap03, AmfNgap04, AmfReg01, AmfAuth01, AmfAuth02,
-         AmfDereg01, AmfNeg01, AmfSec01, AmfSec02, AmfSec04, AmfSec07]
+         AmfDereg01, AmfNeg01, AmfSec01, AmfSec02, AmfSec04, AmfSec06, AmfSec07]

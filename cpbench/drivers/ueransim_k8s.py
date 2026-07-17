@@ -144,6 +144,7 @@ class Driver(BaseDriver):
             self._stop_capture(cap)
         obs.update(self._decode_nas_security(pcap))
         obs.update(self._decode_pfcp(pcap))
+        obs.update(self._decode_suci(pcap))
         obs["ok"] = bool(obs.get("registered"))
         # restore the deployment's UE
         cur = self._pod(self.ue_match)
@@ -212,6 +213,17 @@ class Driver(BaseDriver):
             return {"n4_capture": False}
         return {"n4_capture": True, "n4_msg_types": sorted(types),
                 "n4_session_establish": 50 in types, "n4_session_delete": 54 in types}
+
+    def _decode_suci(self, pcap: Path) -> dict[str, Any]:
+        if not shutil.which("tshark") or not pcap.exists():
+            return {}
+        r = self._run("tshark", "-r", str(pcap), "-Y", "nas_5gs.mm.message_type == 0x41", "-V")
+        txt = r.stdout
+        if "Protection scheme Id" not in txt:
+            return {}
+        m = re.search(r"Protection scheme Id:\s*(.+)", txt)
+        scheme = m.group(1).strip() if m else "?"
+        return {"suci_scheme": scheme, "supi_concealed": "NULL scheme" not in scheme}
 
     def _ping(self, ue_pod: str, ue_ip: str) -> tuple[bool, str]:
         if not ue_ip:
