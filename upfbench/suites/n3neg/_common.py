@@ -60,7 +60,9 @@ def setup(ctx, base_id, frame=256):
          "dst_mac": (e.get("n3_remote_mac") or (ctx.traffic._resolve_mac() if hasattr(ctx.traffic, "_resolve_mac") else "00:11:22:33:44:33")),
          "src_mac": e.get("trex_src_mac", "00:11:22:33:44:35"),
          "gnb_ip": e.get("gnb_ip", "192.168.252.10"),
-         "remote_ip": e.get("n3_remote_ip", "192.168.252.3"),
+         # outer GTP-U dst = the UPF N3 IP; prefer the generator's live value (e.g. the eUPF pod
+         # IP resolved in calico_pod mode) over the static config default.
+         "remote_ip": (getattr(ctx.traffic, "remote_ip", "") or e.get("n3_remote_ip", "192.168.252.3")),
          "n6": _n6(ctx), "ff": ctx.upf.fwd_field()}
     pkts = _build_packets(s, frame)
     return s, pkts

@@ -52,13 +52,23 @@ class Control(ControlPlane):
         self.n3_addr = e.get("n3_addr", "192.168.252.3")
         self.gnb_addr = e.get("gnb_addr", "192.168.252.10")
         self.ue_pool = e.get("ue_pool", "10.250.0.0/24")
-        # remote UPF N4 address (the PFCP agent)
-        self.remote = e.get("pfcp_remote_addr", "") or self._resolve_remote(
-            e.get("pfcp_service", "upf"))
-        # kube knobs (to resolve the service IP + recover the pfcp-agent)
+        # kube knobs (to resolve the UPF address + recover the pfcp-agent)
         self.namespace = e.get("namespace", "aether-5gc")
         self.kubectl = e.get("kubectl", "kubectl")
         self.kubeconfig = e.get("kubeconfig", "")
+        # remote UPF N4 (PFCP agent) address. Prefer an explicit addr; else, for a UPF whose PFCP
+        # is NOT behind a k8s Service (e.g. eUPF publishes only its API service, listening for
+        # PFCP on the pod IP), resolve the UPF pod IP from a label selector; else a Service
+        # ClusterIP. A single-interface eBPF UPF terminates N3 and N4 on that same pod IP.
+        self.remote = e.get("pfcp_remote_addr", "")
+        if not self.remote and e.get("pfcp_pod_selector"):
+            ip = self._resolve_pod_ip(e["pfcp_pod_selector"])
+            if ip:
+                self.remote = ip
+                if not e.get("n3_addr"):
+                    self.n3_addr = ip
+        if not self.remote:
+            self.remote = self._resolve_remote(e.get("pfcp_service", "upf"))
         self.pod = e.get("pod", "upf-0")
         self.pfcp_container = e.get("pfcp_agent_container", "pfcp-agent")
         # Omit URRs for UPFs whose PFCP parser rejects them (e.g. OAI-UPF). The
@@ -85,13 +95,25 @@ class Control(ControlPlane):
         self._server: subprocess.Popen | None = None
         self.associated = False
 
-    # --- service IP resolution ------------------------------------------------
-    def _resolve_remote(self, service: str) -> str:
-        cmd = [self.cfg.extra.get("kubectl", "kubectl")]
+    # --- UPF address resolution -----------------------------------------------
+    def _kube(self) -> list[str]:
+        """kubectl base, honouring a multi-token binary (e.g. 'microk8s kubectl') + kubeconfig."""
+        cmd = str(self.cfg.extra.get("kubectl", "kubectl")).split()
         if self.cfg.extra.get("kubeconfig"):
             cmd += ["--kubeconfig", self.cfg.extra["kubeconfig"]]
-        cmd += ["get", "svc", service, "-n", self.cfg.extra.get("namespace", "aether-5gc"),
-                "-o", "jsonpath={.spec.clusterIP}"]
+        return cmd
+
+    def _resolve_pod_ip(self, selector: str) -> str:
+        """Pod IP of the UPF's PFCP agent, for UPFs whose N4 isn't fronted by a Service."""
+        cmd = [*self._kube(), "get", "pod", "-n", self.cfg.extra.get("namespace", "aether-5gc"),
+               "-l", selector, "-o", "jsonpath={.items[0].status.podIP}"]
+        proc = subprocess.run(cmd, capture_output=True, text=True)
+        return proc.stdout.strip() if proc.returncode == 0 else ""
+
+    def _resolve_remote(self, service: str) -> str:
+        cmd = [*self._kube(), "get", "svc", service,
+               "-n", self.cfg.extra.get("namespace", "aether-5gc"),
+               "-o", "jsonpath={.spec.clusterIP}"]
         proc = subprocess.run(cmd, capture_output=True, text=True)
         ip = proc.stdout.strip()
         if proc.returncode != 0 or not ip:

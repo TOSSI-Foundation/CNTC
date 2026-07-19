@@ -18,7 +18,7 @@ export KUBECONFIG ?= $(HOME)/.kube/config
 export PATH := $(PATH):/var/lib/rancher/rke2/bin:$(HOME)/.local/bin
 
 .DEFAULT_GOAL := help
-.PHONY: help prereqs doctor configure run run-conformance run-perf run-n3neg verdict certify \
+.PHONY: help prereqs doctor configure run run-conformance run-perf run-n3neg eupf-run eupf-certify verdict certify \
         dashboard dashboard-bg dashboard-stop profiles lint test k8s-deploy k8s-run k8s-clean clean
 
 help:  ## show targets
@@ -58,6 +58,13 @@ run-conformance:  ## pfcp + n3neg only (the certification set) + grade
 
 run-perf:  ## performance + load + pfcp only
 > python3 -m upfbench.cli run --config $(CONFIG) --suite all --campaign $(CAMPAIGN)
+
+# --- free5GC + eUPF (eBPF/XDP) — dual certificate --------------------------------
+eupf-run:  ## eUPF: run one suite  (CONFIG=configs/eupf.yaml SUITE=conformance|ebpf CAMPAIGN=)
+> sudo python3 -m upfbench.cli run --config $(or $(CONFIG),configs/eupf.yaml) --suite $(or $(SUITE),conformance) --profile $(if $(filter ebpf,$(SUITE)),upf-ebpf,conformance) --campaign $(or $(CAMPAIGN),EUPF)
+
+eupf-certify:  ## eUPF: BOTH certs (conformance + eBPF/XDP) end-to-end  (CONFIG= PREFIX=)
+> sudo ./scripts/eupf-certify.sh $(or $(CONFIG),configs/eupf.yaml) $(or $(PREFIX),EUPF)
 
 run-n3neg:  ## N3 robustness only (crashes+recovers the UPF)
 > python3 -m upfbench.cli run --config $(CONFIG) --suite n3neg --campaign $(CAMPAIGN)-N3

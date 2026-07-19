@@ -70,6 +70,19 @@ class UPFAdapter(abc.ABC):
         """
         return "tx_pkts"
 
+    # --- dataplane family + eBPF/XDP white-box (optional; only eBPF UPFs implement) ----
+    def dataplane_kind(self) -> str:
+        """Datapath family label: 'ebpf' | 'dpdk' | 'af_packet' | 'af_xdp' | 'cndp' | 'gtp5g'...
+        Default: the configured mode. The ``upf-ebpf`` profile's tests apply only when this is
+        'ebpf'; for every other UPF they self-grade 'na' (a DPDK UPF is not an eBPF UPF)."""
+        return (self.cfg.mode or "").lower()
+
+    def bpf_introspect(self) -> dict[str, Any] | None:
+        """Live white-box view of an eBPF/XDP datapath — XDP attach state, BPF map pinning/
+        entries, stats, and the TEIDs currently installed as dataplane rules — or ``None`` on a
+        non-eBPF UPF, so the XDP tests grade 'na' rather than a false pass."""
+        return None
+
 
 def load_adapter(name: str, cfg, store) -> UPFAdapter:
     mod = importlib.import_module(f"upfbench.adapters.{name}")

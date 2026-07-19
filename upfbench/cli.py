@@ -100,7 +100,7 @@ def main(argv=None) -> int:
 
     r = sub.add_parser("run", help="run a campaign from a config")
     r.add_argument("--config", required=True)
-    r.add_argument("--suite", choices=["performance", "load", "pfcp", "n3neg",
+    r.add_argument("--suite", choices=["performance", "load", "pfcp", "n3neg", "ebpf",
                                        "conformance", "all"])
     r.add_argument("--reset-between-suites", action=argparse.BooleanOptionalAction,
                    default=None,

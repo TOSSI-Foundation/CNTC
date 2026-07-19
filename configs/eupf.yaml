@@ -1,0 +1,63 @@
+# free5GC + eUPF (eBPF/XDP dataplane) — CNTC UPF campaign.
+#   eBPF/XDP certificate:     upfbench run --config configs/eupf.yaml --suite ebpf
+#                             cntc certify campaigns/<id>/results.json --profile upf-ebpf
+#   Conformance certificate:  upfbench run --config configs/eupf.yaml --suite conformance
+#                             cntc certify campaigns/<id>/results.json --profile conformance
+# (Any key under `upf:` that isn't adapter/mode/n3_iface/n6_iface/n4_addr lands in upf.extra.)
+campaign: EUPF-EBPF-2026-001
+suite: ebpf
+profile: upf-ebpf          # default grading profile; CLI --profile overrides for a conformance run
+
+sut:
+  rig_class: k8s-microk8s
+  core_release: "free5GC helm (k8s) + eUPF"
+  upf: "free5GC + eUPF (github.com/edgecomllc/eupf)"
+  dataplane: "eBPF/XDP (generic attach mode — native/offload unavailable on this Xen vif NIC)"
+  nic: "Xen vif (paravirtual)"
+
+upf:
+  adapter: eupf
+  mode: ebpf_xdp
+  n3_iface: access          # logical N3 port name in the synthesized counter view
+  n6_iface: core            # logical N6 port name (n3neg._n6 matches this)
+  n4_addr: ""
+
+  # --- eUPF adapter (REST API + k8s) ---
+  namespace: free5gc
+  pod_selector: app.kubernetes.io/name=eupf
+  container: eupf
+  kubectl: "microk8s kubectl"
+  api_service: eupf         # REST API via this service's ClusterIP:8080 (restart-stable)
+
+  # --- pfcpsim (N4 control for CF-* and the XDP map-binding tests) ---
+  pfcpsim_dir: third_party/pfcpsim
+  pfcpsim_iface: eth0
+  # eUPF's PFCP (:8805) is on the pod IP, not the API Service — resolve the pod IP live.
+  # N3 (F-TEID) resolves to the same pod IP; eUPF matches uplink by TEID.
+  pfcp_pod_selector: app.kubernetes.io/name=eupf
+  gnb_addr: "192.168.252.10"
+  ue_pool: "10.250.0.0/24"
+  # eUPF does not implement the PFCP Association Release procedure (its own 3GPP compat doc:
+  # TS 29.244 §7.4.4.5/6 = 'N'); it tears associations down via heartbeat loss. Declare it so
+  # CF-01 verifies Association Setup and records Release as a documented capability gap (the
+  # same handling as OAI-UPF) rather than asserting an unsupported optional procedure.
+  pfcp_no_assoc_release: true
+
+  # --- tcpreplay (N3 raw-frame injection for the conformance n3neg suite only) ---
+  # eUPF's XDP is on the pod's Calico veth; resolve that veth + the pod MAC/IP live.
+  gen_via: calico_pod
+  n3_ifname: eth0
+
+# eBPF/XDP suite knobs (optional)
+ebpf:
+  inject_pkts: 1000
+  malformed_pkts: 2000
+  count_sessions: 5
+
+# n3neg (conformance) knobs — eUPF's XDP is a kernel-netdev hook, so drive it with host
+# tcpreplay (af_packet-style injection into the pod veth), not trex.
+n3neg:
+  control: pfcpsim
+  generator: tcpreplay
+  burst_pkts: 20000
+  frame_size: 256

@@ -70,6 +70,39 @@ class Generator(TrafficGenerator):
         self._pcaps: dict[int, str] = {}   # frame_size -> pcap path (cached)
         self.burst_pps = int(e.get('burst_pps', 5000))   # n3neg send_burst rate (af_packet)
         self._dir = Path(tempfile.mkdtemp(prefix="upfbench-pcap-"))
+        # eUPF/Calico: the UPF's XDP hook is on a pod veth whose name/IP/MAC are only known at
+        # runtime (and the pod IP changes across restarts). Resolve the send interface (the
+        # node-side cali veth), the outer-dst IP (pod IP) and the pod MAC live from the selector.
+        if str(e.get("gen_via", "")).lower() == "calico_pod":
+            self._resolve_calico_pod(e)
+
+    def _resolve_calico_pod(self, e) -> None:
+        kube = str(e.get("kubectl", "kubectl")).split()
+        if e.get("kubeconfig"):
+            kube += ["--kubeconfig", e["kubeconfig"]]
+        ns = e.get("namespace", "free5gc")
+        sel = e.get("pod_selector", "app.kubernetes.io/name=eupf")
+
+        def kout(*a):
+            return subprocess.run([*kube, *a], capture_output=True, text=True).stdout.strip()
+
+        pod = kout("get", "pod", "-n", ns, "-l", sel, "-o", "jsonpath={.items[0].metadata.name}")
+        pod_ip = kout("get", "pod", "-n", ns, "-l", sel, "-o", "jsonpath={.items[0].status.podIP}")
+        if pod:
+            self.pod = pod
+            mac = subprocess.run([*kube, "exec", "-n", ns, pod, "-c", e.get("container", "eupf"),
+                                  "--", "cat", f"/sys/class/net/{self.n3_ifname}/address"],
+                                 capture_output=True, text=True).stdout.strip()
+            if re.fullmatch(r"[0-9a-f:]{17}", mac):
+                self.remote_mac = mac
+        if pod_ip:
+            self.remote_ip = pod_ip     # outer GTP-U dst == the eUPF pod IP (its N3 address)
+            out = subprocess.run(["ip", "route", "get", pod_ip], capture_output=True, text=True).stdout
+            m = re.search(r"\bdev\s+(cali\w+)", out)
+            if m:
+                self.iface = m.group(1)   # inject on the node-side veth of the eUPF pod
+        self.store.record_command(
+            f"# calico_pod: inject on {self.iface} -> pod {self.pod} ({self.remote_ip}, {self.remote_mac})")
 
     # --- TrafficGenerator contract -------------------------------------------
     def run_trial(self, *, frame_size: int, offered_mpps: float, duration_s: int = 10,
@@ -147,6 +180,8 @@ class Generator(TrafficGenerator):
     def _resolve_mac(self) -> str:
         """Learn the UPF N3 MAC. Docker-bridge UPFs (n3_mac_via=arp) resolve via the
         host neighbour table; k8s pods read it authoritatively from inside the pod."""
+        if self.remote_mac:          # already resolved (e.g. calico_pod mode)
+            return self.remote_mac
         if self.mac_via == "arp":
             return self._resolve_mac_arp()
         return self._resolve_mac_pod()

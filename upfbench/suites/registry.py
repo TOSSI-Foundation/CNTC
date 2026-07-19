@@ -17,6 +17,10 @@ SUITE_REQUIRES = {
     "load": {"control": "pfcpsim", "traffic": "trex"},
     "pfcp": {"control": "pfcpsim", "traffic": None},
     "n3neg": {"control": "pfcpsim", "traffic": "trex"},
+    # eBPF/XDP dataplane assurance: pfcpsim installs/deletes sessions for the map-binding tests;
+    # the fast-path tests inject GTP-U straight to the UPF's N3 addr:2152 (no external generator),
+    # so no traffic plugin is wired here.
+    "ebpf": {"control": "pfcpsim", "traffic": None},
 }
 
 

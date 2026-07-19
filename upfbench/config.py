@@ -12,7 +12,7 @@ from typing import Any
 
 import yaml
 
-VALID_SUITES = ("performance", "load", "pfcp", "n3neg", "conformance", "all")
+VALID_SUITES = ("performance", "load", "pfcp", "n3neg", "ebpf", "conformance", "all")
 
 
 @dataclasses.dataclass
@@ -35,6 +35,7 @@ class Campaign:
     load: dict[str, Any] = dataclasses.field(default_factory=dict)
     pfcp: dict[str, Any] = dataclasses.field(default_factory=dict)
     n3neg: dict[str, Any] = dataclasses.field(default_factory=dict)
+    ebpf: dict[str, Any] = dataclasses.field(default_factory=dict)   # eBPF/XDP suite knobs
     baseline: str | None = None       # path to a prior results.json for comparison
     report_commands: bool = True      # include the captured-commands appendix in the
                                       # combined report-all.pdf (set false for a clean
@@ -88,6 +89,7 @@ def load(path: str | Path) -> Campaign:
         load=raw.get("load", {}),
         pfcp=raw.get("pfcp", {}),
         n3neg=raw.get("n3neg", {}),
+        ebpf=raw.get("ebpf", {}),
         baseline=raw.get("baseline"),
         report_commands=raw.get("report_commands", True),
         reset_between_suites=raw.get("reset_between_suites", False),

@@ -181,7 +181,11 @@ _INJECTION_OK = {
     # "gtp5g" (Open5GS / free5GC) is the in-kernel GTP-U module bound to a normal netdev
     # (eth0 on a docker bridge), so tcpreplay injects into it the same way — verified live
     # on free5GC (a TEID-aligned GTP-U blast decapsulated on upfgtp). Not a DPDK/XDP VF.
-    "tcpreplay": {"af_packet", "linux", "simpleswitch", "gtp5g"},
+    # "ebpf_xdp" (eUPF) attaches its XDP program to a normal kernel netdev (a Calico veth) in
+    # generic mode, so the hook is in the RX/skb path — host af_packet injection reaches it.
+    # Verified live: a TEID-aligned GTP-U blast via tcpreplay into the pod's veth decapsulated
+    # and forwarded (xdp tx=5000/5000). It is NOT a DPDK/XDP-owned VF, so tcpreplay drives it.
+    "tcpreplay": {"af_packet", "linux", "simpleswitch", "gtp5g", "ebpf_xdp"},
     "trex": {"af_xdp", "dpdk", "cndp"},
     "testpmd": {"af_xdp", "dpdk", "cndp"},
 }
