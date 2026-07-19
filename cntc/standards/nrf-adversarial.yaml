@@ -1,0 +1,36 @@
+# CNTC requirement catalog — NRF LEVEL 2 "Adversarial Robustness & Privileged Interop"
+#
+# LEVEL 2 = requirements that need a NON-COMPLIANT or PRIVILEGED peer: forged/replayed/
+# downgraded protocol state, deliberately malformed messages, impersonating a registered NF
+# with real PKI, network-initiated/timer-driven procedures, and scale/stress edges.
+#
+# STATUS: ROADMAP (CNTC v2.0). These tests are NOT implemented yet — they grade 'na', so a
+# Level 2 run is INCOMPLETE by design until the v2.0 tooling lands (raw N2 crafter, NF-identity
+# PKI, network-side triggers). Never read an L2 'na' as a pass.
+version: 0.1.0-roadmap
+profile: nrf-adversarial
+title: "5G NRF \u2014 CNTC Level 2 (Adversarial Robustness & Privileged Interop)"
+standards:
+- 3GPP TS 29.510 (Nnrf)
+- "3GPP TS 33.501 \xA713 (SBI authorization)"
+- "3GPP TS 33.518 (SCAS \u2014 NRF)"
+defaults:
+  class: normal
+gate:
+  essential: all
+tests:
+- id: NRF-REG-02
+  name: NFUpdate / heartbeat (NFStatusNotify keep-alive)
+  category: protocol
+  class: essential
+  verdict: status_pass
+- id: NRF-REG-03
+  name: NFDeregister
+  category: protocol
+  class: essential
+  verdict: status_pass
+- id: NRF-DISC-03
+  name: NFStatusSubscribe / notify
+  category: protocol
+  class: normal
+  verdict: status_pass

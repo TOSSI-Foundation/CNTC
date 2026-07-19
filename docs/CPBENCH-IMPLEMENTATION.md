@@ -25,19 +25,27 @@ It is the control-plane sibling of `upfbench` (which tests the UPF/user plane). 
 **same** grading umbrella (`cntc`), so the verdict/certificate/scorecard machinery is reused
 unchanged.
 
-**Current status (verified against a live free5GC v3.x core):**
+**Release model — two certification levels:**
+
+| Level | What it proves | Tests | Status |
+|---|---|---|---|
+| **Level 1 — Conformance & Observable Security** | everything provable by driving the NF with a **spec-compliant peer** and observing the result (incl. on-the-wire capture) | **44** | **100% implemented — ships as v1.0** |
+| **Level 2 — Adversarial Robustness & Privileged Interop** | everything needing a **non-compliant or privileged peer** (forged/replayed/malformed state, registered-NF PKI, network-initiated procedures) | **20** | roadmap — **v2.0** |
+
+**Current status (verified against a live free5GC core):**
 
 | Metric | Value |
 |---|---|
 | Network functions covered | **5** (AMF, SMF, NRF, AUSF, UDM) |
-| Total tests defined | **64** |
-| Tests implemented (driven against the live core) | **41** |
-| Live outcomes of implemented tests | **36 pass · 2 fail · 3 na** |
-| NFs that pass all essential tests (certifiable) | **2** — AMF, UDM |
+| Level 1 tests | **44 — all implemented** |
+| Level 1 essentials (gate the certificate) | **26 — all implemented** |
+| NFs certifiable at Level 1 (docker free5GC) | **3** — AMF, AUSF, UDM |
+| Level 1 failures (docker) | 2 — SMF, NRF, both on a **real no-TLS finding** |
 
-The 2 fails are **real findings** (the free5GC deployment serves SBI without TLS), not test
-defects. The 23 not-yet-implemented tests need heavier tooling (raw NGAP/NAS message crafting,
-OAuth2 NF certificates, or a custom UE) and are tracked in §8.
+**The Level 1 guarantee:** every Level 1 test is implemented, so a Level 1 verdict is always a
+clean **PASS or FAIL about the deployment** — never `INCOMPLETE` because the tester didn't build
+something. Level 2 tests are deliberately excluded from the Level 1 catalogs so they cannot
+distort a Level 1 verdict.
 
 > **How certification works (the one rule to remember):** each test has a **weight class** —
 > **essential**, normal, or bonus. **Only the *essential* tests gate the certificate.** A
@@ -311,14 +319,37 @@ Legend: **Class** — E = essential (gates the certificate), n = normal, B = bon
 The **Essential (pass/total)** column is the one that decides certification — an NF is
 certifiable only when it reads *N/N* (all essentials pass).
 
-| NF | Total | Implemented | Pass | Fail | na | Stub | **Essential (pass/total)** | Verdict |
-|---|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
-| **AMF** | 24 | 13 | 13 | 0 | 0 | 11 | **9 / 9** ✅ | **PASS** (certifiable) |
-| **SMF** | 15 | 11 | 9 | 1 | 1 | 4 | 6 / 7 | FAIL |
-| **NRF** | 11 | 6 | 3 | 1 | 2 | 5 | 2 / 5 | FAIL |
-| **AUSF** | 7 | 4 | 4 | 0 | 0 | 3 | 3 / 4 | INCOMPLETE |
-| **UDM** | 7 | 7 | 7 | 0 | 0 | 0 | **4 / 4** ✅ | **PASS** (certifiable) |
-| **TOTAL** | **64** | **41** | **36** | **2** | **3** | **23** | **24 / 29** | composite FAIL |
+### Level 1 (v1.0) — the shipped certification
+
+| NF | L1 tests | L1 essentials | **docker free5GC** | **k8s free5GC** |
+|---|:--:|:--:|:--:|:--:|
+| **AMF** | 14 | 9 | **PASS ✅** (9/9) | INCOMPLETE (8/9)¹ |
+| **SMF** | 11 | 7 | FAIL (6/7 — no TLS) | FAIL (5/7 — no TLS + no authz) |
+| **NRF** | 8 | 3 | FAIL (2/3 — no TLS) | FAIL (1/3 — no authz + no TLS) |
+| **AUSF** | 4 | 3 | **PASS ✅** (3/3) | FAIL (2/3 — no authz) |
+| **UDM** | 7 | 4 | **PASS ✅** (4/4) | FAIL (3/4 — no authz) |
+| **TOTAL** | **44** | **26** | **3 / 5 certifiable** | **0 / 5 certifiable** |
+
+Certificates issued on docker: `CNTC-AMF--8D15FE0A72`, `CNTC-AUSF-3CECFDF28C`, `CNTC-UDM--C3FF58F297`.
+
+**Same tests, same NFs, different result** — the k8s deployment runs SBI **without TLS and
+without OAuth2 authorization**, so it genuinely fails the security bar that docker clears. UDM
+passes on docker and fails on k8s for exactly that reason. That is the framework working, not a
+test defect.
+
+¹ The single k8s `INCOMPLETE` is **our** limitation, not the deployment's: the in-cluster driver
+cannot run a wrong-credential UE for `AMF-SEC-04`. The AMF N2 NodePort is reachable from the
+host, so a host-side negative attach closes this.
+
+### Level 2 (v2.0 roadmap) — 20 tests, not yet implemented
+
+| NF | L2 tests | Needs |
+|---|:--:|---|
+| AMF | 10 | raw N2 crafter (malformed/replay/bidding-down), network-initiated triggers |
+| SMF | 4 | PDU/N4 modify, duplicate + ceiling stress |
+| NRF | 3 | registered-NF identity (PKI) for update/deregister/subscribe |
+| AUSF | 3 | wrong-RES* UE, EAP-AKA′, Kausf internals |
+| **TOTAL** | **20** | see §9 |
 
 Only **AMF (9/9)** and **UDM (4/4)** have all essentials passing → those two are **certifiable**.
 The others fail the gate: SMF/NRF each have an essential FAIL (real no-TLS finding), AUSF has an

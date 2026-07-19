@@ -1,58 +1,59 @@
-# CNTC requirement catalog — UDM CONFORMANCE profile  (Stage 2, control plane)
-# Per-NF, standard-anchored:
-#   protocol : TS 29.503 (Nudm — SDM / UECM / UEAuthentication)
-#   security : TS 33.514 (SCAS — UDM) + TS 33.501 (SUCI de-concealment / SIDF)
-# Driven via the SBI client (Nudm) and/or transitively via AMF/SMF procedures.
-version: "0.1.0"
+# CNTC requirement catalog — UDM LEVEL 1 "Conformance & Observable Security"
+#
+# LEVEL 1 = every requirement provable by driving the NF with a SPEC-COMPLIANT peer and
+# observing the result (including on-the-wire capture). No forged, replayed or malformed
+# protocol state; no privileged/registered-NF identity. Level 2 (udm-adversarial.yaml)
+# covers those.
+#
+# Every test in this catalog is IMPLEMENTED, so an NF here is always cleanly judged
+# PASS or FAIL — never INCOMPLETE because the tester didn't build something.
+# Gate: all ESSENTIAL tests must PASS -> certificate. essential FAIL -> no certificate.
+# A test that cannot be judged on a given deployment (e.g. needs a privileged identity) is
+# kept NORMAL class so it informs the scorecard without gating.
+version: 1.0.0
 profile: udm-conformance
-title: "5G UDM Conformance (Nudm subscription / auth-vector / SCAS)"
+title: "5G UDM \u2014 CNTC Level 1 (Conformance & Observable Security)"
 standards:
-  - "3GPP TS 29.503 (Nudm)"
-  - "3GPP TS 33.501 (SUCI / SIDF)"
-  - "3GPP TS 33.514 (SCAS — UDM)"
+- 3GPP TS 29.503 (Nudm)
+- 3GPP TS 33.501 (SUCI / SIDF)
+- "3GPP TS 33.514 (SCAS \u2014 UDM)"
 defaults:
   class: normal
 gate:
   essential: all
-
 tests:
-  # --- protocol: subscription + UE context management (TS 29.503) -------------------
-  - id: UDM-SDM-01
-    name: Subscription data retrieval (Nudm_SDM_Get)
-    category: protocol
-    class: essential
-    verdict: status_pass
-  - id: UDM-SDM-02
-    name: Session-management subscription data (for SMF)
-    category: protocol
-    class: normal
-    verdict: status_pass
-  - id: UDM-UECM-01
-    name: AMF registration for UE (Nudm_UECM_Registration)
-    category: protocol
-    class: normal
-    verdict: status_pass
-  - id: UDM-AUTH-01
-    name: Authentication-vector generation (Nudm_UEAuthentication_Get)
-    category: protocol
-    class: essential
-    verdict: status_pass
-
-  # --- security assurance (TS 33.514) ----------------------------------------------
-  - id: UDM-SEC-01
-    name: SUCI de-concealment (SIDF) authorization
-    category: security
-    class: normal
-    verdict: status_pass
-  - id: UDM-SEC-02
-    name: SBI (Nudm) requires TLS + valid OAuth2 token
-    category: security
-    class: essential
-    verdict: status_pass
-
-  # --- robustness -------------------------------------------------------------------
-  - id: UDM-NEG-01
-    name: Unknown SUPI -> 404 ProblemDetails, no crash
-    category: robustness
-    class: essential
-    verdict: status_pass
+- id: UDM-SDM-01
+  name: Subscription data retrieval (Nudm_SDM_Get)
+  category: protocol
+  class: essential
+  verdict: status_pass
+- id: UDM-SDM-02
+  name: Session-management subscription data (for SMF)
+  category: protocol
+  class: normal
+  verdict: status_pass
+- id: UDM-UECM-01
+  name: AMF registration for UE (Nudm_UECM_Registration)
+  category: protocol
+  class: normal
+  verdict: status_pass
+- id: UDM-AUTH-01
+  name: Authentication-vector generation (Nudm_UEAuthentication_Get)
+  category: protocol
+  class: essential
+  verdict: status_pass
+- id: UDM-SEC-01
+  name: SUCI de-concealment (SIDF) authorization
+  category: security
+  class: normal
+  verdict: status_pass
+- id: UDM-SEC-02
+  name: SBI (Nudm) requires TLS + valid OAuth2 token
+  category: security
+  class: essential
+  verdict: status_pass
+- id: UDM-NEG-01
+  name: Unknown SUPI -> 404 ProblemDetails, no crash
+  category: robustness
+  class: essential
+  verdict: status_pass

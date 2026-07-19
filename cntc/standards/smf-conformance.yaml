@@ -1,102 +1,80 @@
-# CNTC requirement catalog — SMF CONFORMANCE profile  (Stage 2, control plane)
-# Per-NF, standard-anchored:
-#   protocol : TS 29.502 (Nsmf), TS 24.501 §6 (NAS-SM), TS 29.244 (PFCP / N4)
-#   security : TS 33.515 (SCAS — SMF), protocol-facing subset only
-# SMF-DP-01 bridges to Stage 1: it pushes real traffic through the UPF the SMF just
-# programmed (reuses the upfbench traffic layer), proving the control plane wired the user plane.
-version: "0.1.0"
+# CNTC requirement catalog — SMF LEVEL 1 "Conformance & Observable Security"
+#
+# LEVEL 1 = every requirement provable by driving the NF with a SPEC-COMPLIANT peer and
+# observing the result (including on-the-wire capture). No forged, replayed or malformed
+# protocol state; no privileged/registered-NF identity. Level 2 (smf-adversarial.yaml)
+# covers those.
+#
+# Every test in this catalog is IMPLEMENTED, so an NF here is always cleanly judged
+# PASS or FAIL — never INCOMPLETE because the tester didn't build something.
+# Gate: all ESSENTIAL tests must PASS -> certificate. essential FAIL -> no certificate.
+# A test that cannot be judged on a given deployment (e.g. needs a privileged identity) is
+# kept NORMAL class so it informs the scorecard without gating.
+version: 1.0.0
 profile: smf-conformance
-title: "5G SMF Conformance (Nsmf / NAS-SM / N4 / SCAS)"
+title: "5G SMF \u2014 CNTC Level 1 (Conformance & Observable Security)"
 standards:
-  - "3GPP TS 29.502 (Nsmf)"
-  - "3GPP TS 24.501 §6 (5GSM / NAS-SM)"
-  - "3GPP TS 29.244 (PFCP / N4)"
-  - "3GPP TS 33.515 (SCAS — SMF)"
+- 3GPP TS 29.502 (Nsmf)
+- "3GPP TS 24.501 \xA76 (5GSM / NAS-SM)"
+- 3GPP TS 29.244 (PFCP / N4)
+- "3GPP TS 33.515 (SCAS \u2014 SMF)"
 defaults:
   class: normal
 gate:
   essential: all
-
 tests:
-  # --- protocol: PDU session management (TS 24.501 §6 / TS 23.502) -------------------
-  - id: SMF-SESS-01
-    name: PDU session establishment (24.501 §6.4.1 / 23.502 §4.3.2)
-    category: protocol
-    class: essential
-    verdict: status_pass
-  - id: SMF-SESS-02
-    name: PDU session modification (24.501 §6.4.2)
-    category: protocol
-    class: normal
-    verdict: status_pass
-  - id: SMF-SESS-03
-    name: PDU session release (24.501 §6.4.3)
-    category: protocol
-    class: essential
-    verdict: status_pass
-  - id: SMF-SESS-04
-    name: Multiple PDU sessions / multi-DNN
-    category: protocol
-    class: normal
-    verdict: status_pass
-  - id: SMF-SESS-05
-    name: UE IP address allocation
-    category: protocol
-    class: normal
-    verdict: status_pass
-
-  # --- protocol: N4 programming of the UPF (TS 29.244, observed from SMF side) -------
-  - id: SMF-N4-01
-    name: SMF programs UPF over N4 (PFCP Session Establishment emitted)
-    category: protocol
-    class: essential
-    verdict: status_pass
-  - id: SMF-N4-02
-    name: N4 session modification on PDU modify
-    category: protocol
-    class: normal
-    verdict: status_pass
-  - id: SMF-N4-03
-    name: N4 session deletion on PDU release
-    category: protocol
-    class: normal
-    verdict: status_pass
-  - id: SMF-DP-01
-    name: Data-path verify — traffic forwards through the UPF the SMF programmed
-    category: protocol
-    class: essential
-    verdict: status_pass
-
-  # --- security assurance: protocol-facing SCAS cases (TS 33.515) --------------------
-  - id: SMF-SEC-01
-    name: SBI (Nsmf) requires TLS + valid OAuth2 token
-    category: security
-    class: essential
-    verdict: status_pass
-  - id: SMF-SEC-02
-    name: Reject PDU-session create with missing / invalid mandatory IE
-    category: security
-    class: essential
-    verdict: status_pass
-  - id: SMF-SEC-03
-    name: Session-event logging present
-    category: security
-    class: normal
-    verdict: status_pass
-
-  # --- robustness -------------------------------------------------------------------
-  - id: SMF-NEG-01
-    name: Invalid session request -> reject, no crash
-    category: robustness
-    class: essential
-    verdict: status_pass
-  - id: SMF-NEG-02
-    name: Duplicate-session handling
-    category: robustness
-    class: normal
-    verdict: status_pass
-  - id: SMF-NEG-03
-    name: Session-count ceiling -> graceful (no crash)
-    category: robustness
-    class: normal
-    verdict: status_pass
+- id: SMF-SESS-01
+  name: "PDU session establishment (24.501 \xA76.4.1 / 23.502 \xA74.3.2)"
+  category: protocol
+  class: essential
+  verdict: status_pass
+- id: SMF-SESS-03
+  name: "PDU session release (24.501 \xA76.4.3)"
+  category: protocol
+  class: essential
+  verdict: status_pass
+- id: SMF-SESS-04
+  name: Multiple PDU sessions / multi-DNN
+  category: protocol
+  class: normal
+  verdict: status_pass
+- id: SMF-SESS-05
+  name: UE IP address allocation
+  category: protocol
+  class: normal
+  verdict: status_pass
+- id: SMF-N4-01
+  name: SMF programs UPF over N4 (PFCP Session Establishment emitted)
+  category: protocol
+  class: essential
+  verdict: status_pass
+- id: SMF-N4-03
+  name: N4 session deletion on PDU release
+  category: protocol
+  class: normal
+  verdict: status_pass
+- id: SMF-DP-01
+  name: "Data-path verify \u2014 traffic forwards through the UPF the SMF programmed"
+  category: protocol
+  class: essential
+  verdict: status_pass
+- id: SMF-SEC-01
+  name: SBI (Nsmf) requires TLS + valid OAuth2 token
+  category: security
+  class: essential
+  verdict: status_pass
+- id: SMF-SEC-02
+  name: Reject PDU-session create with missing / invalid mandatory IE
+  category: security
+  class: essential
+  verdict: status_pass
+- id: SMF-SEC-03
+  name: Session-event logging present
+  category: security
+  class: normal
+  verdict: status_pass
+- id: SMF-NEG-01
+  name: Invalid session request -> reject, no crash
+  category: robustness
+  class: essential
+  verdict: status_pass

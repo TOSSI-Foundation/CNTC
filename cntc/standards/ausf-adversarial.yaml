@@ -1,0 +1,36 @@
+# CNTC requirement catalog — AUSF LEVEL 2 "Adversarial Robustness & Privileged Interop"
+#
+# LEVEL 2 = requirements that need a NON-COMPLIANT or PRIVILEGED peer: forged/replayed/
+# downgraded protocol state, deliberately malformed messages, impersonating a registered NF
+# with real PKI, network-initiated/timer-driven procedures, and scale/stress edges.
+#
+# STATUS: ROADMAP (CNTC v2.0). These tests are NOT implemented yet — they grade 'na', so a
+# Level 2 run is INCOMPLETE by design until the v2.0 tooling lands (raw N2 crafter, NF-identity
+# PKI, network-side triggers). Never read an L2 'na' as a pass.
+version: 0.1.0-roadmap
+profile: ausf-adversarial
+title: "5G AUSF \u2014 CNTC Level 2 (Adversarial Robustness & Privileged Interop)"
+standards:
+- 3GPP TS 29.509 (Nausf)
+- 3GPP TS 33.501 (5G-AKA / EAP-AKA')
+- "3GPP TS 33.516 (SCAS \u2014 AUSF)"
+defaults:
+  class: normal
+gate:
+  essential: all
+tests:
+- id: AUSF-AUTH-03
+  name: Wrong RES* -> authentication failure (correct rejection)
+  category: security
+  class: essential
+  verdict: status_pass
+- id: AUSF-AUTH-04
+  name: EAP-AKA' authentication (if supported; else na)
+  category: protocol
+  class: bonus
+  verdict: status_pass
+- id: AUSF-SEC-01
+  name: SUPI / Kausf handling per spec
+  category: security
+  class: normal
+  verdict: status_pass

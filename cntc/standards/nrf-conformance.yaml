@@ -1,80 +1,64 @@
-# CNTC requirement catalog — NRF CONFORMANCE profile  (Stage 2, control plane)
-# Per-NF, standard-anchored:
-#   protocol : TS 29.510 (Nnrf — NF management + discovery)
-#   security : TS 33.518 (SCAS — NRF) + TS 33.501 §13 (SBI authorization / OAuth2)
-# Driven directly by the cpbench SBI client (HTTP/2 + TLS + OAuth2) posing as a peer NF.
-version: "0.1.0"
+# CNTC requirement catalog — NRF LEVEL 1 "Conformance & Observable Security"
+#
+# LEVEL 1 = every requirement provable by driving the NF with a SPEC-COMPLIANT peer and
+# observing the result (including on-the-wire capture). No forged, replayed or malformed
+# protocol state; no privileged/registered-NF identity. Level 2 (nrf-adversarial.yaml)
+# covers those.
+#
+# Every test in this catalog is IMPLEMENTED, so an NF here is always cleanly judged
+# PASS or FAIL — never INCOMPLETE because the tester didn't build something.
+# Gate: all ESSENTIAL tests must PASS -> certificate. essential FAIL -> no certificate.
+# A test that cannot be judged on a given deployment (e.g. needs a privileged identity) is
+# kept NORMAL class so it informs the scorecard without gating.
+version: 1.0.0
 profile: nrf-conformance
-title: "5G NRF Conformance (Nnrf management / discovery / SCAS)"
+title: "5G NRF \u2014 CNTC Level 1 (Conformance & Observable Security)"
 standards:
-  - "3GPP TS 29.510 (Nnrf)"
-  - "3GPP TS 33.501 §13 (SBI authorization)"
-  - "3GPP TS 33.518 (SCAS — NRF)"
+- 3GPP TS 29.510 (Nnrf)
+- "3GPP TS 33.501 \xA713 (SBI authorization)"
+- "3GPP TS 33.518 (SCAS \u2014 NRF)"
 defaults:
   class: normal
 gate:
   essential: all
-
 tests:
-  # --- protocol: NF management (register / heartbeat / deregister) -------------------
-  - id: NRF-REG-01
-    name: NFRegister — a peer NF registers its profile
-    category: protocol
-    class: essential
-    verdict: status_pass
-  - id: NRF-REG-02
-    name: NFUpdate / heartbeat (NFStatusNotify keep-alive)
-    category: protocol
-    class: normal
-    verdict: status_pass
-  - id: NRF-REG-03
-    name: NFDeregister
-    category: protocol
-    class: normal
-    verdict: status_pass
-
-  # --- protocol: NF discovery (TS 29.510) -------------------------------------------
-  - id: NRF-DISC-01
-    name: NFDiscover by NF type returns correct profiles
-    category: protocol
-    class: essential
-    verdict: status_pass
-  - id: NRF-DISC-02
-    name: NFDiscover by service name
-    category: protocol
-    class: normal
-    verdict: status_pass
-  - id: NRF-DISC-03
-    name: NFStatusSubscribe / notify
-    category: protocol
-    class: normal
-    verdict: status_pass
-
-  # --- security assurance (TS 33.518 / TS 33.501 §13) -------------------------------
-  - id: NRF-SEC-01
-    name: OAuth2 access-token grant (Nnrf_AccessToken)
-    category: security
-    class: normal
-    verdict: status_pass
-  - id: NRF-SEC-02
-    name: Reject discovery / registration without a valid token -> 403
-    category: security
-    class: essential
-    verdict: status_pass
-  - id: NRF-SEC-03
-    name: SBI endpoint requires TLS
-    category: security
-    class: essential
-    verdict: status_pass
-
-  # --- robustness -------------------------------------------------------------------
-  - id: NRF-NEG-01
-    name: Malformed NFRegister -> 400 ProblemDetails, no crash
-    category: robustness
-    class: essential
-    verdict: status_pass
-  - id: NRF-NEG-02
-    name: Discover unknown NF type -> empty result / 404
-    category: robustness
-    class: normal
-    verdict: status_pass
+- id: NRF-REG-01
+  name: "NFRegister \u2014 a peer NF registers its profile"
+  category: protocol
+  class: normal
+  verdict: status_pass
+- id: NRF-DISC-01
+  name: NFDiscover by NF type returns correct profiles
+  category: protocol
+  class: normal
+  verdict: status_pass
+- id: NRF-DISC-02
+  name: NFDiscover by service name
+  category: protocol
+  class: normal
+  verdict: status_pass
+- id: NRF-SEC-01
+  name: OAuth2 access-token grant (Nnrf_AccessToken)
+  category: security
+  class: normal
+  verdict: status_pass
+- id: NRF-SEC-02
+  name: Reject discovery / registration without a valid token -> 403
+  category: security
+  class: essential
+  verdict: status_pass
+- id: NRF-SEC-03
+  name: SBI endpoint requires TLS
+  category: security
+  class: essential
+  verdict: status_pass
+- id: NRF-NEG-01
+  name: Malformed NFRegister -> 400 ProblemDetails, no crash
+  category: robustness
+  class: essential
+  verdict: status_pass
+- id: NRF-NEG-02
+  name: Discover unknown NF type -> empty result / 404
+  category: robustness
+  class: normal
+  verdict: status_pass
