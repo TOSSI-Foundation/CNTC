@@ -38,6 +38,16 @@ doctor:  ## preflight readiness check
 configure:  ## interactive wizard -> configs/<campaign>.yaml
 > ./scripts/cntc-configure.py
 
+# --- control plane (cpbench) ---------------------------------------------------
+cp-configure:  ## interactive wizard -> control-plane campaign config (docker or k8s)
+> ./scripts/cpbench-configure.py
+
+cp-doctor:  ## preflight the control-plane rig  (CONFIG=)
+> python3 -m cpbench.cli doctor --config $(CONFIG)
+
+cp-run:  ## run the control-plane suite  (CONFIG= NF=all|amf|smf|nrf|ausf|udm)
+> python3 -m cpbench.cli run --config $(CONFIG) --nf $(or $(NF),all)
+
 # --- run ----------------------------------------------------------------------
 run:  ## full e2e: all + n3neg -> merge -> verdict -> certify  (CONFIG= CAMPAIGN=)
 > ./scripts/cntc-run-all.sh $(CONFIG) $(CAMPAIGN)
