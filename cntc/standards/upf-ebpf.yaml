@@ -1,0 +1,80 @@
+# CNTC requirement catalog — UPF eBPF/XDP DATAPLANE ASSURANCE  (white-box, OPTIONAL)
+#
+# WHAT THIS IS — and is NOT:
+#   This is a SEPARATE, OPTIONAL certificate that applies ONLY to eBPF/XDP-based UPFs
+#   (e.g. eUPF). It is NOT the universal conformance certificate. A UPF earns the universal
+#   `conformance` certificate the same way every UPF does — by obeying N4/PFCP (TS 29.244) and
+#   surviving malformed N3 input (CF-01..05 + NT-01/02). That certificate is standards-anchored
+#   and implementation-agnostic, and eUPF earns it identically to a DPDK or af_packet UPF.
+#
+#   This profile adds WHITE-BOX assurance on top: it verifies that the eBPF/XDP dataplane
+#   actually realizes what the control plane installs — the XDP program is attached and engaged,
+#   and the N4 PFCP rules are reflected in (and removed from) the BPF maps. It answers "is the
+#   fast path real and does control→dataplane binding work", which black-box forwarding proves
+#   only indirectly.
+#
+# NOT APPLICABLE to non-eBPF UPFs. If the adapter's dataplane is not eBPF/XDP, every test here
+# grades 'na' (the adapter returns no BPF introspection) -> the profile is INCOMPLETE and no
+# eBPF certificate is issued. That is correct: a DPDK UPF is not an eBPF UPF.
+#
+# Grading: all ESSENTIAL tests must PASS -> eBPF/XDP Dataplane certificate. essential FAIL ->
+# no certificate. essential not-observable -> 'na' -> INCOMPLETE (never a silent pass).
+# The only spec anchor is TS 29.244 §5.2 for the binding tests (the UPF SHALL apply the PDRs/
+# FARs it receives over N4); the pure XDP-mechanics tests are implementation assurance, not 3GPP.
+version: "1.0.0"
+profile: upf-ebpf
+title: "5G UPF eBPF/XDP Dataplane Assurance (white-box, optional)"
+standards:
+  - "3GPP TS 29.244 §5.2 (UPF applies received PDRs/FARs — verified white-box)"
+  - "Linux XDP / eBPF dataplane realization (implementation assurance)"
+requires:
+  dataplane: ebpf     # informational precondition; tests self-grade 'na' on non-eBPF UPFs
+defaults:
+  class: normal
+gate:
+  essential: all
+
+tests:
+  # --- fast-path is real (the XDP program is loaded, attached, and engaged) -------------
+  - id: XDP-01
+    name: XDP program attached to the N3 (access) interface
+    category: dataplane
+    class: essential
+    verdict: status_pass
+  - id: XDP-02
+    name: XDP attach mode is native/driver, not the generic/SKB fallback (informational)
+    category: dataplane
+    class: normal
+    verdict: status_pass
+  - id: XDP-07
+    name: XDP fast-path engaged — stats map increments under N3 traffic (packets traverse XDP)
+    category: dataplane
+    class: essential
+    verdict: status_pass
+  - id: XDP-08
+    name: XDP program stays attached after a malformed-N3 burst (no silent detach to slow path)
+    category: robustness
+    class: normal
+    verdict: status_pass
+
+  # --- control->dataplane binding (the N4 rules are reflected in the BPF maps) -----------
+  - id: XDP-03
+    name: Required BPF maps present and pinned (PDR / FAR / QER / session)
+    category: dataplane
+    class: normal
+    verdict: status_pass
+  - id: XDP-04
+    name: Installed PFCP session (PDR/FAR) is reflected in the eBPF maps  (TS 29.244 §5.2)
+    category: binding
+    class: essential
+    verdict: status_pass
+  - id: XDP-05
+    name: Deleted PFCP session removes its eBPF map entries (no stale dataplane state)
+    category: binding
+    class: essential
+    verdict: status_pass
+  - id: XDP-06
+    name: eBPF session-map entry count matches the installed session count (no drift)
+    category: binding
+    class: normal
+    verdict: status_pass

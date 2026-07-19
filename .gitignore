@@ -23,3 +23,6 @@ dashboard/assets/*.orig
 # OS cruft
 .DS_Store
 ._*
+
+# stray upfbench run logs
+run-*.log
