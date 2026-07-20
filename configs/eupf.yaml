@@ -37,6 +37,11 @@ upf:
   pfcp_pod_selector: app.kubernetes.io/name=eupf
   gnb_addr: "192.168.252.10"
   ue_pool: "10.250.0.0/24"
+  # eUPF ENFORCES QER MBR. pfcpsim's default subscriber model installs ~60 Mbps UL, which
+  # capped the single-flow benchmark at ~63 Mbps (measured) — i.e. we were measuring the rate
+  # limiter, not the datapath. Raise the MBR so the perf suite sees the raw datapath ceiling
+  # (same treatment the framework applies to the other QER-enforcing UPF, BESS).
+  pfcpsim_mbr_kbps: 10000000
   # eUPF does not implement the PFCP Association Release procedure (its own 3GPP compat doc:
   # TS 29.244 §7.4.4.5/6 = 'N'); it tears associations down via heartbeat loss. Declare it so
   # CF-01 verifies Association Setup and records Release as a documented capability gap (the
@@ -53,6 +58,36 @@ ebpf:
   inject_pkts: 1000
   malformed_pkts: 2000
   count_sessions: 5
+
+# --- Data-plane benchmark suites (indicative on this rig — see caveat below) ---------------
+# eUPF has no pybess (BESS white-box) and its XDP hook is on a kernel netdev, so override the
+# BESS/DPDK defaults: pfcpsim installs the per-session PDRs, tcpreplay offers the GTP-U load.
+# CAVEAT: generic XDP (native impossible on this Xen vif NIC) + injection over a Calico veth +
+# a host tcpreplay sender. These numbers characterise THIS rig and the generic-XDP fallback,
+# not eUPF's ceiling. A real benchmark needs native XDP on a physical NIC + a DPDK generator.
+performance:
+  control: pfcpsim          # override pybess (BESS-only white-box control)
+  generator: tcpreplay      # override testpmd (DPDK)
+  # 64B is omitted: GTP-U encapsulation alone is 78B, so a 64B frame cannot carry it.
+  frame_sizes: [128, 256, 512, 1024, 1518]
+  trial_duration_s: 3
+  max_rate_mpps: 0.25
+  search_max_iters: 6
+  search_resolution_mpps: 0.005
+  burst_frame_size: 512
+  burst_load_mpps: 0.3
+  multiflow_flows: 16
+  multiflow_frame_size: 512
+  multiflow_load_mpps: 0.3
+
+load:
+  control: pfcpsim
+  generator: tcpreplay      # override trex (DPDK/XDP-VF generator)
+  ue_counts: [10, 100, 1000]   # eUPF advertises max_sessions=65535
+  lt02_ue_count: 100
+  lt02_frame_size: 512
+  lt02_load_mpps: 0.15
+  lt02_duration_s: 6
 
 # n3neg (conformance) knobs — eUPF's XDP is a kernel-netdev hook, so drive it with host
 # tcpreplay (af_packet-style injection into the pod veth), not trex.
