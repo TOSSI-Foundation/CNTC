@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 366" role="img"
+          aria-label="A cpbench test asks the core adapter for an NF endpoint. The docker adapter resolves it via docker inspect to a container IP on port 8000; the Kubernetes adapter resolves it via kubectl get svc to a ClusterIP on 8080, with N2 reached through a NodePort."><style>
+  text{font-family:'DejaVu Sans','Helvetica',Arial,sans-serif}
+  .t-mono,.t-mut,.t-accent{font-family:'DejaVu Sans Mono','Courier New',monospace}
+  .hd{font-weight:700}
+  .s-box{fill:#ffffff;stroke:#c2cccf;stroke-width:1}
+  .s-box-2{fill:#f4f7f8;stroke:#c2cccf;stroke-width:1}
+  .s-core{fill:#fbfdfd;stroke:#b7c3c6;stroke-width:1.3}
+  .s-accent{fill:#0c8f89;stroke:#0c8f89}
+  .s-accentbox{fill:#d7edeb;stroke:#0c8f89;stroke-width:1.2}
+  .s-line{stroke:#b7c3c6;fill:#b7c3c6}
+  .s-flow{stroke:#0c8f89;fill:none}
+  .t{fill:#0f171c} .t-mono{fill:#33454e} .t-mut{fill:#5d6f77} .t-accent{fill:#0a6c67}
+</style><rect x="0" y="0" width="900" height="366" fill="#eef2f3"/><text x="26" y="42" class="t hd" font-size="21" fill="#0f171c">One engine, two deployments</text><text x="26" y="64" class="t-mut" font-size="12.5">Same tests, same NFs — only the core adapter's address resolution differs (docker inspect vs kubectl get svc)</text><g transform="translate(0,66)">
+          <defs>
+            <marker id="ah2" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0 0 L10 5 L0 10 z" class="s-line" />
+            </marker>
+          </defs>
+          <!-- shared top -->
+          <rect x="300" y="26" width="300" height="60" rx="10" class="s-box"/>
+          <text x="320" y="50" class="t hd" font-size="13">cpbench NF test</text>
+          <text x="320" y="70" class="t-mono" font-size="11.5">adapter.nf_endpoint("amf")</text>
+          <!-- split -->
+          <line x1="430" y1="86" x2="240" y2="128" class="s-line" stroke-width="1.6" marker-end="url(#ah2)"/>
+          <line x1="470" y1="86" x2="660" y2="128" class="s-line" stroke-width="1.6" marker-end="url(#ah2)"/>
+
+          <!-- docker branch -->
+          <rect x="70" y="132" width="330" height="140" rx="12" class="s-box-2"/>
+          <text x="88" y="156" class="t hd" font-size="13">docker-compose</text>
+          <text x="286" y="156" class="t-mut" font-size="11">adapter: free5gc</text>
+          <rect x="88" y="170" width="294" height="34" rx="7" class="s-core"/>
+          <text x="100" y="191" class="t-mono" font-size="11.5">$ docker inspect …</text>
+          <line x1="235" y1="204" x2="235" y2="224" class="s-line" stroke-width="1.6" marker-end="url(#ah2)"/>
+          <rect x="88" y="226" width="294" height="34" rx="7" class="s-accentbox"/>
+          <text x="100" y="247" class="t-accent hd" font-size="12">10.100.200.16 : 8000</text>
+
+          <!-- k8s branch -->
+          <rect x="500" y="132" width="330" height="140" rx="12" class="s-box-2"/>
+          <text x="518" y="156" class="t hd" font-size="13">Kubernetes</text>
+          <text x="700" y="156" class="t-mut" font-size="11">adapter: free5gc_k8s</text>
+          <rect x="518" y="170" width="294" height="34" rx="7" class="s-core"/>
+          <text x="530" y="191" class="t-mono" font-size="11.5">$ kubectl get svc …</text>
+          <line x1="665" y1="204" x2="665" y2="224" class="s-line" stroke-width="1.6" marker-end="url(#ah2)"/>
+          <rect x="518" y="226" width="294" height="34" rx="7" class="s-accentbox"/>
+          <text x="530" y="247" class="t-accent hd" font-size="12">ClusterIP : 8080  ·  N2 → NodePort</text>
+        </g></svg>

@@ -1,0 +1,157 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1180 728" role="img"
+          aria-label="Data flow: campaign config feeds the cpbench engine, which drives the live 5G core over N2, N1, SBI and N4 interfaces and captures the wire; results.json flows to the cntc verdict engine, graded against per-NF standards catalogs, producing a per-NF certificate."><style>
+  text{font-family:'DejaVu Sans','Helvetica',Arial,sans-serif}
+  .t-mono,.t-mut,.t-accent{font-family:'DejaVu Sans Mono','Courier New',monospace}
+  .hd{font-weight:700}
+  .s-box{fill:#ffffff;stroke:#c2cccf;stroke-width:1}
+  .s-box-2{fill:#f4f7f8;stroke:#c2cccf;stroke-width:1}
+  .s-core{fill:#fbfdfd;stroke:#b7c3c6;stroke-width:1.3}
+  .s-accent{fill:#0c8f89;stroke:#0c8f89}
+  .s-accentbox{fill:#d7edeb;stroke:#0c8f89;stroke-width:1.2}
+  .s-line{stroke:#b7c3c6;fill:#b7c3c6}
+  .s-flow{stroke:#0c8f89;fill:none}
+  .t{fill:#0f171c} .t-mono{fill:#33454e} .t-mut{fill:#5d6f77} .t-accent{fill:#0a6c67}
+</style><rect x="0" y="0" width="1180" height="728" fill="#eef2f3"/><text x="26" y="42" class="t hd" font-size="21" fill="#0f171c">CNTC — Control-Plane Certification Architecture</text><text x="26" y="64" class="t-mut" font-size="12.5">cpbench engine  ·  AMF · SMF · NRF · AUSF · UDM  →  graded against 3GPP protocol + SCAS specs  →  per-NF certificate</text><g transform="translate(0,78)">
+          <defs>
+            <marker id="ah" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0 0 L10 5 L0 10 z" class="s-line" />
+            </marker>
+            <marker id="af" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7.5" markerHeight="7.5" orient="auto-start-reverse">
+              <path d="M0 0 L10 5 L0 10 z" class="s-accent"/>
+            </marker>
+          </defs>
+
+          <!-- ============ TOP SPINE: measure -> judge ============ -->
+          <!-- CONFIG -->
+          <rect x="18" y="60" width="150" height="108" rx="10" class="s-box-2"/>
+          <text x="30" y="82" class="t-mut" font-size="11">campaign config</text>
+          <text x="30" y="102" class="t hd" font-size="13">free5gc-cp.yaml</text>
+          <text x="30" y="122" class="t-mono" font-size="11">domain: cp</text>
+          <text x="30" y="138" class="t-mono" font-size="11">target_nf: all</text>
+          <text x="30" y="154" class="t-mono" font-size="11">adapter · subs</text>
+
+          <!-- ENGINE -->
+          <rect x="208" y="42" width="286" height="242" rx="12" class="s-box"/>
+          <rect x="208" y="42" width="286" height="26" rx="12" class="s-accentbox"/>
+          <text x="222" y="60" class="t-accent hd" font-size="12.5">cpbench engine · measures</text>
+          <!-- inner rows -->
+          <rect x="222" y="80" width="258" height="30" rx="6" class="s-box-2"/>
+          <text x="234" y="99" class="t-mono" font-size="11.5">runner — orchestrate · run per NF</text>
+          <rect x="222" y="116" width="258" height="30" rx="6" class="s-box-2"/>
+          <text x="234" y="129" class="t-mono" font-size="10.5">adapters/ — free5gc (docker)</text>
+          <text x="234" y="141" class="t-mono" font-size="10.5">· free5gc_k8s (kubectl)</text>
+          <rect x="222" y="152" width="258" height="30" rx="6" class="s-box-2"/>
+          <text x="234" y="165" class="t-mono" font-size="10.5">drivers/ — UERANSIM (N1/N2)</text>
+          <text x="234" y="177" class="t-mono" font-size="10.5">· SBI client (HTTP/2) · tshark</text>
+          <rect x="222" y="188" width="258" height="30" rx="6" class="s-box-2"/>
+          <text x="234" y="207" class="t-mono" font-size="11.5">suites/ — amf smf nrf ausf udm</text>
+          <text x="222" y="238" class="t-mut" font-size="10.5">observers/ nas_ngap · metrics/ signaling</text>
+          <text x="222" y="256" class="t-mut" font-size="10.5">cntc_common → TestResult / Store</text>
+          <text x="222" y="274" class="t-accent" font-size="10.5">└─ results.json (shared schema)</text>
+
+          <!-- results.json -->
+          <rect x="546" y="72" width="140" height="84" rx="10" class="s-box-2"/>
+          <text x="558" y="94" class="t-mut" font-size="11">artifact</text>
+          <text x="558" y="114" class="t hd" font-size="13">results.json</text>
+          <text x="558" y="134" class="t-mono" font-size="10.5">suites[] · tests[]</text>
+          <text x="558" y="149" class="t-mono" font-size="10.5">status·metrics</text>
+
+          <!-- verdict -->
+          <rect x="738" y="56" width="178" height="116" rx="12" class="s-box"/>
+          <rect x="738" y="56" width="178" height="26" rx="12" class="s-accentbox"/>
+          <text x="752" y="74" class="t-accent hd" font-size="11.5">cntc umbrella · judges</text>
+          <text x="752" y="100" class="t-mono" font-size="11">verdict.evaluate()</text>
+          <text x="752" y="118" class="t-mut" font-size="10.5">pure · engine-agnostic</text>
+          <text x="752" y="140" class="t-mono" font-size="10.5">essential gate → PASS</text>
+          <text x="752" y="156" class="t-mono" font-size="10.5">na → INCOMPLETE</text>
+
+          <!-- certificate -->
+          <rect x="960" y="64" width="200" height="100" rx="12" class="s-accentbox"/>
+          <text x="974" y="86" class="t-accent" font-size="11">per-NF certificate</text>
+          <text x="974" y="108" class="t hd" font-size="14">CNTC-AMF-…</text>
+          <text x="974" y="130" class="t-mono" font-size="10.5">scorecard · cert.json</text>
+          <text x="974" y="150" class="t-mono" font-size="10.5">issued on PASS only</text>
+
+          <!-- spine arrows (accent) -->
+          <line x1="168" y1="114" x2="206" y2="120" class="s-flow" stroke-width="2" marker-end="url(#af)"/>
+          <line x1="494" y1="118" x2="544" y2="114" class="s-flow" stroke-width="2" marker-end="url(#af)"/>
+          <line x1="686" y1="114" x2="736" y2="114" class="s-flow" stroke-width="2" marker-end="url(#af)"/>
+          <line x1="916" y1="114" x2="958" y2="114" class="s-flow" stroke-width="2" marker-end="url(#af)"/>
+
+          <!-- catalogs feeding verdict -->
+          <rect x="738" y="238" width="178" height="86" rx="10" class="s-box-2"/>
+          <text x="752" y="260" class="t-mut" font-size="11">standards/ catalogs · data</text>
+          <text x="752" y="280" class="t-mono" font-size="10.5">{nf}-conformance  (L1)</text>
+          <text x="752" y="296" class="t-mono" font-size="10.5">{nf}-adversarial  (L2)</text>
+          <text x="752" y="314" class="t-mono" font-size="10.5">TS 29.5xx · TS 33.51x</text>
+          <line x1="827" y1="238" x2="827" y2="174" class="s-flow" stroke-width="1.6" stroke-dasharray="4 3" marker-end="url(#af)"/>
+          <text x="836" y="212" class="t-accent" font-size="10.5">grades against</text>
+
+          <!-- ============ ENGINE -> 5G CORE ============ -->
+          <line x1="351" y1="284" x2="351" y2="356" class="s-flow" stroke-width="2.4" marker-end="url(#af)"/>
+          <text x="362" y="316" class="t-accent" font-size="10.5">drives &amp; observes</text>
+          <text x="362" y="332" class="t-mut" font-size="10">N2/NGAP·SCTP38412 · N1/NAS · SBI·HTTP/2 · N4/PFCP·8805 · wire-capture</text>
+
+          <!-- 5G CORE UNDER TEST band -->
+          <rect x="18" y="356" width="900" height="274" rx="14" class="s-core"/>
+          <text x="34" y="382" class="t hd" font-size="13">5G core under test — bring-your-own</text>
+          <text x="388" y="382" class="t-mut" font-size="11">free5GC · Open5GS · OAI  ·  docker-compose or Kubernetes</text>
+
+          <!-- NF boxes -->
+          <!-- AMF -->
+          <rect x="34" y="398" width="168" height="150" rx="10" class="s-box"/>
+          <text x="48" y="422" class="t hd" font-size="16">AMF</text>
+          <text x="48" y="440" class="t-mut" font-size="10">deep</text>
+          <text x="48" y="464" class="t-mono" font-size="10.5">TS 24.501 · 38.413</text>
+          <text x="48" y="480" class="t-mono" font-size="10.5">33.501 (5G-AKA)</text>
+          <text x="48" y="502" class="t-accent" font-size="10.5">SCAS · TS 33.512</text>
+          <text x="48" y="528" class="t-mut" font-size="10">N1·N2 + SBI + capture</text>
+          <!-- SMF -->
+          <rect x="214" y="398" width="168" height="150" rx="10" class="s-box"/>
+          <text x="228" y="422" class="t hd" font-size="16">SMF</text>
+          <text x="228" y="440" class="t-mut" font-size="10">deep</text>
+          <text x="228" y="464" class="t-mono" font-size="10.5">TS 29.502 · 29.244</text>
+          <text x="228" y="480" class="t-mono" font-size="10.5">24.501 §6 (NAS-SM)</text>
+          <text x="228" y="502" class="t-accent" font-size="10.5">SCAS · TS 33.515</text>
+          <text x="228" y="528" class="t-mut" font-size="10">PDU + N4/PFCP + SBI</text>
+          <!-- NRF -->
+          <rect x="394" y="398" width="150" height="150" rx="10" class="s-box"/>
+          <text x="408" y="422" class="t hd" font-size="16">NRF</text>
+          <text x="408" y="440" class="t-mut" font-size="10">focused</text>
+          <text x="408" y="464" class="t-mono" font-size="10.5">TS 29.510</text>
+          <text x="408" y="486" class="t-accent" font-size="10.5">SCAS · TS 33.518</text>
+          <text x="408" y="512" class="t-mut" font-size="10">SBI direct</text>
+          <text x="408" y="528" class="t-mut" font-size="10">register · discover</text>
+          <!-- AUSF -->
+          <rect x="556" y="398" width="150" height="150" rx="10" class="s-box"/>
+          <text x="570" y="422" class="t hd" font-size="16">AUSF</text>
+          <text x="570" y="440" class="t-mut" font-size="10">focused</text>
+          <text x="570" y="464" class="t-mono" font-size="10.5">TS 29.509</text>
+          <text x="570" y="486" class="t-accent" font-size="10.5">SCAS · TS 33.516</text>
+          <text x="570" y="512" class="t-mut" font-size="10">SBI + transitive</text>
+          <text x="570" y="528" class="t-mut" font-size="10">5G-AKA via AMF</text>
+          <!-- UDM -->
+          <rect x="718" y="398" width="184" height="150" rx="10" class="s-box"/>
+          <text x="732" y="422" class="t hd" font-size="16">UDM</text>
+          <text x="732" y="440" class="t-mut" font-size="10">focused</text>
+          <text x="732" y="464" class="t-mono" font-size="10.5">TS 29.503</text>
+          <text x="732" y="486" class="t-accent" font-size="10.5">SCAS · TS 33.514</text>
+          <text x="732" y="512" class="t-mut" font-size="10">SBI + transitive</text>
+          <text x="732" y="528" class="t-mut" font-size="10">SDM · auth-vector · SIDF</text>
+
+          <!-- UPF strip -->
+          <rect x="34" y="562" width="868" height="52" rx="9" class="s-box-2"/>
+          <text x="48" y="583" class="t hd" font-size="12">UPF — user plane (N3 GTP-U · N4 PFCP)</text>
+          <text x="48" y="601" class="t-mut" font-size="10.5">tested by the sibling engine upfbench · same cntc grading · eBPF/XDP, DPDK, af_xdp, af_packet</text>
+          <text x="720" y="592" class="t-accent" font-size="10.5">SMF ─N4→ UPF</text>
+
+          <!-- supporting NFs note (right column under certificate) -->
+          <rect x="960" y="356" width="200" height="130" rx="10" class="s-box-2"/>
+          <text x="974" y="378" class="t-mut" font-size="10.5">supporting NFs</text>
+          <text x="974" y="398" class="t-mono" font-size="10.5">PCF · NSSF · UDR</text>
+          <text x="974" y="416" class="t-mut" font-size="10">transitively exercised:</text>
+          <text x="974" y="432" class="t-mut" font-size="10">a PDU session proves</text>
+          <text x="974" y="446" class="t-mut" font-size="10">SMF↔PCF policy; a slice</text>
+          <text x="974" y="460" class="t-mut" font-size="10">registration proves NSSF</text>
+          <text x="974" y="478" class="t-mut" font-size="10">selection.</text>
+        </g></svg>
