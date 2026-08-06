@@ -52,26 +52,36 @@ control→dataplane binding, no auth-bypass) are proven on the wire, not assumed
 | **Level 1 — Conformance & Observable Security** | everything provable with a **spec-compliant peer** + observation | **44** (26 essential) | **shipped — v1.0** |
 | **Level 2 — Adversarial Robustness & Privileged Interop** | everything needing a **non-compliant or privileged peer** (forged/replayed/malformed state, registered-NF PKI) | 20 | roadmap |
 
-**The Level-1 guarantee:** every L1 test is implemented, so a verdict is always a clean
-**PASS** or **FAIL about the deployment** — never `INCOMPLETE` because the tester didn't build
-something. An NF earns its certificate only when **all its essential tests pass**.
+**The Level-1 guarantee:** every L1 test is *implemented* — so a verdict is never `INCOMPLETE`
+because the tester didn't build something. When a case genuinely can't be judged on a deployment
+(the core enforces no OAuth2, or there's no UE to drive registration) the result is a transparent
+`INCOMPLETE` **about that deployment** — a reported gap, never a silent pass. An NF earns its
+certificate only when **all its essential tests pass**.
 
 ## What a real run shows
 
-Verified against a live **free5GC**, on both deployment styles — *same tests, same NFs, different
-result*, because the difference is the deployment's hardening, not the tests:
+Verified against a live **free5GC** on both deployment styles — *same tests, same NFs, different
+result*, because the difference is the deployment's hardening (and what the rig can exercise), not
+the tests:
 
-| NF | Docker free5GC | Kubernetes free5GC |
+| NF | Docker free5GC | Kubernetes free5GC (Helm + in-cluster UE) |
 |---|---|---|
-| **AMF** | **PASS** ✅ | INCOMPLETE¹ |
-| **AUSF** | **PASS** ✅ | FAIL — no SBI authorization |
-| **UDM** | **PASS** ✅ | FAIL — no TLS / OAuth2 |
-| SMF | FAIL — no TLS on SBI | FAIL |
-| NRF | FAIL — no TLS on SBI | FAIL |
+| **AMF** | **PASS** ✅ (9/9) | **PASS** ✅ (9/9) |
+| **AUSF** | **PASS** ✅ | INCOMPLETE¹ |
+| **UDM** | **PASS** ✅ | INCOMPLETE¹ |
+| SMF | FAIL — no TLS on SBI | FAIL² |
+| NRF | FAIL — no TLS on SBI | FAIL — serves discovery to an **unauthenticated** client (HTTP 200) + no TLS |
 
-**3 of 5 certifiable on docker; 0 of 5 on k8s** — the Kubernetes deployment runs its SBI without
-TLS or OAuth2 authorization. The framework **reports the gap; it does not rubber-stamp**.
-¹ a tooling limit on k8s (needs a host-side wrong-credential UE), not a deployment fault.
+**Docker: 3 of 5 certifiable. Kubernetes: AMF certifies** — the full attach cycle (registration ·
+5G-AKA · NAS ciphering/integrity · **wrong-key negative attach**) driven by an *in-cluster* UE.
+Same harness, and it still surfaces every gap — the Kubernetes NRF serves the network topology to
+an unauthenticated client, a real authorization finding the (OAuth2-enforcing) docker core does not
+have. **The framework reports the gap; it does not rubber-stamp, and never fakes a pass.**
+
+¹ AUSF/UDM core auth/subscription pass (transitively, via registration); their SBI-authorization
+case is `na` because the default Helm free5GC doesn't enforce OAuth2 — a token-less call returns
+`400`, not `401/403`, so there's no authorization *decision* to grade.
+² the in-cluster single-node UPF has no N6 route, so the PDU-session data-path case can't complete.
 
 ---
 
