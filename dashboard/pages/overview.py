@@ -128,14 +128,19 @@ def layout(**_):
                     html.Span(className="dotc"), "Framework online"]),
                 html.Span(f"updated {latest.date[:16]}" if latest else "no runs",
                           className="muted small mono")])])
-    sub = html.P("Black-box benchmarking for 5G UPFs over real N3 / N4 interfaces — "
-                 "performance, load, conformance and robustness across datapaths.",
-                 className="muted small", style={"margin": "2px 0 18px", "maxWidth": "700px"})
+    from dashboard.catalog_data import cp_nf_counts
+    cpc = cp_nf_counts()
+    cp_tests = sum(t for t, _ in cpc.values())
+    cp_ess = sum(e for _, e in cpc.values())
+    sub = html.P("Standards-graded certification for the whole 5G core — the control plane "
+                 "(AMF/SMF/NRF/AUSF/UDM over N1/N2 + SBI) and the user plane (the UPF over "
+                 "N3 / N4) — conformance, observable security, performance and robustness.",
+                 className="muted small", style={"margin": "2px 0 18px", "maxWidth": "720px"})
     quad = html.Div(className="kpi-quad", children=[
-        _kq("UPFs", "5", "3 live · 2 planned"),
-        _kq("Dataplane modes", "4", "DPDK measured"),
+        _kq("Network functions", str(len(cpc)), f"control plane · {cp_ess} essential"),
+        _kq("UPFs", "5", "user plane · 3 live"),
+        _kq("Test cases", str(cp_tests + 16), f"{cp_tests} control · 16 user plane"),
         _kq("Runs", str(n_runs), "on record"),
-        _kq("Suites", "4", "16 test cases"),
         _kq("Findings", str(n_find), "remote DoS · high" if n_find else "none",
             "var(--bad-fg)" if n_find else None),
         _kq("Last activity", latest.date[5:10] if latest else "—",
@@ -146,6 +151,8 @@ def layout(**_):
         quad])
     coverage = html.Div(className="section-label", children=[
         html.H2("Coverage"), html.Div(className="rule"),
+        dcc.Link("Control plane →", href="/control-plane", className="finding-link",
+                 style={"margin": "0", "fontSize": "12.5px"}),
         dcc.Link("UPF registry →", href="/upfs", className="finding-link",
-                 style={"margin": "0", "fontSize": "12.5px"})])
+                 style={"margin": "0 0 0 14px", "fontSize": "12.5px"})])
     return html.Div(className="page", children=[head, sub, dash_top, coverage, _suite_cards()])

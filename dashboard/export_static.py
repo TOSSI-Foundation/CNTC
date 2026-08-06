@@ -319,18 +319,22 @@ def page_compare(camps) -> str:
 
 
 def page_catalog() -> str:
-    from .catalog_data import CATALOG
+    from .catalog_data import DOMAINS, catalog_summary, domain_summary
     blocks = ""
-    for name, accent, tests in CATALOG:
-        rows = "".join(
-            f'<tr><td><span class="cat-id" style="color:{accent}">{esc(tid)}</span></td>'
-            f'<td><b>{esc(tn)}</b></td><td class="cat-what">{esc(what)}</td>'
-            f'<td>{pill(std, T.MUTE)}</td></tr>' for tid, tn, what, std in tests)
-        tbl = (f'<table class="data-table catalog-table"><thead><tr><th>ID</th><th>Test</th>'
-               f'<th>What it measures</th><th>Standard</th></tr></thead><tbody>{rows}</tbody></table>')
-        blocks += card(tbl, title=name, sub=f"{len(tests)} test cases")
+    for dtitle, dblurb, catalog in DOMAINS:
+        blocks += (f'<div class="domain-head"><h2 class="domain-title">{esc(dtitle)}</h2>'
+                   f'{pill(domain_summary(catalog), T.ACCENT)}'
+                   f'<div class="muted small domain-blurb">{esc(dblurb)}</div></div>')
+        for name, accent, tests in catalog:
+            rows = "".join(
+                f'<tr><td><span class="cat-id" style="color:{accent}">{esc(tid)}</span></td>'
+                f'<td><b>{esc(tn)}</b></td><td class="cat-what">{esc(what)}</td>'
+                f'<td>{pill(std, T.MUTE)}</td></tr>' for tid, tn, what, std in tests)
+            tbl = (f'<table class="data-table catalog-table"><thead><tr><th>ID</th><th>Test</th>'
+                   f'<th>What it measures</th><th>Standard</th></tr></thead><tbody>{rows}</tbody></table>')
+            blocks += card(tbl, title=name, sub=f"{len(tests)} test cases")
     head = ('<div class="page-head"><h1>Test catalog</h1>'
-            '<div class="muted">Four suites · 16 test cases · black-box over N3 (TRex) + N4 (pfcpsim)</div></div>')
+            f'<div class="muted">{esc(catalog_summary())}</div></div>')
     return shell("catalog.html", "Test catalog", head + blocks)
 
 

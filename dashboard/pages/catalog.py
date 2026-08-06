@@ -6,7 +6,8 @@ import dash
 from dash import html
 
 from dashboard.components import card
-from dashboard.catalog_data import CATALOG, SUITE_CATID, standard_links
+from dashboard.catalog_data import (DOMAINS, SUITE_CATID, standard_links,
+                                     catalog_summary, domain_summary)
 
 dash.register_page(__name__, path="/catalog", name="Test catalog")
 
@@ -38,11 +39,20 @@ def _suite_block(name, accent, tests):
                   html.Tbody(rows)]))
 
 
+def _domain_block(title, blurb, catalog):
+    return html.Section(className="catalog-domain", children=[
+        html.Div(className="domain-head", children=[
+            html.H2(title, className="domain-title"),
+            html.Span(domain_summary(catalog), className="pill pill--neutral"),
+            html.Div(blurb, className="muted small domain-blurb")]),
+        *[_suite_block(name, accent, tests) for name, accent, tests in catalog],
+    ])
+
+
 def layout(**_):
     return html.Div(className="page", children=[
         html.Div(className="page-head", children=[
             html.H1("Test catalog"),
-            html.Div("Four suites · 16 test cases · black-box over N3 (TRex) + N4 (pfcpsim)",
-                     className="muted")]),
-        *[_suite_block(name, accent, tests) for name, accent, tests in CATALOG],
+            html.Div(catalog_summary(), className="muted")]),
+        *[_domain_block(title, blurb, catalog) for title, blurb, catalog in DOMAINS],
     ])

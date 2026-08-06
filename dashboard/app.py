@@ -23,10 +23,11 @@ app = Dash(__name__, use_pages=True, pages_folder=str(PAGES),
            suppress_callback_exceptions=True)
 server = app.server
 
-# UPF-first IA (redesign v2): nav grouped into Results + Reference.
+# Whole-core IA: nav grouped into Results + Reference. Both planes get a coverage page —
+# Control plane (AMF/SMF/NRF/AUSF/UDM) and UPFs (user plane).
 _NAV = [
-    ("Results", [("/", "Overview"), ("/upfs", "UPFs"), ("/campaigns", "Runs"),
-                 ("/compare", "Compare"), ("/findings", "Findings")]),
+    ("Results", [("/", "Overview"), ("/control-plane", "Control plane"), ("/upfs", "UPFs"),
+                 ("/campaigns", "Runs"), ("/compare", "Compare"), ("/findings", "Findings")]),
     ("Reference", [("/catalog", "Test catalog"), ("/methodology", "Methodology")]),
 ]
 

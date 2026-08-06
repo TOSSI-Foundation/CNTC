@@ -473,6 +473,13 @@ h3{font-size:15px;font-weight:650;margin:0;letter-spacing:-.01em;color:var(--ink
 .catalog-table .cat-id{font-family:var(--mono);font-weight:700;color:var(--accent-fg)}
 .catalog-table .cat-what{color:var(--mute);line-height:1.5}
 .catalog-table td b{font-weight:620;color:var(--ink)}
+/* catalog domain sections (control plane / user plane) */
+.catalog-domain{margin-top:26px}
+.catalog-domain:first-of-type{margin-top:8px}
+.domain-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  padding-bottom:10px;margin-bottom:14px;border-bottom:2px solid var(--border)}
+.domain-title{font-size:1.15rem;font-weight:680;color:var(--ink);margin:0}
+.domain-blurb{flex-basis:100%;margin-top:2px}
 
 /* ============================ methodology ============================ */
 .flow{display:flex;align-items:stretch;gap:6px;flex-wrap:wrap;margin:8px 0 14px}
