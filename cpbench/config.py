@@ -7,6 +7,8 @@ the report. See ``configs/free5gc-cp.yaml`` for the canonical example.
 from __future__ import annotations
 
 import dataclasses
+import os
+import pwd
 from pathlib import Path
 from typing import Any
 
@@ -14,6 +16,26 @@ import yaml
 
 NFS = ("amf", "smf", "nrf", "ausf", "udm")
 VALID_TARGETS = NFS + ("all",)
+
+
+def expand_user_path(p: str | Path) -> Path:
+    """Expand ``~`` the way the *invoking* user means it, even under ``sudo``.
+
+    The run command is documented as ``sudo python3 -m cpbench.cli run …`` (tcpdump /
+    pfcpsim / docker need root). Under sudo ``$HOME`` becomes ``/root``, so a plain
+    ``Path("~/UERANSIM").expanduser()`` would look in ``/root`` and miss the user's build.
+    When ``SUDO_USER`` is set we expand ``~`` against that user's real home instead — so the
+    non-sudo ``doctor`` and the sudo ``run`` resolve the same path.
+    """
+    s = str(p)
+    sudo_user = os.environ.get("SUDO_USER")
+    if sudo_user and (s == "~" or s.startswith("~/")):
+        try:
+            home = pwd.getpwnam(sudo_user).pw_dir
+            return Path(home + s[1:])
+        except KeyError:
+            pass
+    return Path(s).expanduser()
 
 
 @dataclasses.dataclass

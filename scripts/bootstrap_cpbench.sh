@@ -81,6 +81,15 @@ python3 -m pip install -e . \
   || { echo "    editable install failed; installing deps directly"; \
        python3 -m pip install 'httpx[http2]>=0.27' PyYAML Jinja2 scapy; }
 
+# `cpbench run` needs root (tcpdump on N2, pfcpsim, docker), so the framework + its deps must
+# ALSO be importable under sudo — the user site-packages above are invisible to root. Install
+# once into the system interpreter too (idempotent; skipped if root can already import httpx).
+if ! sudo python3 -c "import httpx, yaml, scapy" >/dev/null 2>&1; then
+  echo "    making the framework importable under sudo (for the root-run 'cpbench run')"
+  sudo python3 -m pip install -e . --root-user-action=ignore \
+    || sudo python3 -m pip install --root-user-action=ignore 'httpx[http2]>=0.27' PyYAML Jinja2 scapy
+fi
+
 # ---------------------------------------------------------------------------
 echo ">>> [3/4] UERANSIM (AGPL-3.0 — fetched + built into your environment, not bundled)"
 if [ "${SKIP_UERANSIM:-0}" = "1" ]; then

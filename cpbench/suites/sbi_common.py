@@ -18,21 +18,60 @@ def _host_port(ctx: RunContext) -> tuple[str, int]:
     return host, int(port or 8000)
 
 
+# Cache the detected scheme per host:port so we probe TLS once per campaign, not per test.
+_SCHEME_CACHE: dict[tuple[str, int], str] = {}
+
+
+def sbi_scheme(ctx: RunContext, host: str, port: int) -> str:
+    """'https' if the SBI port speaks TLS, else 'http'. Detected once and cached.
+
+    free5GC on docker serves SBI as cleartext HTTP; the SD-Core/Aether k8s chart serves it
+    over HTTPS. Hardcoding a scheme makes every request to the *other* kind of deployment fail
+    (cleartext to a TLS port -> HTTP 400 / reset), which used to be misread as a security
+    finding. Probing the port makes the SBI checks work — and judge honestly — on both.
+    """
+    key = (host, port)
+    if key not in _SCHEME_CACHE:
+        scheme = "http"
+        try:
+            if ctx.sbi is not None and ctx.sbi.tls_probe(host, port).get("tls"):
+                scheme = "https"
+        except Exception:  # noqa: BLE001
+            scheme = "http"
+        _SCHEME_CACHE[key] = scheme
+    return _SCHEME_CACHE[key]
+
+
+def sbi_base(ctx: RunContext) -> str:
+    """Base URL for the NF's SBI with the scheme auto-detected (https on TLS, else http)."""
+    host, port = _host_port(ctx)
+    return f"{sbi_scheme(ctx, host, port)}://{host}:{port}"
+
+
 def reject_unauth(ctx: RunContext, tid: str, name: str, path: str,
                   method: str = "GET", body=None) -> TestResult:
     """PASS iff a token-less call to an SBI service is rejected with 401/403."""
     if ctx.sbi is None:
         return TestResult(tid, name, "na", notes="no SBI client wired")
-    host, port = _host_port(ctx)
-    r = ctx.sbi.request(method, f"http://{host}:{port}{path}", json=body)
+    r = ctx.sbi.request(method, f"{sbi_base(ctx)}{path}", json=body)
     st = r.get("status")
     if st is None:
         return TestResult(tid, name, "na", notes=f"{ctx.nf.upper()} unreachable: {r.get('error')}")
-    ok = st in (401, 403)
-    return TestResult(tid, name, "pass" if ok else "fail",
-                      metrics={"status": st},
-                      notes=f"unauthenticated {method} {path} -> HTTP {st} "
-                            f"({'rejected' if ok else 'NOT rejected — authz bypass'})")
+    # Honest grading of a token-less SBI call:
+    #   401/403        -> authorization enforced (PASS)
+    #   2xx            -> protected data served WITHOUT a token = a real auth bypass (FAIL)
+    #   anything else  -> 400/404/5xx: the request was NOT served, but not on auth grounds
+    #                     (often wrong endpoint shape) — we cannot conclude either way (na).
+    if st in (401, 403):
+        return TestResult(tid, name, "pass", metrics={"status": st},
+                          notes=f"unauthenticated {method} {path} -> HTTP {st} (rejected)")
+    if 200 <= st < 300:
+        return TestResult(tid, name, "fail", metrics={"status": st},
+                          notes=f"unauthenticated {method} {path} -> HTTP {st} "
+                                f"(served without a token — authz bypass)")
+    return TestResult(tid, name, "na", metrics={"status": st},
+                      notes=f"unauthenticated {method} {path} -> HTTP {st} — not an auth "
+                            f"decision (request not served, but not 401/403); cannot judge authz")
 
 
 def requires_tls(ctx: RunContext, tid: str, name: str) -> TestResult:

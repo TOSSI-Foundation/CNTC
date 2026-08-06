@@ -17,6 +17,7 @@ import time
 from pathlib import Path
 from typing import Any
 
+from cpbench.config import expand_user_path
 from cpbench.drivers.base import Driver as BaseDriver
 
 _PROCEDURES = {
@@ -34,7 +35,7 @@ class Driver(BaseDriver):
     def __init__(self, cfg, store):
         super().__init__(cfg, store)
         d = cfg.drivers.get("ueransim_dir", "~/UERANSIM")
-        self.dir = Path(d).expanduser()
+        self.dir = expand_user_path(d)
         self.gnb_bin = self.dir / "build" / "nr-gnb"
         self.ue_bin = self.dir / "build" / "nr-ue"
         self.cli_bin = self.dir / "build" / "nr-cli"
@@ -68,8 +69,11 @@ class Driver(BaseDriver):
         return gpath, upath
 
     def _run(self, *args: str, timeout: int = 20) -> subprocess.CompletedProcess:
+        # start_new_session=True → the child gets its own session with NO controlling terminal,
+        # so nr-gnb/nr-ue/nr-cli can't grab /dev/tty and leave the recording terminal in raw mode
+        # (which showed up as a "staircase" of un-returned newlines).
         return subprocess.run([*self.sudo, *args], capture_output=True, text=True,
-                              stdin=subprocess.DEVNULL, timeout=timeout)
+                              stdin=subprocess.DEVNULL, timeout=timeout, start_new_session=True)
 
     def _kill(self) -> None:
         for b in ("nr-ue", "nr-gnb"):
@@ -114,14 +118,14 @@ class Driver(BaseDriver):
             self.store.record_command(f"{' '.join(self.sudo)} {self.gnb_bin} -c {gpath}")
             with open(gnb_log, "w") as gl:
                 gnb = subprocess.Popen([*self.sudo, str(self.gnb_bin), "-c", str(gpath)],
-                                       stdout=gl, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL)
+                                       stdout=gl, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, start_new_session=True)
             obs["sctp"] = self._wait_for(gnb_log, "SCTP connection established", 12)
             obs["ng_setup"] = self._wait_for(gnb_log, "NG Setup procedure is successful", 8)
 
             self.store.record_command(f"{' '.join(self.sudo)} {self.ue_bin} -c {upath}")
             with open(ue_log, "w") as ul:
                 ue = subprocess.Popen([*self.sudo, str(self.ue_bin), "-c", str(upath)],
-                                      stdout=ul, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL)
+                                      stdout=ul, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, start_new_session=True)
             obs["auth_request"] = self._wait_for(ue_log, "Authentication Request received", 15)
             obs["security_mode"] = self._wait_for(ue_log, "Security Mode Command received", 6)
             obs["registered"] = self._wait_for(ue_log, "Initial Registration is successful", 8)
@@ -189,12 +193,12 @@ class Driver(BaseDriver):
             time.sleep(1)
             with open(gnb_log, "w") as gl:
                 subprocess.Popen([*self.sudo, str(self.gnb_bin), "-c", str(gpath)],
-                                 stdout=gl, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL)
+                                 stdout=gl, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, start_new_session=True)
             self._wait_for(gnb_log, "NG Setup procedure is successful", 8)
             self.store.record_command(f"{' '.join(self.sudo)} {self.ue_bin} -c {badpath}  # invalid key")
             with open(ue_log, "w") as ul:
                 subprocess.Popen([*self.sudo, str(self.ue_bin), "-c", str(badpath)],
-                                 stdout=ul, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL)
+                                 stdout=ul, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, start_new_session=True)
             obs["auth_failure"] = (self._wait_for(ue_log, "Authentication Failure", 8)
                                    or self._wait_for(ue_log, "Authentication Reject", 3))
             txt = ue_log.read_text(errors="ignore") if ue_log.exists() else ""
@@ -219,7 +223,7 @@ class Driver(BaseDriver):
         try:
             p = subprocess.Popen([*self.sudo, "tcpdump", "-i", self.n2_iface, "-w", str(pcap), flt],
                                  stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-                                 stdin=subprocess.DEVNULL)
+                                 stdin=subprocess.DEVNULL, start_new_session=True)
             time.sleep(1.0)   # let tcpdump bind before the SCTP association forms
             return p
         except Exception:  # noqa: BLE001

@@ -104,10 +104,17 @@ def _cmd_certify(args) -> int:
         print(f"no such results.json: {results_path}", file=sys.stderr)
         return 2
     data = json.loads(results_path.read_text())
-    verdict = data.get("verdict")
-    if verdict is None:   # grade on the fly if the run wasn't graded yet
+    if args.profile is not None:
+        # An explicit --profile is authoritative: grade against it now, ignoring any verdict the
+        # run wrote back (which may be a different — e.g. composite — profile). This is what makes
+        # `certify --profile amf-conformance` after a `--nf amf` run yield the AMF certificate.
         catalog = load_catalog(args.profile)
         verdict = evaluate(data.get("suites", []), catalog, rig=_rig_from_results(data))
+    else:
+        verdict = data.get("verdict")
+        if verdict is None:   # not graded yet and no profile given → default profile
+            catalog = load_catalog("conformance")
+            verdict = evaluate(data.get("suites", []), catalog, rig=_rig_from_results(data))
     cert = C.issue(verdict, data.get("sut", {}), data.get("started", ""))
     if cert is None:
         print(f"\n  ❌ NOT CERTIFIED\n  Reason: {C.refusal_reason(verdict)}")
@@ -152,7 +159,9 @@ def main(argv=None) -> int:
 
     cert = sub.add_parser("certify", help="issue a formal conformance certificate from a results.json (PASS only)")
     cert.add_argument("results", help="path to a campaign results.json")
-    cert.add_argument("--profile", default="conformance", help="profile to grade against if not already graded")
+    cert.add_argument("--profile", default=None,
+                      help="grade against this profile (authoritative — overrides any written-back "
+                           "verdict). Omit to reuse the run's own verdict, or default to 'conformance'.")
     cert.set_defaults(func=_cmd_certify)
 
     args = p.parse_args(argv)

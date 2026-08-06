@@ -41,7 +41,24 @@ def _cmd_doctor(args) -> int:
 
 def _cmd_run(args) -> int:
     from cpbench import runner
-    runner.run(args.config, nf=args.nf, campaign=args.campaign)
+    # Defensive terminal-restore: the run spawns external tools (UERANSIM/tcpdump). They are
+    # already detached from the TTY (start_new_session), but as belt-and-suspenders we snapshot
+    # the terminal mode and restore it afterwards, so a clean prompt is guaranteed on camera.
+    saved = None
+    try:
+        import termios
+        if sys.stdout.isatty():
+            saved = termios.tcgetattr(sys.stdout.fileno())
+    except Exception:  # noqa: BLE001 — not a tty / no termios: nothing to restore
+        saved = None
+    try:
+        runner.run(args.config, nf=args.nf, campaign=args.campaign)
+    finally:
+        if saved is not None:
+            try:
+                termios.tcsetattr(sys.stdout.fileno(), termios.TCSANOW, saved)
+            except Exception:  # noqa: BLE001
+                pass
     return 0
 
 

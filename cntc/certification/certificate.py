@@ -17,7 +17,10 @@ from typing import Any
 
 def _certificate_id(subject: str, profile: str, catalog_version: str, stamp: str) -> str:
     seed = f"{subject}|{profile}|{catalog_version}|{stamp}".encode()
-    return f"CNTC-{profile.upper()[:4]}-{hashlib.sha256(seed).hexdigest()[:10].upper()}"
+    # Tag = the leading token of the profile (before the first '-'), capped — so
+    # "amf-conformance" -> "AMF" (not "AMF-"), "conformance" -> "CONF", "upf-ebpf" -> "UPF".
+    tag = profile.upper().split("-", 1)[0][:4]
+    return f"CNTC-{tag}-{hashlib.sha256(seed).hexdigest()[:10].upper()}"
 
 
 def issue(verdict: dict[str, Any], sut: dict[str, Any], stamp: str) -> dict[str, Any] | None:

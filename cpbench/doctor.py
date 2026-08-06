@@ -46,7 +46,7 @@ def _check_ueransim(cfg) -> list[tuple[str, bool, str]]:
     gnb = cfg.drivers.get("gnb")
     if gnb != "ueransim":
         return []
-    d = Path(cfg.drivers.get("ueransim_dir", "~/UERANSIM")).expanduser()
+    d = cfgmod.expand_user_path(cfg.drivers.get("ueransim_dir", "~/UERANSIM"))
     built = (d / "build" / "nr-gnb").exists() and (d / "build" / "nr-ue").exists()
     return [("ueransim", built, f"{d}/build" + ("" if built else "  — nr-gnb/nr-ue NOT built"))]
 

@@ -160,12 +160,19 @@ def _apply_verdicts(store, cfg, live_facts: dict) -> None:
         print("[cntc] no per-NF verdicts produced this campaign.")
         return
 
-    composite = _composite(verdicts, rig)
-    store.set_verdict(composite)
-    (store.dir / "scorecard.md").write_text(render_markdown(composite))
-    (store.dir / "scorecard.html").write_text(render_html(composite))
-    print(f"[cntc] composite control-plane verdict: {composite['result']}  "
-          f"(scorecards: {store.dir}/scorecard*.md)")
+    # When a single NF ran, the campaign IS that NF — write back its own <nf>-conformance
+    # verdict (not a composite-of-one wrapper). This keeps the top-level verdict, the dashboard
+    # certificate banner, and a later `certify --profile <nf>-conformance` all consistent — the
+    # same profile, the same certificate ID. Only a multi-NF run needs the composite.
+    if len(verdicts) == 1:
+        top = next(iter(verdicts.values()))
+    else:
+        top = _composite(verdicts, rig)
+    store.set_verdict(top)
+    (store.dir / "scorecard.md").write_text(render_markdown(top))
+    (store.dir / "scorecard.html").write_text(render_html(top))
+    label = "control-plane verdict" if len(verdicts) == 1 else "composite control-plane verdict"
+    print(f"[cntc] {label}: {top['result']}  (scorecards: {store.dir}/scorecard*.md)")
 
 
 def _composite(verdicts: dict[str, dict], rig: dict) -> dict:

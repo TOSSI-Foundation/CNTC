@@ -14,11 +14,13 @@ from __future__ import annotations
 
 from cntc_common.results import TestResult
 from cpbench.suites.base import NfTestCase, RunContext
+from cpbench.suites import sbi_common
 
 
 def _base(ctx: RunContext) -> str:
-    ep = ctx.endpoint or ctx.core.nf_endpoint("nrf")
-    return f"http://{ep}"
+    # Scheme auto-detected (https on a TLS SBI port, else http) so discovery/registration work
+    # against both the cleartext-SBI docker free5GC and the HTTPS-SBI k8s (SD-Core) chart.
+    return sbi_common.sbi_base(ctx)
 
 
 def _host_port(ctx: RunContext) -> tuple[str, int]:
@@ -36,14 +38,22 @@ class NrfSec02(NfTestCase):
         url = (f"{_base(ctx)}/nnrf-disc/v1/nf-instances"
                "?target-nf-type=AMF&requester-nf-type=SMF")
         r = ctx.sbi.request("GET", url)                 # deliberately NO token
-        if r.get("status") is None:
+        st = r.get("status")
+        if st is None:
             return TestResult(self.id, self.name, "na",
                               notes=f"NRF unreachable: {r.get('error')}")
-        rejected = r["status"] in (401, 403)
-        return TestResult(self.id, self.name, "pass" if rejected else "fail",
-                          metrics={"status": r["status"]},
-                          notes=f"unauthenticated discovery -> HTTP {r['status']} "
-                                f"({'rejected' if rejected else 'NOT rejected — auth bypass'})")
+        # 401/403 = authz enforced (PASS); 2xx with NF data = served without a token = bypass
+        # (FAIL); 400/404/5xx = not served, but not an auth decision -> cannot judge (na).
+        if st in (401, 403):
+            return TestResult(self.id, self.name, "pass", metrics={"status": st},
+                              notes=f"unauthenticated discovery -> HTTP {st} (rejected)")
+        if 200 <= st < 300:
+            return TestResult(self.id, self.name, "fail", metrics={"status": st},
+                              notes=f"unauthenticated discovery -> HTTP {st} "
+                                    f"(NF list served without a token — auth bypass)")
+        return TestResult(self.id, self.name, "na", metrics={"status": st},
+                          notes=f"unauthenticated discovery -> HTTP {st} — not an auth decision; "
+                                f"cannot judge authz enforcement")
 
 
 class NrfSec03(NfTestCase):
