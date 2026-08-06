@@ -16,24 +16,26 @@ We are building it **outward from the data plane**, one layer at a time:
 | Stage | Scope | Status |
 |-------|-------|--------|
 | 1 | **UPF** — 5G user plane over N3/N4 (performance, load, PFCP conformance, N3 robustness) | ✅ **available today** |
-| 2 | **5G Core control plane** — AMF / SMF / … (NGAP · PFCP · SBI) | 🔜 next |
+| 2 | **5G Core control plane** — AMF · SMF · NRF · AUSF · UDM (NAS/NGAP · N4/PFCP · SBI) | ✅ **available today** |
 | 3 | **RAN** — gNB · O-CU / O-DU / O-RU | 🗺️ roadmap |
 | 4 | **SMO** — Service Management & Orchestration | 🗺️ roadmap |
 | 5 | **RIC** — Near-RT / Non-RT RIC · xApps / rApps (E2 · A1 · O1) | 🗺️ roadmap |
 | 6 | **Full O-RAN ecosystem** — end-to-end certification across the stack | 🎯 vision |
 
-Everything below is **Stage 1 (UPF)** — in production today. The engine that measures
-(`upfbench`) and the umbrella that judges (`cntc`) are deliberately decoupled, so each later
-stage adds a new engine + a requirement catalog **without touching the grading core**.
+**Stages 1 and 2 are in production today** — the **user plane** (`upfbench`) and the **control
+plane** (`cpbench`). The engines that measure and the umbrella that judges (`cntc`) are
+deliberately decoupled, so each stage adds a new engine + a requirement catalog **without touching
+the grading core** — which is exactly how the control plane was added.
 
-CNTC has two layers:
+CNTC has two kinds of layer — **engines that measure**, and **one umbrella that judges**:
 
 | Layer | What it is | Where |
 |-------|-----------|-------|
-| **Engine** (`upfbench`) | The UPF test engine — drives any open-source 5G UPF over N3/N4 and measures it (performance, load, PFCP conformance, N3 robustness). | [`upfbench/`](upfbench/) |
-| **Verdict** (`cntc`) | The umbrella: a **requirement catalog** per profile (`cntc/standards/*.yaml`) + a pure **verdict engine** that grades results and emits a **scorecard** + certificate. | [`cntc/`](cntc/) |
+| **Engine** (`upfbench`) | The **user-plane** engine — drives any open-source 5G UPF over N3/N4 (performance, load, PFCP conformance, N3 robustness). | [`upfbench/`](upfbench/) |
+| **Engine** (`cpbench`) | The **control-plane** engine — drives the 5G core NFs (AMF/SMF/NRF/AUSF/UDM) over N1/N2 (NAS/NGAP), N4 (PFCP) and the SBI, and captures the signalling on the wire. | [`cpbench/`](cpbench/) |
+| **Verdict** (`cntc`) | The umbrella: a **requirement catalog** per profile (`cntc/standards/*.yaml`) + a pure **verdict engine** that grades *either* engine's results and emits a **scorecard** + certificate. | [`cntc/`](cntc/) |
 
-The engine measures; the umbrella judges. They're decoupled — `cntc.verdict` grades the
+The engines measure; the umbrella judges. They're decoupled — `cntc.verdict` grades the
 serialized `results.json`, so it can also **re-grade any past campaign** without re-running it.
 
 ---
@@ -60,6 +62,8 @@ make dashboard                                      # live web UI over campaigns
 | `make run-perf` · `make run-n3neg` | performance + load + pfcp · N3 robustness only |
 | `make verdict` | (re)grade a campaign → scorecard (`--write-back`) |
 | `make certify` | issue a certificate **iff** the verdict is `PASS` |
+| `make cp-configure` · `make cp-doctor` · `make cp-run` | **control plane**: wizard · preflight · run AMF/SMF/NRF/AUSF/UDM (docker **or** Kubernetes) |
+| `make eupf-run` · `make eupf-certify` | free5GC + eUPF (eBPF/XDP): run · **dual** certificate (conformance + `upf-ebpf`) |
 | `make dashboard` · `dashboard-bg` · `dashboard-stop` | live Plotly dashboard: foreground · tmux · stop |
 | `make profiles` · `make lint` · `make test` | list profiles · validate catalogs · run verdict unit tests |
 | `make k8s-deploy` · `make k8s-run` · `make k8s-clean` | dashboard in Kubernetes · in-cluster run Job · teardown |
@@ -77,7 +81,13 @@ pip install -e .                                   # installs both `cntc` and `u
 upfbench run --config configs/sdcore-bess-trex.yaml --suite pfcp      # PFCP conformance
 upfbench run --config configs/sdcore-bess-trex.yaml --suite n3neg     # N3 robustness
 
-# 2) umbrella — list profiles / grade / re-grade
+# 2) control plane — certify a live 5G core's NFs (bring-your-own free5GC / Open5GS / OAI)
+./scripts/bootstrap_cpbench.sh                     # deps + UERANSIM built from source (AGPL, fetched)
+make cp-doctor  CONFIG=configs/free5gc-cp.yaml     # preflight -> READY
+make cp-run     CONFIG=configs/free5gc-cp.yaml NF=amf
+cntc certify    campaigns/<id>/results.json --profile amf-conformance   # cert iff every essential passed
+
+# 3) umbrella — list profiles / grade / re-grade (works for BOTH engines)
 cntc profiles                                      # available requirement profiles
 cntc run --config configs/sdcore-bess.yaml --suite pfcp --profile conformance
 cntc verdict campaigns/<id>/results.json           # re-grade a past run -> scorecard
@@ -162,10 +172,53 @@ upfbench dashboard                                # live web UI over campaigns/ 
 - **dashboard/** — live Plotly Dash web UI · **third_party/pfcpsim/** — vendored omec-project/pfcpsim.
 
 ### Dashboard
-A live, view-only **Plotly Dash** app over `campaigns/` (`upfbench dashboard`). Pages:
-Overview, UPFs, Runs, Compare, Findings, Test catalog, Methodology. See
-[dashboard/README.md](dashboard/README.md). *(Next: surface the CNTC scorecard/verdict per
-campaign — see the plan.)*
+A live, view-only **Plotly Dash** app over `campaigns/` (`make dashboard`). Pages:
+Overview, **Control plane**, UPFs, Runs, Compare, Findings, Test catalog, Methodology — the
+Control-plane page and the Test catalog now cover **both** the control plane (44 tests across five
+NFs) and the user plane, and each run surfaces its CNTC scorecard + certificate. See
+[dashboard/README.md](dashboard/README.md).
+
+---
+
+## The control-plane engine (`cpbench`) — per-NF, standard-anchored
+
+`cpbench` certifies the **5G core control plane**: it drives each network function over its real
+interfaces and grades it against that NF's own 3GPP spec — both its **stage-3 protocol** spec and
+its **SCAS** security-assurance spec.
+
+| NF | Protocol | SCAS | Driven via |
+|----|----------|------|-----------|
+| **AMF** | TS 24.501 (NAS) · TS 38.413 (NGAP) · TS 33.501 (5G-AKA) | TS 33.512 | UERANSIM over N1/N2 + on-the-wire NAS capture |
+| **SMF** | TS 29.502 (Nsmf) · TS 29.244 (N4/PFCP) | TS 33.515 | PDU sessions via UERANSIM + N4 capture |
+| **NRF** | TS 29.510 (Nnrf) | TS 33.518 | SBI client (HTTP/2 + TLS + OAuth2) |
+| **AUSF** | TS 29.509 (Nausf) | TS 33.516 | SBI client + transitive via registration |
+| **UDM** | TS 29.503 (Nudm) | TS 33.514 | SBI client + transitive via registration |
+
+- **Two certification levels.** **Level 1 — Conformance & Observable Security** (44 tests, 26
+  essential) is **shipped**: everything provable with a spec-compliant peer + observation
+  (registration, 5G-AKA, NAS ciphering/integrity, no-auth-bypass, SBI TLS/OAuth2, malformed →
+  reject). **Level 2 — Adversarial Robustness** (20 tests) is on the roadmap as data-only catalogs.
+- **Same gate as the UPF:** an NF earns a certificate only when **all its essential tests pass**;
+  a case that can't be judged on a deployment is **`na`** → `INCOMPLETE`, **never a silent pass**.
+- **Runs against your live core**, on both deployment styles — **docker-compose** (`free5gc`
+  adapter) and **Kubernetes** (`free5gc_k8s` adapter, addresses resolved live via `kubectl`) —
+  with an in-cluster or host-side UERANSIM UE. Bring your own free5GC / Open5GS / OAI.
+- **Tool stack (open, arm's-length):** UERANSIM (gNB+UE, AGPL — fetched & built, not bundled),
+  our own SBI client, `tcpdump`+`tshark` for N2/N4 wire capture, `pfcpsim` for N4.
+
+```bash
+./scripts/bootstrap_cpbench.sh                    # deps + UERANSIM (fresh server)
+make cp-configure                                 # wizard -> control-plane campaign config
+make cp-doctor CONFIG=configs/free5gc-cp.yaml     # preflight -> READY
+make cp-run    CONFIG=configs/free5gc-cp.yaml NF=all
+cntc certify   campaigns/<id>/results.json --profile amf-conformance
+```
+
+The full design, the test catalog, and the deployment runbooks are in
+[docs/CPBENCH-IMPLEMENTATION.md](docs/CPBENCH-IMPLEMENTATION.md),
+[docs/CNTC-LEVELS-AND-USAGE.md](docs/CNTC-LEVELS-AND-USAGE.md),
+[docs/CNTC-TECHNICAL-REFERENCE.md](docs/CNTC-TECHNICAL-REFERENCE.md) and
+[docs/FREE5GC-K8S-DEPLOY.md](docs/FREE5GC-K8S-DEPLOY.md).
 
 ---
 
@@ -190,5 +243,10 @@ campaign — see the plan.)*
     loud warnings when `baseline`/`rig_class` are missing (never a faked performance PASS).
   - **M4** governance — `cntc lint` catalog linter, [requirements rulebook](docs/CNTC-REQUIREMENTS.md)
     + [governance note](docs/CNTC-GOVERNANCE.md). **14/14 unit tests pass** (`tests/test_verdict.py`).
-- **Next:** metric-key drift check in `cntc lint`; **Stage 2** — a 5G Core control-plane engine
-  under the same umbrella (see the [Objective](#objective) roadmap and [docs/PLAN.md](docs/PLAN.md)).
+- **Control plane (`cpbench`) — Stage 2, shipped:** 44 Level-1 tests across AMF/SMF/NRF/AUSF/UDM,
+  verified against a live **free5GC** on both **docker-compose** and **Kubernetes**. On docker,
+  AMF/AUSF/UDM certify; on Kubernetes, AMF certifies (full in-cluster registration + 5G-AKA + NAS
+  security + negative attach) and the SBI checks surface real findings (no-TLS / token-less
+  discovery) — the framework reports the gap, it never rubber-stamps.
+- **Next:** metric-key drift check in `cntc lint`; **Stage 3 (RAN)** under the same umbrella
+  (see the [Objective](#objective) roadmap and [docs/PLAN.md](docs/PLAN.md)).
