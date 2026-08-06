@@ -131,12 +131,14 @@ class Driver(BaseDriver):
             else:
                 self._parse_logs(self._logs(ue), self._logs(gnb), obs)
                 obs["ping_ok"], obs["ping_detail"] = self._ping(ue, obs.get("ue_ip", ""))
-                # UE-initiated release + deregistration (captured -> N4 delete + UE ctx release)
-                self._exec(ue, self.supi, "ps-release-all"); time.sleep(3)
-                obs["pdu_released"] = "PDU Session Release Command received" in self._logs(ue, 80)
-                self._exec(ue, self.supi, "deregister normal"); time.sleep(3)
-                obs["deregistered"] = "De-registration is successful" in self._logs(ue, 80)
-                obs["ue_context_release"] = "UE Context Release Command received" in self._logs(gnb, 120)
+                # UE-initiated release + deregistration (captured -> N4 delete + UE ctx release).
+                # Poll for each milestone (in-cluster log timing is variable under load) instead
+                # of a single fixed-sleep check, so these don't flap PASS/FAIL on a timing race.
+                self._exec(ue, self.supi, "ps-release-all")
+                obs["pdu_released"] = self._wait_log(ue, "PDU Session Release Command received", 15)
+                self._exec(ue, self.supi, "deregister normal")
+                obs["deregistered"] = self._wait_log(ue, "De-registration is successful", 20)
+                obs["ue_context_release"] = self._wait_log(gnb, "UE Context Release Command received", 20, tail=200)
                 obs["second_session"] = None
         except Exception as e:  # noqa: BLE001
             obs["error"] = f"{type(e).__name__}: {e}"
@@ -151,6 +153,16 @@ class Driver(BaseDriver):
         if cur:
             self._kubectl("delete", "pod", cur, "--wait=false")
         return obs
+
+    def _wait_log(self, pod: str, needle: str, timeout: float, tail: int = 100) -> bool:
+        """Poll a pod's logs until ``needle`` appears or ``timeout`` elapses (in-cluster log
+        timing is variable, so a single fixed-sleep check flaps). Returns True once seen."""
+        deadline = time.time() + timeout
+        while time.time() < deadline:
+            if needle in self._logs(pod, tail):
+                return True
+            time.sleep(2)
+        return False
 
     def _await_registration(self, timeout: float = 75.0) -> str:
         deadline = time.time() + timeout

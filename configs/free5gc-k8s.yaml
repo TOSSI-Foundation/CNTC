@@ -20,5 +20,5 @@ subscribers:
   opc: 8e27b6af0e692e750f32667a3b14605d
   dnn: internet
 sut:
-  rig_class: k8s-microk8s
-  core_release: free5GC helm (k8s)
+  rig_class: k8s
+  core_release: "free5GC helm (Kubernetes, RKE2)"

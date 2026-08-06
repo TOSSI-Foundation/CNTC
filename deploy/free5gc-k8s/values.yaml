@@ -1,0 +1,9 @@
+# CNTC — free5GC-on-Kubernetes deploy overrides for the free5gc/free5gc-helm chart.
+# Only the deltas from the chart defaults that this single-node RKE2 box needs:
+#   - single UPF (simpler + reliable; ULCL needs extra N9 plumbing)
+#   - N6 (UPF internet side) ipvlan master forced to eth0 (this node has no eth1)
+global:
+  userPlaneArchitecture: single
+  upf:
+    n6network:
+      masterIf: eth0

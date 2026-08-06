@@ -1,0 +1,49 @@
+# CNTC control-plane campaign — free5GC on Kubernetes (SD-Core / Aether-style Helm chart).
+#
+# This targets a deployment where the NF Services are named plainly (amf/smf/nrf/ausf/udm) on
+# their real 3GPP SBI ports, and pods are labelled app=<nf> (release=sd-core). The adapter
+# resolves each NF's ClusterIP live via `kubectl get svc`, so nothing here hardcodes an IP.
+#
+# There is no in-cluster UE/gNB in this deployment, so the N2 registration cases (full AMF/SMF
+# attach + AUSF/UDM transitive) grade `na` — the SBI-driven cases (TLS / OAuth2 / malformed ->
+# reject, discovery, subscription, auth-vector) run and reveal the deployment's SBI hardening.
+#
+#   cpbench doctor --config configs/free5gc-k8s-aether.yaml
+#   cpbench run    --config configs/free5gc-k8s-aether.yaml --nf all --campaign VERIFY-K8S
+domain: control-plane
+campaign: VERIFY-K8S
+target_nf: all                      # amf | smf | nrf | ausf | udm | all
+
+core:
+  adapter: free5gc_k8s
+  namespace: aether-5gc
+  nf_label: app                     # pods are labelled app=amf (not app.kubernetes.io/name=free5gc-amf)
+  nf_label_prefix: ""               # label value is the bare NF name
+  # Per-NF SBI Service (name + real 3GPP port). ClusterIP is resolved live via kubectl.
+  services:
+    amf:  { name: amf,  port: 29518 }
+    smf:  { name: smf,  port: 29502 }
+    nrf:  { name: nrf,  port: 29510 }
+    ausf: { name: ausf, port: 29509 }
+    udm:  { name: udm,  port: 29503 }
+  webui: http://localhost:30500     # WebUI NodePort for subscriber provisioning (optional)
+
+drivers:
+  gnb: ueransim_k8s
+  ue_pod_match: ueransim-ue          # no in-cluster UE here -> registration cases grade na
+  gnb_pod_match: ueransim-gnb
+  amf_n2_addr: 192.168.6.90          # AMF N2 LoadBalancer IP (SCTP 38412) — used only if a UE exists
+  amf_n2_port: 38412
+  k8s_drive: false                   # observe-only; no UE pod to restart
+
+# 5G-AKA subscriber (used only if a UE registers; harmless otherwise).
+subscribers:
+- supi: imsi-208930000000001
+  ki:   8baf473f2f8fd09487cccbd7097c6862
+  opc:  8e27b6af0e692e750f32667a3b14605d
+  dnn:  internet
+
+sut:
+  rig_class:    k8s
+  core_release: "free5GC (Kubernetes, SD-Core/Aether Helm)"
+  cpu:          ""
