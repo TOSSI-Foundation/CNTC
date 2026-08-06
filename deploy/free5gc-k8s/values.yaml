@@ -1,9 +1,39 @@
 # CNTC — free5GC-on-Kubernetes deploy overrides for the free5gc/free5gc-helm chart.
-# Only the deltas from the chart defaults that this single-node RKE2 box needs:
+# Deltas from the chart defaults that this single-node RKE2 box needs:
 #   - single UPF (simpler + reliable; ULCL needs extra N9 plumbing)
 #   - N6 (UPF internet side) ipvlan master forced to eth0 (this node has no eth1)
+#   - mongo PV corrected for THIS node: the chart ships a `local` PV pinned to a node named
+#     "ubuntu" at /home/ubuntu/mongodbdb; this box is "node1", so we replace it with a
+#     hostPath PV on node1 (mongo runs as uid 1001 — chown /data/free5gc-mongo to 1001:1001).
 global:
   userPlaneArchitecture: single
   upf:
     n6network:
       masterIf: eth0
+
+mongodb:
+  extraDeploy:
+    - apiVersion: v1
+      kind: PersistentVolume
+      metadata:
+        name: free5gc-pv-mongo
+        labels:
+          project: free5gc
+      spec:
+        capacity:
+          storage: 8Gi
+        accessModes:
+          - ReadWriteOnce
+        persistentVolumeReclaimPolicy: Retain
+        storageClassName: microk8s-hostpath
+        hostPath:
+          path: /data/free5gc-mongo
+          type: DirectoryOrCreate
+        nodeAffinity:
+          required:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values:
+                      - node1

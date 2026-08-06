@@ -26,6 +26,7 @@ from typing import Any
 from cpbench.drivers.base import Driver as BaseDriver
 
 _OBS_CACHE: dict[str, dict] = {}
+_BADAUTH_CACHE: dict[str, dict] = {}
 
 
 class Driver(BaseDriver):
@@ -86,6 +87,46 @@ class Driver(BaseDriver):
         obs = self._drive_and_capture() if self.drive else self._observe_only()
         _OBS_CACHE[self.namespace] = obs
         return obs
+
+    def observe_bad_auth(self) -> dict[str, Any]:
+        """Negative attach: run an in-cluster ``nr-ue`` with an INVALID key alongside the
+        deployment's UE, and confirm the network denies it (no auth bypass). Returns
+        {denied, auth_failure, registered}. Cached process-wide.
+
+        We copy the pod's own UE config, overwrite only the key with an all-zero key, and run
+        ``nr-ue`` for a short window inside the UE pod — non-disruptive to the running good UE."""
+        if _BADAUTH_CACHE.get(self.namespace) is not None:
+            return _BADAUTH_CACHE[self.namespace]
+        ue = self._pod(self.ue_match)
+        if not ue:
+            out = {"error": "no in-cluster UE pod"}
+            _BADAUTH_CACHE[self.namespace] = out
+            return out
+        ue_bin = self.cli.rsplit("/", 1)[0] + "/nr-ue"
+        # find the pod's UE config, make a wrong-key copy, run nr-ue briefly, capture the NAS log
+        script = (
+            "CFG=$(ls /ueransim/config/ue-config.yaml /ueransim/config/*ue*.yaml 2>/dev/null "
+            "| grep -v cpbench-bad | head -1); "
+            "sed 's/^key:.*/key: \"00000000000000000000000000000000\"/' \"$CFG\" "
+            "> /tmp/cpbench-bad-ue.yaml; "
+            f"timeout 16 {ue_bin} -c /tmp/cpbench-bad-ue.yaml 2>&1 | head -80")
+        self.store.record_command(f"kubectl exec {ue} -- sh -c '<wrong-key nr-ue attach>'")
+        r = self._kubectl("exec", ue, "--", "sh", "-c", script, timeout=30)
+        log = (r.stdout or "") + (r.stderr or "")
+        if not log.strip():
+            out = {"error": "wrong-key nr-ue produced no output"}
+            _BADAUTH_CACHE[self.namespace] = out
+            return out
+        low = log.lower()
+        auth_failure = ("mac_failure" in low or "mac failure" in low
+                        or "authentication failure" in low)
+        rejected = "authentication reject" in low
+        registered = "initial registration is successful" in low
+        out = {"denied": bool((rejected or auth_failure) and not registered),
+               "auth_failure": bool(auth_failure),
+               "registered": bool(registered)}
+        _BADAUTH_CACHE[self.namespace] = out
+        return out
 
     def _parse_logs(self, ul: str, gl: str, obs: dict) -> None:
         obs["registered"] = "Initial Registration is successful" in ul
