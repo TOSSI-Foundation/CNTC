@@ -18,7 +18,8 @@ export KUBECONFIG ?= $(HOME)/.kube/config
 export PATH := $(PATH):/var/lib/rancher/rke2/bin:$(HOME)/.local/bin
 
 .DEFAULT_GOAL := help
-.PHONY: help prereqs doctor configure run run-conformance run-perf run-n3neg eupf-run eupf-certify verdict certify \
+.PHONY: help prereqs doctor configure cp-configure cp-doctor cp-run cp-certify run run-conformance run-perf run-n3neg \
+        eupf-run eupf-certify verdict certify \
         dashboard dashboard-bg dashboard-stop profiles lint test k8s-deploy k8s-run k8s-clean clean
 
 help:  ## show targets
@@ -45,8 +46,11 @@ cp-configure:  ## interactive wizard -> control-plane campaign config (docker or
 cp-doctor:  ## preflight the control-plane rig  (CONFIG=)
 > python3 -m cpbench.cli doctor --config $(CONFIG)
 
-cp-run:  ## run the control-plane suite  (CONFIG= NF=all|amf|smf|nrf|ausf|udm)
-> python3 -m cpbench.cli run --config $(CONFIG) --nf $(or $(NF),all)
+cp-run:  ## run the control-plane suite  (CONFIG= NF=all|amf|smf|nrf|ausf|udm CAMPAIGN=)
+> python3 -m cpbench.cli run --config $(CONFIG) --nf $(or $(NF),all) $(if $(CAMPAIGN),--campaign $(CAMPAIGN),)
+
+cp-certify:  ## issue a control-plane certificate  (CAMPAIGN= NF=amf|smf|nrf|ausf|udm)
+> python3 -m cntc.cli certify campaigns/$(CAMPAIGN)/results.json --profile $(or $(NF),amf)-conformance
 
 # --- run ----------------------------------------------------------------------
 run:  ## full e2e: all + n3neg -> merge -> verdict -> certify  (CONFIG= CAMPAIGN=)
