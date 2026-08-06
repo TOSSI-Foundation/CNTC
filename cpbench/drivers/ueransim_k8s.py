@@ -103,28 +103,34 @@ class Driver(BaseDriver):
             _BADAUTH_CACHE[self.namespace] = out
             return out
         ue_bin = self.cli.rsplit("/", 1)[0] + "/nr-ue"
-        # find the pod's UE config, make a wrong-key copy, run nr-ue briefly, capture the NAS log
+        # copy the pod's UE config, overwrite only the key, run nr-ue and capture the FULL NAS log
+        # (the wrong-key UE never registers, so it retries for the whole window — the MAC failure
+        # lands on the first attempt once the radio link is up).
         script = (
             "CFG=$(ls /ueransim/config/ue-config.yaml /ueransim/config/*ue*.yaml 2>/dev/null "
             "| grep -v cpbench-bad | head -1); "
             "sed 's/^key:.*/key: \"00000000000000000000000000000000\"/' \"$CFG\" "
             "> /tmp/cpbench-bad-ue.yaml; "
-            f"timeout 16 {ue_bin} -c /tmp/cpbench-bad-ue.yaml 2>&1 | head -80")
-        self.store.record_command(f"kubectl exec {ue} -- sh -c '<wrong-key nr-ue attach>'")
-        r = self._kubectl("exec", ue, "--", "sh", "-c", script, timeout=30)
-        log = (r.stdout or "") + (r.stderr or "")
-        if not log.strip():
-            out = {"error": "wrong-key nr-ue produced no output"}
-            _BADAUTH_CACHE[self.namespace] = out
-            return out
-        low = log.lower()
-        auth_failure = ("mac_failure" in low or "mac failure" in low
-                        or "authentication failure" in low)
-        rejected = "authentication reject" in low
-        registered = "initial registration is successful" in low
-        out = {"denied": bool((rejected or auth_failure) and not registered),
-               "auth_failure": bool(auth_failure),
-               "registered": bool(registered)}
+            f"timeout 22 {ue_bin} -c /tmp/cpbench-bad-ue.yaml 2>&1")
+        auth_failure = rejected = registered = False
+        # retry once if the attach never reached a decision (in-cluster radio link can be racy)
+        for _ in range(2):
+            self.store.record_command(f"kubectl exec {ue} -- sh -c '<wrong-key nr-ue attach>'")
+            r = self._kubectl("exec", ue, "--", "sh", "-c", script, timeout=35)
+            low = ((r.stdout or "") + (r.stderr or "")).lower()
+            auth_failure = ("mac_failure" in low or "mac failure" in low
+                            or "authentication failure" in low)
+            rejected = "authentication reject" in low
+            registered = "initial registration is successful" in low
+            if registered or auth_failure or rejected:
+                break   # got a definitive outcome
+        if registered:                       # served without valid credentials = a real bypass
+            out = {"denied": False, "auth_failure": False, "registered": True}
+        elif auth_failure or rejected:        # network refused the wrong-key UE
+            out = {"denied": True, "auth_failure": True, "registered": False}
+        else:                                 # never reached auth -> can't judge (na, not a fail)
+            out = {"error": "wrong-key attach did not reach the authentication step "
+                            "(no MAC-failure and no registration observed)"}
         _BADAUTH_CACHE[self.namespace] = out
         return out
 
