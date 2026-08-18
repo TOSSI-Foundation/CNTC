@@ -30,9 +30,22 @@ core:
   namespace: free5gc
   webui: http://localhost:30500
 
+# The UE that stimulates the RAN. It is an external process (built by the tester); ranbench
+# owns only its invocation. Every parameter here must agree with the DU's cell config, see
+# docs/RANBENCH-RIG.md for the eight that matter and what happens when they don't.
 drivers:
-  ue: oai_nr_ue               # UE over the ZMQ virtual radio, lands in phase P1/P2
-  # zmq_tx_port / zmq_rx_port are read from the DU config; set here only to override.
+  ue: ue_oai_zmq
+  ue_bin: ~/openairinterface5g/cmake_targets/ran_build/build/nr-uesoftmodem
+  uecap_file: ~/openairinterface5g/targets/PROJECTS/GENERIC-NR-5GC/CONF/uecap_ports1.xml
+  prb: 51                     # 20 MHz at SCS 30 kHz
+  numerology: 1
+  band: 78
+  centre_freq_hz: 3489420000  # = the DU's dl_arfcn 632628
+  ssb: 0                      # the DU reports SSB offset pointA 0 / k_SSB 0
+  zmq_tx: tcp://127.0.0.1:4557
+  zmq_rx: tcp://127.0.0.1:4556
+  attach_timeout_s: 150
+  ping_target: 8.8.8.8
 
 # 5G-AKA subscribers to provision into the core (the RAN cannot be exercised without one).
 # These MUST match the core's PLMN and the slice the CU-CP advertises at NG Setup, or the UE

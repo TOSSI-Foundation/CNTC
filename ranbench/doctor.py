@@ -57,8 +57,8 @@ def run(config_path: str) -> int:
         up = str(facts.get("nodes_up", ""))
         rows.append(("ran:build", bool(built) and not built.startswith("(none"),
                      f"{facts.get('ran','?')}, built: {built or '?'}"))
-        rows.append(("ran:running", bool(up) and not up.startswith("(none"),
-                     f"running: {up or '?'}  {facts.get('ran_release','')}"))
+        rows.append(("ran:release", bool(facts.get("ran_release")),
+                     f"{facts.get('ran_release','unknown')}, running now: {up or 'none'}"))
     except Exception as e:  # noqa: BLE001
         rows.append(("ran:build", False, f"describe failed: {e}"))
 
@@ -70,9 +70,14 @@ def run(config_path: str) -> int:
             rows.append((f"ep:{tgt}", False, f"error: {e}"))
             continue
         rows.append((f"ep:{tgt}", bool(ep), ep or "unresolved, is the config path set in ran.configs?"))
+        # Not running is fine: the run starts each product itself and stops it again so the
+        # pcaps flush. What would be fatal is being unable to *observe* liveness at all, since
+        # the robustness cases judge crashes on it.
         alive = ran.node_alive(tgt)
-        rows.append((f"alive:{tgt}", alive is True,
-                     "running" if alive else ("not running" if alive is False else "cannot observe")))
+        rows.append((f"alive:{tgt}", alive is not None,
+                     "running" if alive else ("not running (the run will start it)"
+                                              if alive is False else
+                                              "CANNOT OBSERVE, crash detection impossible")))
         pcaps = ran.pcap_paths(tgt)
         rows.append((f"pcap:{tgt}", bool(pcaps),
                      ", ".join(sorted(pcaps)) if pcaps else

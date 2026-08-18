@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import shutil
 import subprocess
+import time
 from pathlib import Path
 from typing import Any
 
@@ -155,6 +156,59 @@ class Adapter(RanAdapter):
             return None
         blob = "\n".join(lines).lower()
         return any(p.lower() in blob for p in patterns)
+
+    # --- lifecycle ------------------------------------------------------------
+    # The stack is started and stopped around the measurement rather than left running: it is
+    # expensive at idle (the DU alone sits near 200% CPU in ZMQ blocking mode), and, crucially,
+    # OCUDU only closes its pcap files on shutdown, so stopping a product is what makes its
+    # evidence readable.
+    def start(self, target: str) -> bool:
+        """Start one product class from its configured YAML. False if already running or the
+        binary/config is missing. Never raises, a failure to start must surface as 'na'."""
+        if self.node_alive(target):
+            return False
+        binary, cfg_path = self.bins.get(target), self.configs.get(target)
+        if not binary or not Path(binary).exists() or not cfg_path or not Path(cfg_path).exists():
+            return False
+        cmd = (["sudo", "-n"] if self.use_sudo else []) + [str(binary), "-c", str(cfg_path)]
+        self.store.record_command(" ".join(cmd))
+        console = self.store.raw / f"ocudu-{target}-console.log"
+        try:
+            with open(console, "w") as fh:
+                subprocess.Popen(cmd, stdout=fh, stderr=subprocess.STDOUT,
+                                 stdin=subprocess.DEVNULL, start_new_session=True)
+        except OSError:
+            return False
+        return True
+
+    def stop(self, target: str, graceful: bool = True) -> None:
+        """Stop one product class.
+
+        Graceful (SIGINT) is the default because it is what makes OCUDU close its pcaps, and
+        because on F1 it sends an orderly F1 Removal. That matters: a test for *recovery* has to
+        take the peer away abruptly (``graceful=False``), otherwise the DU is simply being told
+        to stand down and has nothing to recover from.
+        """
+        proc = NODES.get(target, (None,))[0]
+        if not proc:
+            return
+        self._run("pkill", "-INT" if graceful else "-KILL", "-x", proc, timeout=10)
+
+    def wait_for_log(self, target: str, needle: str, timeout: float = 40.0) -> bool:
+        """Block until ``needle`` appears in the product's log file, or the timeout expires."""
+        path = _dig(self._cfg_yaml(target), "log", "filename")
+        if not path:
+            return False
+        deadline = time.time() + timeout
+        p = Path(path)
+        while time.time() < deadline:
+            try:
+                if p.exists() and needle.lower() in p.read_text(errors="ignore").lower():
+                    return True
+            except OSError:
+                pass
+            time.sleep(0.5)
+        return False
 
     def pcap_paths(self, target: str) -> dict[str, str]:
         """The per-interface pcaps this product writes, from its own ``pcap:`` config block.
