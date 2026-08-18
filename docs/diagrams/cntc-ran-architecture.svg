@@ -1,0 +1,218 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 900" role="img"
+     aria-label="CNTC RAN certification architecture: a split gNB comprising O-DU, O-CU-CP and O-CU-UP under certification, driven by a UE over the Uu interface and a 5G core over N2 and N3, with F1-C, F1-U and E1 between the product classes; ranbench captures each interface and cntc grades the result into one certificate per product class.">
+<style>
+  text{font-family:'DejaVu Sans','Helvetica',Arial,sans-serif}
+  .mono{font-family:'DejaVu Sans Mono','Courier New',monospace}
+  .hd{font-weight:700}
+  .t{fill:#0f171c} .tm{fill:#33454e} .tmut{fill:#5d6f77} .tac{fill:#0a6c67} .tinv{fill:#ffffff}
+  .box{fill:#ffffff;stroke:#c2cccf;stroke-width:1.2}
+  .peer{fill:#f1f4f5;stroke:#b7c3c6;stroke-width:1.2}
+  .sut{fill:#ffffff;stroke:#0c8f89;stroke-width:1.8}
+  .sutband{fill:#d7edeb;stroke:none}
+  .zone{fill:none;stroke:#0c8f89;stroke-width:1.4;stroke-dasharray:7 5}
+  .zonepeer{fill:none;stroke:#b7c3c6;stroke-width:1.3;stroke-dasharray:6 5}
+  .link{stroke:#4a5f68;stroke-width:2;fill:none}
+  .linkup{stroke:#b13a77;stroke-width:2;fill:none}
+  .note{fill:#fff8e6;stroke:#d9b45f;stroke-width:1.1}
+  .chip{fill:#eaf4f3;stroke:#0c8f89;stroke-width:1}
+  .flow{stroke:#0c8f89;stroke-width:2;fill:none}
+</style>
+<defs>
+  <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M0 0 L10 5 L0 10 z" fill="#4a5f68"/></marker>
+  <marker id="au" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M0 0 L10 5 L0 10 z" fill="#b13a77"/></marker>
+  <marker id="af" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M0 0 L10 5 L0 10 z" fill="#0c8f89"/></marker>
+</defs>
+
+<rect x="0" y="0" width="1240" height="900" fill="#eef2f3"/>
+<text x="30" y="44" class="t hd" font-size="22">CNTC RAN Certification Architecture</text>
+<text x="30" y="68" class="tmut" font-size="12.5">A split gNB is three product classes (3GPP TS 33.523). Each terminates different interfaces, carries different obligations, and earns its own certificate.</text>
+
+<!-- legend -->
+<rect x="905" y="26" width="14" height="14" rx="3" class="sut"/>
+<text x="926" y="38" class="tm" font-size="11">under certification</text>
+<rect x="1065" y="26" width="14" height="14" rx="3" class="peer"/>
+<text x="1086" y="38" class="tm" font-size="11">peer, bring your own</text>
+
+<!-- ================= zones ================= -->
+<rect x="248" y="108" width="586" height="582" rx="14" class="zone"/>
+<rect x="248" y="108" width="586" height="30" rx="14" fill="#d7edeb"/>
+<rect x="248" y="126" width="586" height="12" fill="#d7edeb"/>
+<text x="268" y="128" class="tac hd" font-size="12.5">NG-RAN node (split gNB), the subject of certification</text>
+
+<rect x="884" y="108" width="236" height="582" rx="14" class="zonepeer"/>
+<rect x="884" y="108" width="236" height="30" rx="14" fill="#e6ebec"/>
+<rect x="884" y="126" width="236" height="12" fill="#e6ebec"/>
+<text x="902" y="128" class="tmut hd" font-size="12.5">5G core (peer)</text>
+
+<rect x="30" y="108" width="188" height="582" rx="14" class="zonepeer"/>
+<rect x="30" y="108" width="188" height="30" rx="14" fill="#e6ebec"/>
+<rect x="30" y="126" width="188" height="12" fill="#e6ebec"/>
+<text x="48" y="128" class="tmut hd" font-size="12.5">UE (peer)</text>
+
+<!-- ================= UE ================= -->
+<rect x="46" y="404" width="156" height="150" rx="10" class="peer"/>
+<text x="124" y="432" class="t hd" font-size="15" text-anchor="middle">UE</text>
+<text x="124" y="452" class="tmut" font-size="10.5" text-anchor="middle">OpenAirInterface nr-UE</text>
+<line x1="62" y1="464" x2="186" y2="464" stroke="#c2cccf" stroke-width="1"/>
+<text x="124" y="484" class="tm" font-size="10.5" text-anchor="middle">ZeroMQ virtual radio</text>
+<text x="124" y="500" class="tmut" font-size="10" text-anchor="middle">no RF hardware needed</text>
+<text x="124" y="522" class="tm mono" font-size="9.5" text-anchor="middle">5G-AKA · RRC · NAS</text>
+<text x="124" y="538" class="tmut" font-size="10" text-anchor="middle">supplied by ranbench</text>
+
+<!-- ================= O-DU ================= -->
+<rect x="272" y="404" width="228" height="196" rx="10" class="sut"/>
+<rect x="272" y="404" width="228" height="26" rx="10" class="sutband"/>
+<rect x="272" y="418" width="228" height="12" class="sutband"/>
+<text x="286" y="422" class="tac hd" font-size="13">O-DU</text>
+<text x="494" y="422" class="tac mono" font-size="10" text-anchor="end">gNB-DU</text>
+<text x="286" y="452" class="t hd" font-size="12">Distributed Unit</text>
+<text x="286" y="470" class="tmut" font-size="10">RLC · MAC · PHY · the cell</text>
+<line x1="286" y1="482" x2="486" y2="482" stroke="#e0e7e8" stroke-width="1"/>
+<text x="286" y="500" class="tm" font-size="10.5">terminates</text>
+<text x="286" y="517" class="tm mono" font-size="10">Uu · F1-C (client) · F1-U</text>
+<text x="286" y="540" class="tmut" font-size="10">holds no AS keys, so TS 33.523</text>
+<text x="286" y="554" class="tmut" font-size="10">gives it F1 transport security only</text>
+<rect x="286" y="566" width="152" height="20" rx="10" class="chip"/>
+<text x="362" y="580" class="tac mono" font-size="9.5" text-anchor="middle">14 tests · 7 essential</text>
+
+<!-- ================= O-CU-CP ================= -->
+<rect x="572" y="152" width="234" height="200" rx="10" class="sut"/>
+<rect x="572" y="152" width="234" height="26" rx="10" class="sutband"/>
+<rect x="572" y="166" width="234" height="12" class="sutband"/>
+<text x="586" y="170" class="tac hd" font-size="13">O-CU-CP</text>
+<text x="800" y="170" class="tac mono" font-size="10" text-anchor="end">gNB-CU-CP</text>
+<text x="586" y="200" class="t hd" font-size="12">Central Unit, control plane</text>
+<text x="586" y="218" class="tmut" font-size="10">RRC · PDCP-C</text>
+<line x1="586" y1="230" x2="792" y2="230" stroke="#e0e7e8" stroke-width="1"/>
+<text x="586" y="248" class="tm" font-size="10.5">terminates</text>
+<text x="586" y="265" class="tm mono" font-size="10">N2 · F1-C (listens) · E1 (listens)</text>
+<text x="586" y="288" class="tmut" font-size="10">selects the AS algorithms and</text>
+<text x="586" y="302" class="tmut" font-size="10">activates Access Stratum security</text>
+<rect x="586" y="316" width="158" height="20" rx="10" class="chip"/>
+<text x="665" y="330" class="tac mono" font-size="9.5" text-anchor="middle">30 tests · 16 essential</text>
+
+<!-- ================= O-CU-UP ================= -->
+<rect x="572" y="440" width="234" height="200" rx="10" class="sut"/>
+<rect x="572" y="440" width="234" height="26" rx="10" class="sutband"/>
+<rect x="572" y="454" width="234" height="12" class="sutband"/>
+<text x="586" y="458" class="tac hd" font-size="13">O-CU-UP</text>
+<text x="800" y="458" class="tac mono" font-size="10" text-anchor="end">gNB-CU-UP</text>
+<text x="586" y="488" class="t hd" font-size="12">Central Unit, user plane</text>
+<text x="586" y="506" class="tmut" font-size="10">SDAP · PDCP-U</text>
+<line x1="586" y1="518" x2="792" y2="518" stroke="#e0e7e8" stroke-width="1"/>
+<text x="586" y="536" class="tm" font-size="10.5">terminates</text>
+<text x="586" y="553" class="tm mono" font-size="10">E1 (client) · F1-U · N3</text>
+<text x="586" y="576" class="tmut" font-size="10">enforces the ciphering and integrity</text>
+<text x="586" y="590" class="tmut" font-size="10">policy the core signalled</text>
+<rect x="586" y="604" width="152" height="20" rx="10" class="chip"/>
+<text x="662" y="618" class="tac mono" font-size="9.5" text-anchor="middle">14 tests · 7 essential</text>
+
+<!-- ================= core ================= -->
+<rect x="902" y="180" width="200" height="120" rx="10" class="peer"/>
+<text x="1002" y="208" class="t hd" font-size="15" text-anchor="middle">AMF</text>
+<text x="1002" y="228" class="tmut" font-size="10.5" text-anchor="middle">Access and Mobility</text>
+<text x="1002" y="243" class="tmut" font-size="10.5" text-anchor="middle">Management Function</text>
+<line x1="922" y1="256" x2="1082" y2="256" stroke="#c2cccf" stroke-width="1"/>
+<text x="1002" y="276" class="tm mono" font-size="10" text-anchor="middle">terminates N2</text>
+
+<rect x="902" y="470" width="200" height="120" rx="10" class="peer"/>
+<text x="1002" y="498" class="t hd" font-size="15" text-anchor="middle">UPF</text>
+<text x="1002" y="518" class="tmut" font-size="10.5" text-anchor="middle">User Plane Function</text>
+<line x1="922" y1="534" x2="1082" y2="534" stroke="#c2cccf" stroke-width="1"/>
+<text x="1002" y="554" class="tm mono" font-size="10" text-anchor="middle">terminates N3</text>
+<text x="1002" y="572" class="tmut" font-size="10" text-anchor="middle">to the data network</text>
+
+<!-- ================= interfaces ================= -->
+<!-- Uu -->
+<line x1="204" y1="480" x2="270" y2="480" class="link" marker-start="url(#a)" marker-end="url(#a)"/>
+<rect x="196" y="440" width="82" height="34" rx="6" fill="#eef2f3"/>
+<text x="237" y="454" class="t hd" font-size="11" text-anchor="middle">Uu</text>
+<text x="237" y="468" class="tmut mono" font-size="9" text-anchor="middle">NR air / ZMQ</text>
+
+<!-- F1-C : O-DU (client) -> O-CU-CP (listens) -->
+<path d="M500 442 H536 V252 H570" class="link" marker-start="url(#a)" marker-end="url(#a)"/>
+<rect x="360" y="212" width="196" height="46" rx="6" fill="#eef2f3"/>
+<text x="458" y="228" class="t hd" font-size="11.5" text-anchor="middle">F1-C   ·   F1AP</text>
+<text x="458" y="242" class="tmut mono" font-size="9" text-anchor="middle">SCTP 38472 · TS 38.473</text>
+<text x="458" y="254" class="tac mono" font-size="9" text-anchor="middle">O-DU dials, O-CU-CP listens</text>
+
+<!-- F1-U -->
+<path d="M500 560 H570" class="link" marker-start="url(#a)" marker-end="url(#a)"/>
+<rect x="392" y="608" width="150" height="34" rx="6" fill="#eef2f3"/>
+<text x="467" y="622" class="t hd" font-size="11" text-anchor="middle">F1-U · GTP-U</text>
+<text x="467" y="635" class="tmut mono" font-size="9" text-anchor="middle">UDP 2152 · TS 38.425</text>
+
+<!-- E1 -->
+<path d="M689 438 V354" class="link" marker-start="url(#a)" marker-end="url(#a)"/>
+<rect x="700" y="376" width="128" height="34" rx="6" fill="#eef2f3"/>
+<text x="764" y="390" class="t hd" font-size="11" text-anchor="middle">E1 · E1AP</text>
+<text x="764" y="403" class="tmut mono" font-size="9" text-anchor="middle">SCTP 38462 · TS 38.463</text>
+
+<!-- N2 -->
+<line x1="808" y1="240" x2="900" y2="240" class="link" marker-start="url(#a)" marker-end="url(#a)"/>
+<rect x="806" y="196" width="96" height="34" rx="6" fill="#eef2f3"/>
+<text x="854" y="210" class="t hd" font-size="11" text-anchor="middle">N2 · NGAP</text>
+<text x="854" y="223" class="tmut mono" font-size="9" text-anchor="middle">SCTP · TS 38.413</text>
+
+<!-- N3 -->
+<line x1="808" y1="530" x2="900" y2="530" class="link" marker-start="url(#a)" marker-end="url(#a)"/>
+<rect x="806" y="486" width="96" height="34" rx="6" fill="#eef2f3"/>
+<text x="854" y="500" class="t hd" font-size="11" text-anchor="middle">N3 · GTP-U</text>
+<text x="854" y="513" class="tmut mono" font-size="9" text-anchor="middle">UDP 2152 · TS 38.415</text>
+
+<!-- RRC callout -->
+<rect x="256" y="272" width="212" height="86" rx="8" class="note"/>
+<text x="270" y="292" class="t hd" font-size="11">RRC rides inside F1AP</text>
+<text x="270" y="309" class="tm" font-size="9.8">Every RRC message crosses F1 in an</text>
+<text x="270" y="322" class="tm" font-size="9.8">F1AP container (TS 38.473 §8.4), so</text>
+<text x="270" y="335" class="tm" font-size="9.8">RRC conformance and AS security are</text>
+<text x="270" y="348" class="tm" font-size="9.8">observable on an ordinary IP link.</text>
+
+<!-- ================= evidence chain ================= -->
+<line x1="30" y1="716" x2="1210" y2="716" stroke="#c2cccf" stroke-width="1"/>
+<text x="30" y="742" class="t hd" font-size="13">One UE attach produces the evidence for all 58 requirements</text>
+
+<rect x="30" y="758" width="238" height="94" rx="10" class="box"/>
+<text x="46" y="780" class="t hd" font-size="11.5">1 · captured on the wire</text>
+<text x="46" y="800" class="tm mono" font-size="9.5">NGAP · F1AP (+RRC) · E1AP</text>
+<text x="46" y="815" class="tm mono" font-size="9.5">GTP-U on F1-U and N3</text>
+<text x="46" y="835" class="tmut" font-size="9.5">tcpdump and tshark, plus the</text>
+<text x="46" y="847" class="tmut" font-size="9.5">stack's own per-interface pcaps</text>
+
+<path d="M272 805 H306" class="flow" marker-end="url(#af)"/>
+
+<rect x="312" y="758" width="238" height="94" rx="10" class="box"/>
+<text x="328" y="780" class="t hd" font-size="11.5">2 · ranbench measures</text>
+<text x="328" y="800" class="tmut" font-size="9.5">brings the three classes up, runs</text>
+<text x="328" y="813" class="tmut" font-size="9.5">one attach, tears down so captures</text>
+<text x="328" y="826" class="tmut" font-size="9.5">flush, then decodes</text>
+<text x="328" y="846" class="tm mono" font-size="9.5">results.json</text>
+
+<path d="M554 805 H588" class="flow" marker-end="url(#af)"/>
+
+<rect x="594" y="758" width="238" height="94" rx="10" class="box"/>
+<text x="610" y="780" class="t hd" font-size="11.5">3 · cntc grades</text>
+<text x="610" y="800" class="tmut" font-size="9.5">each result against the versioned</text>
+<text x="610" y="813" class="tmut" font-size="9.5">catalog for its product class</text>
+<text x="610" y="833" class="tm mono" font-size="9.5">cucp · cuup · du -conformance</text>
+<text x="610" y="847" class="tmut" font-size="9.5">essential requirements gate</text>
+
+<path d="M836 805 H870" class="flow" marker-end="url(#af)"/>
+
+<rect x="876" y="758" width="334" height="94" rx="10" class="box"/>
+<text x="892" y="780" class="t hd" font-size="11.5">4 · one certificate per product class</text>
+<rect x="892" y="792" width="88" height="22" rx="11" fill="#eaf6ee" stroke="#1a7f37"/>
+<text x="936" y="807" font-size="10" fill="#1a7f37" text-anchor="middle" class="hd">PASS</text>
+<rect x="988" y="792" width="88" height="22" rx="11" fill="#fdeceb" stroke="#cf222e"/>
+<text x="1032" y="807" font-size="10" fill="#cf222e" text-anchor="middle" class="hd">FAIL</text>
+<rect x="1084" y="792" width="112" height="22" rx="11" fill="#fdf5e3" stroke="#b58105"/>
+<text x="1140" y="807" font-size="10" fill="#8a6100" text-anchor="middle" class="hd">INCOMPLETE</text>
+<text x="892" y="832" class="tmut" font-size="9.5">Certificate issued only when every essential requirement passes.</text>
+<text x="892" y="846" class="tmut" font-size="9.5">A requirement that cannot be evaluated never becomes a pass.</text>
+
+<text x="30" y="884" class="tmut" font-size="10">Level 1: 58 automated tests, 30 essential, across N2 · F1-C · F1-U · E1 · N3 and RRC.  Level 2 (adversarial) ships as requirement catalogs only.</text>
+<text x="1210" y="884" class="tmut mono" font-size="10" text-anchor="end">TOSSI Foundation · CNTC</text>
+</svg>

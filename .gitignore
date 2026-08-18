@@ -26,3 +26,16 @@ dashboard/assets/*.orig
 
 # stray upfbench run logs
 run-*.log
+
+# OAI nr-UE L1 statistics, dumped into the cwd on exit by every ranbench attach
+nrL1_UE_stats-*.log
+
+# Working material, not product documentation: planning, release announcements,
+# landscape research, the team overview, the blog draft and the demo script.
+# Kept in the working tree, kept out of the published repository.
+docs/PLAN.md
+docs/OVERVIEW.md
+docs/TOSSI-RELEASE.md
+docs/5g-core-testing-landscape.md
+docs/BLOG-CONTROL-PLANE.md
+docs/VIDEO-DEMO-SCRIPT.md

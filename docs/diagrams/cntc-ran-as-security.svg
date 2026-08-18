@@ -1,0 +1,162 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 900" role="img"
+     aria-label="F1AP decode of one UE attach showing Access Stratum security activation: frames before the Security Mode procedure carry a zero message authentication code and name the NAS message they contain, while frames after it carry real authentication codes and no longer reveal their payload.">
+<style>
+  text{font-family:'DejaVu Sans','Helvetica',Arial,sans-serif}
+  .mono{font-family:'DejaVu Sans Mono','Courier New',monospace}
+  .hd{font-weight:700}
+  .t{fill:#0f171c} .tm{fill:#33454e} .tmut{fill:#5d6f77} .tac{fill:#0a6c67}
+  .panel{fill:#ffffff;stroke:#c2cccf;stroke-width:1.2}
+  .cmd{fill:#0f171c}
+  .bad{fill:#cf222e} .good{fill:#1a7f37} .warn{fill:#8a6100}
+  .note{fill:#ffffff;stroke:#c2cccf;stroke-width:1.1}
+</style>
+<defs>
+  <marker id="an" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M0 0 L10 5 L0 10 z" fill="#5d6f77"/></marker>
+</defs>
+<rect x="0" y="0" width="1240" height="900" fill="#eef2f3"/>
+
+<text x="30" y="44" class="t hd" font-size="22">Access Stratum Security, Proven from the Capture</text>
+<text x="30" y="68" class="tmut" font-size="12.5">One UE attach through a split gNB. Because RRC crosses F1 inside F1AP containers, activation of RRC integrity and ciphering is visible on an ordinary IP link.</text>
+
+<!-- command -->
+<rect x="30" y="86" width="1180" height="34" rx="6" fill="#0f171c"/>
+<text x="44" y="108" class="mono" font-size="11.5" fill="#7ee0d4">$ tshark -r campaigns/OCUDU-RAN-003/raw/pcap/cucp.f1ap.pcap -T fields -e frame.number -e _ws.col.Info</text>
+
+<!-- table panel -->
+<rect x="30" y="136" width="856" height="672" rx="10" class="panel"/>
+<text x="66" y="162" class="tmut hd mono" font-size="10.5">#</text>
+<text x="92" y="162" class="tmut hd mono" font-size="10.5">F1AP PROCEDURE</text>
+<text x="392" y="162" class="tmut hd mono" font-size="10.5">CARRIED CONTENT</text>
+<text x="758" y="162" class="tmut hd mono" font-size="10.5">PDCP MAC</text>
+<line x1="46" y1="172" x2="870" y2="172" stroke="#c2cccf" stroke-width="1"/>
+
+<!-- setup rows (no UE context yet) -->
+<text x="78" y="196" class="tmut mono" font-size="10.5" text-anchor="end">1</text>
+<text x="92" y="196" class="tm mono" font-size="10.5">F1SetupRequest</text>
+<text x="392" y="196" class="tm mono" font-size="10.5">MIB, SIB1</text>
+<text x="78" y="218" class="tmut mono" font-size="10.5" text-anchor="end">2</text>
+<text x="92" y="218" class="tm mono" font-size="10.5">F1SetupResponse</text>
+<text x="78" y="240" class="tmut mono" font-size="10.5" text-anchor="end">3</text>
+<text x="92" y="240" class="tm mono" font-size="10.5">InitialULRRCMessageTransfer</text>
+<text x="392" y="240" class="tm mono" font-size="10.5">RRC Setup Request</text>
+<text x="78" y="262" class="tmut mono" font-size="10.5" text-anchor="end">4</text>
+<text x="92" y="262" class="tm mono" font-size="10.5">DLRRCMessageTransfer</text>
+<text x="392" y="262" class="tm mono" font-size="10.5">RRC Setup</text>
+
+<!-- band 1: unprotected -->
+<rect x="46" y="276" width="824" height="122" rx="6" fill="#fdeceb"/>
+<rect x="46" y="276" width="4" height="122" fill="#cf222e"/>
+<text x="78" y="300" class="tmut mono" font-size="10.5" text-anchor="end">5</text>
+<text x="92" y="300" class="tm mono" font-size="10.5">ULRRCMessageTransfer</text>
+<text x="392" y="300" class="tm mono" font-size="10.5">RRC Setup Complete, Registration request</text>
+<text x="758" y="300" class="bad mono hd" font-size="10.5">0x00000000</text>
+<text x="78" y="324" class="tmut mono" font-size="10.5" text-anchor="end">6</text>
+<text x="92" y="324" class="tm mono" font-size="10.5">DLRRCMessageTransfer</text>
+<text x="392" y="324" class="tm mono" font-size="10.5">DL Information Transfer, Authentication request</text>
+<text x="758" y="324" class="bad mono hd" font-size="10.5">0x00000000</text>
+<text x="78" y="348" class="tmut mono" font-size="10.5" text-anchor="end">7</text>
+<text x="92" y="348" class="tm mono" font-size="10.5">ULRRCMessageTransfer</text>
+<text x="392" y="348" class="tm mono" font-size="10.5">UL Information Transfer, Authentication response</text>
+<text x="758" y="348" class="bad mono hd" font-size="10.5">0x00000000</text>
+<text x="78" y="372" class="tmut mono" font-size="10.5" text-anchor="end">8</text>
+<text x="92" y="372" class="tm mono" font-size="10.5">DLRRCMessageTransfer</text>
+<text x="392" y="372" class="tm mono" font-size="10.5">DL Information Transfer, Security mode command</text>
+<text x="758" y="372" class="bad mono hd" font-size="10.5">0x00000000</text>
+<text x="78" y="392" class="tmut mono" font-size="10.5" text-anchor="end">9</text>
+<text x="92" y="392" class="tm mono" font-size="10.5">ULRRCMessageTransfer</text>
+<text x="392" y="392" class="tm mono" font-size="10.5">UL Information Transfer</text>
+<text x="758" y="392" class="bad mono hd" font-size="10.5">0x00000000</text>
+
+<!-- band 2: activation -->
+<rect x="46" y="404" width="824" height="52" rx="6" fill="#d7edeb"/>
+<rect x="46" y="404" width="4" height="52" fill="#0c8f89"/>
+<text x="78" y="428" class="tmut mono" font-size="10.5" text-anchor="end">10</text>
+<text x="92" y="428" class="tac mono hd" font-size="10.5">UEContextSetupRequest</text>
+<text x="392" y="428" class="tmut mono" font-size="10">RRC container, not dissected by Wireshark</text>
+<text x="78" y="450" class="tmut mono" font-size="10.5" text-anchor="end">11</text>
+<text x="92" y="450" class="tac mono hd" font-size="10.5">UEContextSetupResponse</text>
+
+<!-- band 3: protected -->
+<rect x="46" y="462" width="824" height="170" rx="6" fill="#eaf6ee"/>
+<rect x="46" y="462" width="4" height="170" fill="#1a7f37"/>
+<text x="78" y="486" class="tmut mono" font-size="10.5" text-anchor="end">12</text>
+<text x="92" y="486" class="tm mono" font-size="10.5">ULRRCMessageTransfer</text>
+<text x="392" y="486" class="tm mono hd" font-size="10.5">Security Mode Complete</text>
+<text x="758" y="486" class="good mono hd" font-size="10.5">0xfdbbdaa6</text>
+<text x="78" y="510" class="tmut mono" font-size="10.5" text-anchor="end">13</text>
+<text x="92" y="510" class="tm mono" font-size="10.5">DLRRCMessageTransfer</text>
+<text x="392" y="510" class="tm mono" font-size="10.5">UE Capability Enquiry</text>
+<text x="758" y="510" class="good mono hd" font-size="10.5">0x02c133be</text>
+<text x="78" y="534" class="tmut mono" font-size="10.5" text-anchor="end">14</text>
+<text x="92" y="534" class="tm mono" font-size="10.5">ULRRCMessageTransfer</text>
+<text x="392" y="534" class="tm mono" font-size="10.5">UE Capability Information</text>
+<text x="758" y="534" class="good mono hd" font-size="10.5">0x5aa44404</text>
+<text x="78" y="558" class="tmut mono" font-size="10.5" text-anchor="end">15</text>
+<text x="92" y="558" class="tm mono" font-size="10.5">DLRRCMessageTransfer</text>
+<text x="392" y="558" class="tm mono" font-size="10.5">DL Information Transfer</text>
+<text x="758" y="558" class="good mono hd" font-size="10.5">0x3ae60ae6</text>
+<text x="78" y="582" class="tmut mono" font-size="10.5" text-anchor="end">16</text>
+<text x="92" y="582" class="tm mono" font-size="10.5">ULRRCMessageTransfer</text>
+<text x="392" y="582" class="tm mono" font-size="10.5">UL Information Transfer</text>
+<text x="758" y="582" class="good mono hd" font-size="10.5">0x85153efb</text>
+<text x="78" y="606" class="tmut mono" font-size="10.5" text-anchor="end">17</text>
+<text x="92" y="606" class="tm mono" font-size="10.5">DLRRCMessageTransfer</text>
+<text x="392" y="606" class="tm mono" font-size="10.5">DL Information Transfer</text>
+<text x="758" y="606" class="good mono hd" font-size="10.5">0xf1d22213</text>
+<text x="78" y="626" class="tmut mono" font-size="10.5" text-anchor="end">18</text>
+<text x="92" y="626" class="tm mono" font-size="10.5">ULRRCMessageTransfer</text>
+<text x="392" y="626" class="tm mono" font-size="10.5">UL Information Transfer</text>
+<text x="758" y="626" class="good mono hd" font-size="10.5">0x81f51791</text>
+
+<!-- verdicts inside panel -->
+<line x1="46" y1="654" x2="870" y2="654" stroke="#c2cccf" stroke-width="1"/>
+<rect x="60" y="668" width="386" height="60" rx="8" fill="#eaf6ee" stroke="#1a7f37" stroke-width="1.1"/>
+<text x="74" y="690" class="good hd mono" font-size="11">PASS  CUCP-SEC-01</text>
+<text x="74" y="708" class="tm" font-size="10">RRC integrity protection after AS Security Mode</text>
+<text x="74" y="722" class="tmut" font-size="9.5">TS 33.511 clause 4.2.2.1.1</text>
+<rect x="462" y="668" width="386" height="60" rx="8" fill="#eaf6ee" stroke="#1a7f37" stroke-width="1.1"/>
+<text x="476" y="690" class="good hd mono" font-size="11">PASS  CUCP-SEC-02</text>
+<text x="476" y="708" class="tm" font-size="10">RRC ciphering after AS Security Mode</text>
+<text x="476" y="722" class="tmut" font-size="9.5">TS 33.511 clause 4.2.2.1.6</text>
+<text x="60" y="756" class="tmut" font-size="10">Neither verdict reads a configuration setting. Both are decided by what the capture shows.</text>
+<text x="60" y="778" class="tmut" font-size="10">A run that could not reach Security Mode Complete records these as unevaluated, never as a pass.</text>
+
+<!-- annotations -->
+<path d="M876 336 H906" stroke="#5d6f77" stroke-width="1.4" fill="none" marker-end="url(#an)"/>
+<rect x="914" y="276" width="296" height="122" rx="8" class="note"/>
+<rect x="914" y="276" width="4" height="122" fill="#cf222e"/>
+<text x="932" y="300" class="t hd" font-size="11.5">Before activation</text>
+<text x="932" y="320" class="tm" font-size="10">The authentication code is all zeros, so this</text>
+<text x="932" y="334" class="tm" font-size="10">RRC is not integrity protected.</text>
+<text x="932" y="356" class="tm" font-size="10">The NAS message inside is named, so it is</text>
+<text x="932" y="370" class="tm" font-size="10">not ciphered either. Registration and</text>
+<text x="932" y="384" class="tm" font-size="10">authentication legitimately run in the clear.</text>
+
+<path d="M876 430 H906" stroke="#5d6f77" stroke-width="1.4" fill="none" marker-end="url(#an)"/>
+<rect x="914" y="404" width="296" height="52" rx="8" class="note"/>
+<rect x="914" y="404" width="4" height="52" fill="#0c8f89"/>
+<text x="932" y="424" class="t hd" font-size="11.5">Activation</text>
+<text x="932" y="442" class="tm" font-size="10">The AS Security Mode Command travels here.</text>
+
+<path d="M876 546 H906" stroke="#5d6f77" stroke-width="1.4" fill="none" marker-end="url(#an)"/>
+<rect x="914" y="462" width="296" height="170" rx="8" class="note"/>
+<rect x="914" y="462" width="4" height="170" fill="#1a7f37"/>
+<text x="932" y="486" class="t hd" font-size="11.5">After activation</text>
+<text x="932" y="506" class="tm" font-size="10">Every container now carries a real</text>
+<text x="932" y="520" class="tm" font-size="10">authentication code. Integrity is active.</text>
+<text x="932" y="542" class="tm" font-size="10">The Information Transfers no longer name</text>
+<text x="932" y="556" class="tm" font-size="10">the NAS message they carry, because the</text>
+<text x="932" y="570" class="tm" font-size="10">payload is ciphered. Compare frames 6 to 8,</text>
+<text x="932" y="584" class="tm" font-size="10">which named theirs, with 15 to 18.</text>
+<text x="932" y="606" class="tmut" font-size="9.5">Frames 13 and 14 stay readable because they</text>
+<text x="932" y="618" class="tmut" font-size="9.5">are RRC, not the ciphered NAS payload.</text>
+
+<rect x="914" y="668" width="296" height="60" rx="8" fill="#fff8e6" stroke="#d9b45f" stroke-width="1.1"/>
+<text x="932" y="690" class="t hd" font-size="11">Why this is only possible on a split gNB</text>
+<text x="932" y="708" class="tm" font-size="9.8">In a single-box gNB the same exchange exists</text>
+<text x="932" y="721" class="tm" font-size="9.8">only over the air, and ciphered.</text>
+
+<text x="30" y="828" class="tmut" font-size="10">Captured on the F1-C link between the O-DU and the O-CU-CP during campaign OCUDU-RAN-003. Frame numbers and authentication codes are unmodified.</text>
+<text x="1210" y="828" class="tmut mono" font-size="10" text-anchor="end">TOSSI Foundation · CNTC</text>
+</svg>
