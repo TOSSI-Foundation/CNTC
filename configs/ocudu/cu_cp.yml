@@ -9,6 +9,10 @@
 # ranbench reads this file to resolve the CU-CP's endpoints and its enabled pcaps, the pcaps
 # below are the evidence for the NGAP / F1AP / E1AP / RRC / AS-security test cases.
 cu_cp:
+  # The OAI UE takes longer than the 3 s default to send the PDU Session Establishment
+  # Request after registration; the CU-CP otherwise releases the UE before it asks
+  # ("UE did not request a PDU session after 3000ms"). Seconds, must exceed T310.
+  request_pdu_session_timeout: 20
   amf:
     addrs: 10.43.115.122          # free5GC AMF N2 service (ClusterIP, SCTP 38412)
     bind_addrs: 192.168.6.90      # host address the AMF sees as the gNB

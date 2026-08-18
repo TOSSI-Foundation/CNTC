@@ -18,8 +18,8 @@ f1u:
 
 ru_sdr:
   device_driver: zmq
-  device_args: tx_port=tcp://127.0.0.1:4556,rx_port=tcp://127.0.0.1:4557,base_srate=23.04e6
-  srate: 23.04
+  device_args: tx_port=tcp://127.0.0.1:4556,rx_port=tcp://127.0.0.1:4557,base_srate=30.72e6
+  srate: 30.72
   # The ZMQ device rejects positive channel gain ("Channel gain must be <= 0.0 dB for
   # ZMQ-device"), there is no real RF chain to drive.
   tx_gain: -12
@@ -27,8 +27,10 @@ ru_sdr:
 
 cell_cfg:
   # ARFCN 632628 = 3489.42 MHz. The UE must be pointed at exactly this centre frequency
-  # (nr-uesoftmodem -C 3489420000), and 20 MHz at SCS 30 kHz is 51 PRB (-r 51) at a 23.04 Msps
-  # sample rate, the ZMQ base_srate has to be identical on both ends or the streams desync.
+  # (nr-uesoftmodem -C 3489420000) with 51 PRB (-r 51) for 20 MHz at SCS 30 kHz. The sample
+  # rate above is 30.72 Msps, not the 23.04 the OCUDU examples use, because that is the rate
+  # the OAI UE runs natively for this cell; the ZMQ base_srate must be identical on both ends
+  # or the SSB is found but the PBCH never decodes.
   dl_arfcn: 632628
   band: 78
   channel_bandwidth_MHz: 20
