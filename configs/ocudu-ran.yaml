@@ -35,11 +35,15 @@ drivers:
   # zmq_tx_port / zmq_rx_port are read from the DU config; set here only to override.
 
 # 5G-AKA subscribers to provision into the core (the RAN cannot be exercised without one).
+# These MUST match the core's PLMN and the slice the CU-CP advertises at NG Setup, or the UE
+# is rejected: free5GC here serves mcc 208 / mnc 93, S-NSSAI sst 1 / sd 010203, DNN internet.
 subscribers:
-  - supi: "imsi-001010000000001"
+  - supi: "imsi-208930000000001"
     ki: "8baf473f2f8fd09487cccbd7097c6862"
     opc: "8e27b6af0e692e750f32667a3b14605d"
-    plmn: "00101"
+    plmn: "20893"
+    sst: 1
+    sd: "010203"
     dnn: "internet"
 
 sut:

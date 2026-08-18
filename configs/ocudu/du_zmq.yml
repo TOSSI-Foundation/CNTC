@@ -26,7 +26,10 @@ ru_sdr:
   rx_gain: 0
 
 cell_cfg:
-  dl_arfcn: 650000
+  # ARFCN 632628 = 3489.42 MHz. The UE must be pointed at exactly this centre frequency
+  # (nr-uesoftmodem -C 3489420000), and 20 MHz at SCS 30 kHz is 51 PRB (-r 51) at a 23.04 Msps
+  # sample rate, the ZMQ base_srate has to be identical on both ends or the streams desync.
+  dl_arfcn: 632628
   band: 78
   channel_bandwidth_MHz: 20
   common_scs: 30
