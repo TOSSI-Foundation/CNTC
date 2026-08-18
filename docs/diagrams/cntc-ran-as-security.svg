@@ -17,7 +17,7 @@
 <rect x="0" y="0" width="1240" height="900" fill="#eef2f3"/>
 
 <text x="30" y="44" class="t hd" font-size="22">Access Stratum Security, Proven from the Capture</text>
-<text x="30" y="68" class="tmut" font-size="12.5">One UE attach through a split gNB. Because RRC crosses F1 inside F1AP containers, activation of RRC integrity and ciphering is visible on an ordinary IP link.</text>
+<text x="30" y="68" class="tmut" font-size="12.5">One UE attach through a split gNB. Because RRC crosses F1 inside F1AP containers, what the Access Stratum actually protects is visible on an ordinary IP link.</text>
 
 <!-- command -->
 <rect x="30" y="86" width="1180" height="34" rx="6" fill="#0f171c"/>
@@ -115,12 +115,12 @@
 <text x="74" y="690" class="good hd mono" font-size="11">PASS  CUCP-SEC-01</text>
 <text x="74" y="708" class="tm" font-size="10">RRC integrity protection after AS Security Mode</text>
 <text x="74" y="722" class="tmut" font-size="9.5">TS 33.511 clause 4.2.2.1.1</text>
-<rect x="462" y="668" width="386" height="60" rx="8" fill="#eaf6ee" stroke="#1a7f37" stroke-width="1.1"/>
-<text x="476" y="690" class="good hd mono" font-size="11">PASS  CUCP-SEC-02</text>
+<rect x="462" y="668" width="386" height="60" rx="8" fill="#fdeceb" stroke="#cf222e" stroke-width="1.1"/>
+<text x="476" y="690" class="bad hd mono" font-size="11">FAIL  CUCP-SEC-02</text>
 <text x="476" y="708" class="tm" font-size="10">RRC ciphering after AS Security Mode</text>
-<text x="476" y="722" class="tmut" font-size="9.5">TS 33.511 clause 4.2.2.1.6</text>
-<text x="60" y="756" class="tmut" font-size="10">Neither verdict reads a configuration setting. Both are decided by what the capture shows.</text>
-<text x="60" y="778" class="tmut" font-size="10">A run that could not reach Security Mode Complete records these as unevaluated, never as a pass.</text>
+<text x="476" y="722" class="tmut" font-size="9.5">NEA0 selected, so RRC runs in the clear</text>
+<text x="60" y="756" class="tmut" font-size="10">Neither verdict reads a configuration setting. Both are decided by what the capture shows, and they disagree.</text>
+<text x="60" y="778" class="tmut" font-size="10">Integrity was switched on and ciphering was not. A single "security activated" answer would have hidden that.</text>
 
 <!-- annotations -->
 <path d="M876 336 H906" stroke="#5d6f77" stroke-width="1.4" fill="none" marker-end="url(#an)"/>
@@ -144,18 +144,18 @@
 <rect x="914" y="462" width="4" height="170" fill="#1a7f37"/>
 <text x="932" y="486" class="t hd" font-size="11.5">After activation</text>
 <text x="932" y="506" class="tm" font-size="10">Every container now carries a real</text>
-<text x="932" y="520" class="tm" font-size="10">authentication code. Integrity is active.</text>
-<text x="932" y="542" class="tm" font-size="10">The Information Transfers no longer name</text>
-<text x="932" y="556" class="tm" font-size="10">the NAS message they carry, because the</text>
-<text x="932" y="570" class="tm" font-size="10">payload is ciphered. Compare frames 6 to 8,</text>
-<text x="932" y="584" class="tm" font-size="10">which named theirs, with 15 to 18.</text>
-<text x="932" y="606" class="tmut" font-size="9.5">Frames 13 and 14 stay readable because they</text>
-<text x="932" y="618" class="tmut" font-size="9.5">are RRC, not the ciphered NAS payload.</text>
+<text x="932" y="520" class="good" font-size="10">authentication code. Integrity is active.</text>
+<text x="932" y="542" class="tm" font-size="10">But the RRC message types are still</text>
+<text x="932" y="556" class="bad" font-size="10">readable, so RRC is NOT ciphered.</text>
+<text x="932" y="570" class="tm" font-size="10">The CU-CP selected NEA0, the null</text>
+<text x="932" y="584" class="tm" font-size="10">algorithm, and E1 states so explicitly.</text>
+<text x="932" y="606" class="tmut" font-size="9.5">The NAS names vanish at 15 to 18 for a</text>
+<text x="932" y="618" class="tmut" font-size="9.5">different reason: NAS ciphers itself.</text>
 
 <rect x="914" y="668" width="296" height="60" rx="8" fill="#fff8e6" stroke="#d9b45f" stroke-width="1.1"/>
-<text x="932" y="690" class="t hd" font-size="11">Why this is only possible on a split gNB</text>
-<text x="932" y="708" class="tm" font-size="9.8">In a single-box gNB the same exchange exists</text>
-<text x="932" y="721" class="tm" font-size="9.8">only over the air, and ciphered.</text>
+<text x="932" y="688" class="t hd" font-size="11">Two ciphering layers, do not confuse them</text>
+<text x="932" y="705" class="tm" font-size="9.8">NAS ciphers between UE and core. AS ciphers</text>
+<text x="932" y="718" class="tm" font-size="9.8">between UE and gNB. Only AS is the gNB’s job.</text>
 
 <text x="30" y="828" class="tmut" font-size="10">Captured on the F1-C link between the O-DU and the O-CU-CP during campaign OCUDU-RAN-003. Frame numbers and authentication codes are unmodified.</text>
 <text x="1210" y="828" class="tmut mono" font-size="10" text-anchor="end">TOSSI Foundation · CNTC</text>

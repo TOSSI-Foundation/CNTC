@@ -117,19 +117,50 @@ class WireObserver:
                 if smp_idx is not None and i >= smp_idx
                 for m in [self._MAC_RE.search(l)] if m]
         nonzero_post = [m for m in post if m != "00000000"]
-        # A ciphered RRC container no longer renders the NAS message name it carries: after the
-        # SMC we expect bare "DL/UL Information Transfer" rather than "... , <NAS message>".
-        after = lines[smp_idx + 1:] if smp_idx is not None else []
-        transfers = [l for l in after if "information transfer" in l.lower()]
-        opaque = [l for l in transfers if l.lower().split("mac=")[0].count(",") <= 1]
+        # Ciphering is judged separately, by rrc_ciphering(): whether the NAS message name
+        # disappears is NOT evidence of RRC ciphering, because NAS carries its own security and
+        # becomes opaque once the NAS Security Mode procedure completes, entirely independently
+        # of the Access Stratum.
         return {
             "smc": smc_idx is not None,
             "smp": smp_idx is not None,
             "pre_smc_macs": sorted(set(pre)),
             "post_smc_macs": sorted(set(nonzero_post)),
             "integrity_activated": bool(nonzero_post) and all(m == "00000000" for m in pre),
-            "ciphered": bool(transfers) and len(opaque) == len(transfers),
         }
+
+    def rrc_ciphering(self, f1ap_pcap: str) -> dict | None:
+        """Whether RRC itself is ciphered after Access Stratum security activates.
+
+        The honest test is whether the RRC layer still decodes. Ciphered RRC is opaque, so a
+        dissector cannot name the message; if message types are still readable after Security
+        Mode Complete, RRC is being sent in the clear.
+
+        This deliberately ignores whether the NAS message inside is named. NAS runs its own
+        security between the UE and the AMF, so NAS payloads go opaque after the NAS Security
+        Mode procedure whatever the Access Stratum is doing. Reading that as AS ciphering is a
+        mistake this framework made once already.
+        """
+        rows = self.fields(f1ap_pcap, "nr-rrc", "frame.number")
+        info = self._tshark(f1ap_pcap, "-T", "fields", "-e", "frame.number", "-e", "_ws.col.Info")
+        if rows is None or info is None:
+            return None
+        smp_frame = None
+        for line in info.splitlines():
+            num, _, text = line.partition("\t")
+            if "security mode complete" in text.lower():
+                try:
+                    smp_frame = int(num)
+                except ValueError:
+                    pass
+                break
+        if smp_frame is None:
+            return {"smp": False}
+        readable = sorted({int(r[0]) for r in rows if r and r[0].strip().isdigit()
+                           and int(r[0]) > smp_frame})
+        return {"smp": True, "smp_frame": smp_frame,
+                "rrc_readable_after_smc": bool(readable),
+                "readable_frames": readable[:8]}
 
     # --- user plane -----------------------------------------------------------
     def gtpu(self, pcap: str) -> dict | None:

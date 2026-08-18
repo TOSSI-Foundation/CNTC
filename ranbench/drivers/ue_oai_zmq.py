@@ -254,6 +254,7 @@ class Driver(BaseDriver):
                     obs[f"lines.{slot}"] = observer.info_lines(path)
                 if iface == "f1ap" and tgt == "cucp":
                     obs["as_security"] = observer.as_security(path)
+                    obs["rrc_ciphering"] = observer.rrc_ciphering(path)
                 if iface == "e1ap" and tgt == "cucp":
                     obs["security_info"] = observer.security_info(path)
                 if iface == "ngap":

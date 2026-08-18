@@ -277,19 +277,47 @@ class CucpSec01(RanTestCase):
 
 class CucpSec02(RanTestCase):
     id, name, target = "CUCP-SEC-02", "RRC ciphering after AS SMC", "cucp"
+
     def run(self, ctx: RunContext):
+        """RRC signalling must be ciphered once Access Stratum security is active.
+
+        Judged on the ciphering algorithm the CU-CP selected, which it states on E1, and
+        corroborated by whether the RRC layer still decodes after Security Mode Complete.
+        Ciphered RRC is opaque, so readable message types are direct evidence it is in the clear.
+
+        What this must NOT do is infer ciphering from the NAS message name disappearing. NAS runs
+        its own security between the UE and the AMF, so NAS payloads go opaque after the NAS
+        Security Mode procedure regardless of the Access Stratum. An earlier version of this case
+        read exactly that and reported a PASS for RRC that was never ciphered.
+        """
         o = rc.observation(ctx)
-        s = o.get("as_security")
-        if not s or not s.get("smp"):
+        a = o.get("as_security")
+        r = o.get("rrc_ciphering")
+        s = o.get("security_info")
+        if not a or not a.get("smp"):
             return TestResult(self.id, self.name, "na",
-                              notes="no post-SMC RRC captured, so ciphering cannot be judged")
-        if s["ciphered"]:
-            return TestResult(self.id, self.name, "pass", metrics=s,
-                              notes="RRC containers after AS SMC no longer expose their inner "
-                                    "NAS message, ciphering applied [TS 33.511 §4.2.2.1.6]")
-        return TestResult(self.id, self.name, "fail", metrics=s,
-                          notes="RRC after AS SMC still renders its plaintext content, not "
-                                "ciphered [TS 33.511 §4.2.2.1.6]")
+                              notes="the attach never reached Security Mode Complete, so RRC "
+                                    "ciphering cannot be judged")
+        metrics = {k: v for k, v in (r or {}).items()}
+        if s and s.get("seen"):
+            metrics["ciphering"] = s["ciphering"]
+            if s["ciphering_null"]:
+                extra = (" (confirmed: RRC message types are still readable after Security Mode "
+                         "Complete)") if (r or {}).get("rrc_readable_after_smc") else ""
+                return TestResult(self.id, self.name, "fail", metrics=metrics,
+                                  notes=f"the CU-CP selected {s['ciphering']}, so RRC signalling "
+                                        f"is not ciphered{extra} [TS 33.511 §4.2.2.1.6]")
+        if r is None:
+            return TestResult(self.id, self.name, "na",
+                              notes="no F1AP capture to judge RRC ciphering from")
+        if r.get("rrc_readable_after_smc"):
+            return TestResult(self.id, self.name, "fail", metrics=metrics,
+                              notes=f"RRC message types are still readable after Security Mode "
+                                    f"Complete (frames {r.get('readable_frames')}), so RRC is "
+                                    f"not ciphered [TS 33.511 §4.2.2.1.6]")
+        return TestResult(self.id, self.name, "pass", metrics=metrics,
+                          notes="RRC is opaque after Security Mode Complete, so ciphering is "
+                                "applied [TS 33.511 §4.2.2.1.6]")
 
 
 class CucpSec03(RanTestCase):
