@@ -91,48 +91,80 @@ class CuupUp03(RanTestCase):
 class CuupUp04(RanTestCase):
     id, name, target = "CUUP-UP-04", "Unknown TEID dropped, no crash", "cuup"
     def run(self, ctx):
-        return rc.no_crash(ctx, self.id, self.name, "cuup", "udp", "TS 29.281")
+        return rc.no_crash(ctx, self.id, self.name, "cuup", "udp", "TS 29.281",
+                           needs=("cucp",))
 
 
 class CuupSec01(RanTestCase):
     id, name, target = "CUUP-SEC-01", "UP ciphering per the E1 security policy", "cuup"
 
     def run(self, ctx: RunContext):
-        """The user plane must be ciphered when the policy requires it.
+        """The user plane must be ciphered when the signalled policy requires it.
 
-        Judged on the F1-U capture: PDCP ciphering makes the inner packet opaque, so a readable
-        inner IP header means the user plane is carried in the clear.
+        Judged first on the E1 Bearer Context Setup, which states both the required protection
+        and the algorithm actually selected, that pair is unambiguous. The F1-U capture then
+        corroborates it: PDCP ciphering makes the inner packet opaque, so a readable inner IP
+        header is direct evidence that the user plane is in the clear.
         """
         o = rc.observation(ctx)
         if o.get("error"):
             return TestResult(self.id, self.name, "na", notes=f"attach unavailable: {o['error']}")
+        s = o.get("security_info")
         visible = o.get("payload_visible.cuup.f1u")
-        g = o.get("gtpu.cuup.f1u")
-        if visible is None or g is None:
+        if not s or not s.get("seen"):
             return TestResult(self.id, self.name, "na",
-                              notes="no F1-U capture to judge user-plane protection from")
-        if not g.get("has_traffic"):
-            return TestResult(self.id, self.name, "na",
-                              notes="no user-plane traffic was carried, so ciphering could not "
-                                    "be judged")
+                              notes="no security IEs captured on E1, so the user-plane "
+                                    "ciphering policy cannot be judged")
+        required = s["confidentiality_indication"] in ("required", "preferred")
+        metrics = {**s, "inner_ip_readable": visible}
+        if s["ciphering_null"] and required:
+            return TestResult(self.id, self.name, "fail", metrics=metrics,
+                              notes=f"confidentiality is signalled as "
+                                    f"{s['confidentiality_indication']} but the CU-UP was given "
+                                    f"{s['ciphering']}, the user plane is not ciphered"
+                                    + (" (confirmed: the inner IP packet is readable on F1-U)"
+                                       if visible else "") + " [TS 33.523 §6.2.2.1.7]")
+        if s["ciphering_null"]:
+            return TestResult(self.id, self.name, "na", metrics=metrics,
+                              notes=f"ciphering is {s['ciphering']} and confidentiality is "
+                                    f"{s['confidentiality_indication']}, so no ciphering was "
+                                    f"required of the CU-UP, nothing to enforce "
+                                    f"[TS 33.523 §6.2.2.1.7]")
         if visible:
-            return TestResult(self.id, self.name, "fail",
-                              metrics={"inner_ip_readable": True, "frames": g.get("frames")},
-                              notes="the inner IP packet is readable inside the F1-U tunnel, "
-                                    "user plane is not ciphered [TS 33.523 §6.2.2.1.7]")
-        return TestResult(self.id, self.name, "pass",
-                          metrics={"inner_ip_readable": False, "frames": g.get("frames")},
-                          notes="user-plane payload is opaque on F1-U, ciphering applied "
-                                "[TS 33.523 §6.2.2.1.7]")
+            return TestResult(self.id, self.name, "fail", metrics=metrics,
+                              notes=f"{s['ciphering']} was configured but the inner IP packet is "
+                                    f"readable on F1-U, ciphering is not applied "
+                                    f"[TS 33.523 §6.2.2.1.7]")
+        return TestResult(self.id, self.name, "pass", metrics=metrics,
+                          notes=f"user plane ciphered with {s['ciphering']} and opaque on F1-U "
+                                f"[TS 33.523 §6.2.2.1.7]")
 
 
 class CuupSec02(RanTestCase):
     id, name, target = "CUUP-SEC-02", "UP integrity when the policy requires it", "cuup"
+
     def run(self, ctx: RunContext):
-        return TestResult(self.id, self.name, "na",
-                          notes="not implemented: needs the integrity indication extracted from "
-                                "the E1 Bearer Context Setup and the PDCP MAC-I checked on F1-U "
-                                "[TS 33.523 §6.2.2.1.6]")
+        """Integrity protection of user data is conditional on the signalled policy
+        (TS 33.523 §6.2.2.1.6), so the requirement only bites when it is asked for."""
+        o = rc.observation(ctx)
+        s = o.get("security_info")
+        if not s or not s.get("seen"):
+            return TestResult(self.id, self.name, "na",
+                              notes="no security IEs captured on E1 to judge the integrity "
+                                    "policy from")
+        required = s["integrity_indication"] in ("required", "preferred")
+        if not required:
+            return TestResult(self.id, self.name, "na", metrics=s,
+                              notes=f"user-plane integrity is signalled as "
+                                    f"{s['integrity_indication']}, so none was required of the "
+                                    f"CU-UP, nothing to enforce [TS 33.523 §6.2.2.1.6]")
+        if s["integrity_null"]:
+            return TestResult(self.id, self.name, "fail", metrics=s,
+                              notes=f"integrity is {s['integrity_indication']} but the CU-UP was "
+                                    f"given {s['integrity']} [TS 33.523 §6.2.2.1.6]")
+        return TestResult(self.id, self.name, "pass", metrics=s,
+                          notes=f"user-plane integrity {s['integrity']} applied as "
+                                f"{s['integrity_indication']} [TS 33.523 §6.2.2.1.6]")
 
 
 class CuupSec03(RanTestCase):
@@ -152,7 +184,8 @@ class CuupSec04(RanTestCase):
 class CuupNeg01(RanTestCase):
     id, name, target = "CUUP-NEG-01", "Malformed GTP-U → no O-CU-UP crash", "cuup"
     def run(self, ctx):
-        return rc.no_crash(ctx, self.id, self.name, "cuup", "udp", "TS 29.281")
+        return rc.no_crash(ctx, self.id, self.name, "cuup", "udp", "TS 29.281",
+                           needs=("cucp",))
 
 
 TESTS = [CuupE101, CuupE102, CuupE103, CuupE104, CuupE105,

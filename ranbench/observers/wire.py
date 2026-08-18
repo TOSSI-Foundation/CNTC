@@ -194,3 +194,62 @@ class WireObserver:
             return {"seen": False}
         return {"seen": True, "ciphering": ciph[0] if ciph else "",
                 "integrity": integ[0] if integ else ""}
+
+    # --- security policy and algorithms, from the E1 signalling ----------------
+    # Algorithm enumerations (TS 33.501 §5.11 / TS 38.463): 0 is the NULL algorithm in both
+    # families: NEA0 provides no confidentiality, NIA0 no integrity.
+    _CIPH = {"0": "NEA0 (null)", "1": "128-NEA1", "2": "128-NEA2", "3": "128-NEA3"}
+    _INTEG = {"0": "NIA0 (null)", "1": "128-NIA1", "2": "128-NIA2", "3": "128-NIA3"}
+    # securityIndication enum (TS 38.463): 0 required, 1 preferred, 2 not-needed
+    _IND = {"0": "required", "1": "preferred", "2": "not-needed"}
+
+    def security_info(self, e1ap_pcap: str) -> dict | None:
+        """The AS security the CU-CP actually selected, and the policy it signalled.
+
+        The E1 Bearer Context Setup is the one place both appear together on the wire: the
+        chosen ciphering/integrity algorithms, and the confidentiality/integrity indication the
+        CU-CP is relaying. That makes it the honest source for the algorithm-selection and
+        policy-propagation cases, the RRC Security Mode Command itself rides inside an F1AP
+        RRC container that is not dissected.
+        """
+        rows = self.fields(e1ap_pcap, "e1ap.cipheringAlgorithm",
+                           "e1ap.cipheringAlgorithm", "e1ap.integrityProtectionAlgorithm",
+                           "e1ap.confidentialityProtectionIndication",
+                           "e1ap.integrityProtectionIndication")
+        if rows is None:
+            return None
+        for r in rows:
+            r += [""] * (4 - len(r))
+            ciph, integ, conf_ind, integ_ind = (x.split(",")[0].strip() for x in r[:4])
+            if ciph == "" and integ == "":
+                continue
+            return {
+                "seen": True,
+                "ciphering": self._CIPH.get(ciph, ciph),
+                "integrity": self._INTEG.get(integ, integ),
+                "ciphering_null": ciph == "0",
+                "integrity_null": integ == "0",
+                "confidentiality_indication": self._IND.get(conf_ind, conf_ind or "absent"),
+                "integrity_indication": self._IND.get(integ_ind, integ_ind or "absent"),
+            }
+        return {"seen": False}
+
+    def ngap_security_indication(self, ngap_pcap: str) -> dict | None:
+        """The Security Indication the core signalled in PDU Session Resource Setup, if any.
+
+        It is an optional IE (TS 38.413 §9.3.1.27); a core that omits it leaves the RAN to apply
+        its own configured policy, and the propagation case then cannot be judged.
+        """
+        rows = self.fields(ngap_pcap, "ngap.confidentialityProtectionIndication",
+                           "ngap.confidentialityProtectionIndication",
+                           "ngap.integrityProtectionIndication")
+        if rows is None:
+            return None
+        for r in rows:
+            r += [""] * (2 - len(r))
+            conf, integ = (x.split(",")[0].strip() for x in r[:2])
+            if conf or integ:
+                return {"seen": True,
+                        "confidentiality_indication": self._IND.get(conf, conf or "absent"),
+                        "integrity_indication": self._IND.get(integ, integ or "absent")}
+        return {"seen": False}

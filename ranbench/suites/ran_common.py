@@ -187,13 +187,36 @@ def _udp_garbage(addr: str, port: int) -> tuple[bool, str]:
         return False, f"{type(e).__name__}: {e}"
 
 
+def _port_listening(host: str, port: int, kind: str, timeout: float = 20.0) -> bool:
+    """Wait until the product is actually accepting on its socket.
+
+    Process-alive is not enough for the SCTP probe: a CU-CP that has started but not yet bound
+    its F1-C listener refuses the connection, which would otherwise be misread as a crash.
+    """
+    if kind != "sctp":
+        return True                      # UDP is connectionless; nothing to wait for
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 132)
+            s.settimeout(2.0)
+            s.connect((host, port))
+            s.close()
+            return True
+        except Exception:  # noqa: BLE001
+            time.sleep(1)
+    return False
+
+
 def no_crash(ctx: RunContext, tid: str, name: str, target: str, kind: str,
-             spec: str) -> TestResult:
+             spec: str, needs: tuple[str, ...] = ()) -> TestResult:
     """PASS iff the product survives crude non-compliant input on its own socket.
 
-    The product has to be running to be probed, so this starts it if the measurement already
-    tore it down. If liveness cannot be observed at all the result is 'na', an undetectable
-    crash must never be scored as a pass.
+    The product has to be running AND accepting to be probed, so this brings it up (with any
+    peer it depends on) first. If it cannot be established the result is 'na', "we could not
+    stand it up" is not evidence of a crash, and reporting it as one would blame the product for
+    our own setup. Only a product that was demonstrably up, was probed, and is then gone counts
+    as a failure.
     """
     endpoint = ctx.endpoint or ctx.ran.node_endpoint(target)
     if not endpoint or ":" not in endpoint:
@@ -201,21 +224,33 @@ def no_crash(ctx: RunContext, tid: str, name: str, target: str, kind: str,
     host, _, port_s = endpoint.partition(":")
     port = int(port_s or 0)
 
+    if ctx.ran.node_alive(target) is None:
+        return _na(tid, name, "cannot observe liveness for this product (a crash would be "
+                              "undetectable, so this cannot be judged)")
+
+    # bring up whatever this product needs before it can serve (the CU-UP has no E1 peer
+    # without the CU-CP, the O-DU no F1 peer, and neither stays up alone)
+    for dep in needs:
+        if ctx.ran.node_alive(dep) is not True:
+            ctx.ran.start(dep)
+            ctx.ran.wait_for_log(dep, "Connected to AMF", 45)
     if ctx.ran.node_alive(target) is not True:
         ctx.ran.start(target)
-        for _ in range(20):
+        for _ in range(25):
             if ctx.ran.node_alive(target) is True:
                 break
             time.sleep(1)
-    alive_before = ctx.ran.node_alive(target)
-    if alive_before is None:
-        return _na(tid, name, "cannot observe liveness for this product (a crash would be "
-                              "undetectable, so this cannot be judged)")
-    if alive_before is False:
-        return _na(tid, name, f"{target} is not running, so it cannot be probed")
+    if ctx.ran.node_alive(target) is not True:
+        return _na(tid, name, f"{target} could not be started for probing, so its robustness "
+                              f"cannot be judged (this says nothing about the product)")
+    if not _port_listening(host, port, kind):
+        return _na(tid, name, f"{target} is running but not accepting on {host}:{port}, so the "
+                              f"probe could not be delivered")
 
     sent, how = (_sctp_garbage(host, port) if kind == "sctp" else _udp_garbage(host, port))
-    time.sleep(2)
+    if not sent:
+        return _na(tid, name, f"could not deliver the probe to {host}:{port} ({how})")
+    time.sleep(3)
     alive_after = ctx.ran.node_alive(target)
     ok = alive_after is True
     return TestResult(tid, name, "pass" if ok else "fail",

@@ -159,7 +159,8 @@ class DuSec02(RanTestCase):
 class DuNeg01(RanTestCase):
     id, name, target = "DU-NEG-01", "Malformed GTP-U on F1-U → no O-DU crash", "du"
     def run(self, ctx):
-        return rc.no_crash(ctx, self.id, self.name, "du", "udp", "TS 29.281")
+        return rc.no_crash(ctx, self.id, self.name, "du", "udp", "TS 29.281",
+                           needs=("cucp",))
 
 
 TESTS = [DuF101, DuF102, DuF103, DuF104, DuF105, DuF106, DuF107,

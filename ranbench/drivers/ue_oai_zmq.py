@@ -167,10 +167,12 @@ class Driver(BaseDriver):
         evidence complete. The UE is signalled rather than killed so it can deregister, leaving
         the core without stale UE context for the next campaign."""
         self._kill_ue()
-        # The UE deregisters on the way out, which triggers UE Context Release across N2 and F1.
-        # Those procedures are part of the catalog, so give them time to complete and be
-        # captured before the products that log them are stopped.
-        time.sleep(10)
+        # The UE going away triggers UE Context Release across N2 and F1, and those procedures
+        # are themselves part of the catalog. Wait for the CU-CP to actually log the release
+        # rather than hoping a fixed sleep covers it, a flat delay made these cases flaky,
+        # passing in one run and failing in the next.
+        if not ran.wait_for_log("cucp", "UE Context Release", 30):
+            time.sleep(5)
         for tgt in ("du", "cuup", "cucp"):
             try:
                 ran.stop(tgt)
@@ -235,6 +237,7 @@ class Driver(BaseDriver):
         if observer is None:
             obs["decode_error"] = "no wire observer available (is tshark installed?)"
             return
+        archive = Path(self.store.raw) / "pcap"
         for tgt in ("cucp", "cuup", "du"):
             try:
                 paths = ran.pcap_paths(tgt)
@@ -251,10 +254,30 @@ class Driver(BaseDriver):
                     obs[f"lines.{slot}"] = observer.info_lines(path)
                 if iface == "f1ap" and tgt == "cucp":
                     obs["as_security"] = observer.as_security(path)
-                    obs["as_algorithms"] = observer.rrc_security_algorithms(path)
+                if iface == "e1ap" and tgt == "cucp":
+                    obs["security_info"] = observer.security_info(path)
+                if iface == "ngap":
+                    obs["ngap_security_indication"] = observer.ngap_security_indication(path)
                 if iface in ("n3", "f1u"):
                     obs[f"gtpu.{slot}"] = observer.gtpu(path)
                     obs[f"payload_visible.{slot}"] = observer.gtpu_payload_visible(path)
+                self._archive(archive, path, slot)
+
+    def _archive(self, archive: Path, path: str, slot: str) -> None:
+        """Copy the decoded capture into the campaign so the verdict stays auditable.
+
+        The live files are overwritten the moment any product restarts, which the robustness
+        and recovery cases do, later in the same campaign. Without a copy, the evidence behind a
+        certificate would be gone by the time the run finished.
+        """
+        try:
+            archive.mkdir(parents=True, exist_ok=True)
+            src = Path(path)
+            if src.exists() and src.stat().st_size > 0:
+                self._run("cp", str(src), str(archive / f"{slot}.pcap"), timeout=30)
+                self._run("chmod", "644", str(archive / f"{slot}.pcap"), timeout=10)
+        except Exception:  # noqa: BLE001, archiving must never break a measurement
+            pass
 
     def teardown(self) -> None:
         self._kill_ue()
