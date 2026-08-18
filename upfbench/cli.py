@@ -1,4 +1,4 @@
-"""upfbench CLI — the three-choice menu + non-interactive runner.
+"""upfbench CLI, the three-choice menu + non-interactive runner.
 
 Usage:
     upfbench                                  # interactive: pick a suite, point at a config

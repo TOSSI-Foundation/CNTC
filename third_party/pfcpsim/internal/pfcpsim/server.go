@@ -160,7 +160,7 @@ func (P pfcpSimService) CreateSession(ctx context.Context, request *pb.CreateSes
 
 	// QER MBRs (kbps). Defaults model a rate-limited subscriber (session 60M,
 	// app UL 50M / DL 30M). Set PFCPSIM_MBR_KBPS to raise every MBR to one value
-	// — e.g. a huge number to make the QER effectively unlimited, so a
+	//, e.g. a huge number to make the QER effectively unlimited, so a
 	// QER-enforcing UPF (BESS) is measured at its raw datapath ceiling, the same
 	// way a UPF that ignores QER (OAI simpleswitch) already is.
 	var sessMBR, appUlMBR, appDlMBR uint64 = 60000, 50000, 30000

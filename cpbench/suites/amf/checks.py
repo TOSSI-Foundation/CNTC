@@ -1,4 +1,4 @@
-"""Real AMF test cases — driven over N1/N2 by UERANSIM against the live core.
+"""Real AMF test cases, driven over N1/N2 by UERANSIM against the live core.
 
 Anchored to the specs and asserted on the observed NG/NAS procedure outcomes:
   AMF-NGAP-01 NG Setup succeeds (gNB↔AMF association)        [TS 38.413 §8.7]
@@ -23,7 +23,7 @@ from cpbench.suites import sbi_common
 
 def _sctp_garbage(addr: str, port: int = 38412, timeout: float = 4.0) -> tuple[bool, str]:
     """Open an SCTP association to the AMF's N2 port and send bytes that are NOT a valid
-    NGAP PDU. Returns (sent, detail); a connection reset is fine — we judge by AMF liveness."""
+    NGAP PDU. Returns (sent, detail); a connection reset is fine, we judge by AMF liveness."""
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 132)  # IPPROTO_SCTP
         s.settimeout(timeout)
@@ -58,7 +58,7 @@ def _from_obs(ctx, tid, name, key, ok_note, spec) -> TestResult:
 
 
 class AmfNgap01(NfTestCase):
-    id, name, nf = "AMF-NGAP-01", "NG Setup — gNB↔AMF association", "amf"
+    id, name, nf = "AMF-NGAP-01", "NG Setup, gNB↔AMF association", "amf"
     def run(self, ctx):  # noqa: D102
         return _from_obs(ctx, self.id, self.name, "ng_setup",
                          "NG Setup procedure successful", "TS 38.413 §8.7")
@@ -91,7 +91,7 @@ def _nas_security(ctx, tid, name, key, prop, spec) -> TestResult:
     if not o.get("nas_capture"):
         return TestResult(tid, name, "na",
                           notes="N2 not captured (needs tcpdump+tshark on the N2 interface; "
-                                "set drivers.n2_iface) — cannot judge NAS protection")
+                                "set drivers.n2_iface), cannot judge NAS protection")
     val = o.get(key)
     types = o.get("nas_sec_types")
     if val is True:
@@ -165,7 +165,7 @@ class AmfNeg01(NfTestCase):
         return TestResult(self.id, self.name, "pass" if ok else "fail",
                           metrics={"sctp_sent": sent, "amf_alive_after": alive_after},
                           notes=f"{detail}; AMF alive after malformed N2 input = {alive_after} "
-                                f"({'no crash' if ok else 'CRASHED — remote DoS'}) [TS 38.413 §8.7.5]")
+                                f"({'no crash' if ok else 'CRASHED, remote DoS'}) [TS 38.413 §8.7.5]")
 
 
 class AmfSec04(NfTestCase):
@@ -193,13 +193,13 @@ class AmfSec06(NfTestCase):
         o = _obs(ctx)
         if "supi_concealed" not in o:
             return TestResult(self.id, self.name, "na",
-                              notes="SUCI not captured/decoded (needs N2 capture) — cannot judge")
+                              notes="SUCI not captured/decoded (needs N2 capture), cannot judge")
         scheme = o.get("suci_scheme", "?")
         if o["supi_concealed"]:
             return TestResult(self.id, self.name, "pass", metrics={"suci_scheme": scheme},
                               notes=f"SUPI concealed on N2 via SUCI ({scheme}) [TS 33.512 / 33.501 §6.12]")
         return TestResult(self.id, self.name, "fail", metrics={"suci_scheme": scheme},
-                          notes=f"SUPI exposed on N2 — SUCI uses {scheme} (permanent identity "
+                          notes=f"SUPI exposed on N2, SUCI uses {scheme} (permanent identity "
                                 f"derivable in cleartext) [TS 33.512 / 33.501 §6.12]")
 
 

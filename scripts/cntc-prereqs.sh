@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# cntc-prereqs.sh — install everything CNTC needs to test an af_packet SD-Core UPF, then verify.
+# cntc-prereqs.sh: install everything CNTC needs to test an af_packet SD-Core UPF, then verify.
 # Idempotent; safe to re-run. Run from the framework repo root:  sudo ./scripts/cntc-prereqs.sh
 set -euo pipefail
 
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$REPO"
-echo ">>> CNTC prerequisites — repo: $REPO"
+echo ">>> CNTC prerequisites, repo: $REPO"
 
 # 1) system packages -----------------------------------------------------------
 echo ">>> [1/5] system packages (apt)"

@@ -1,4 +1,4 @@
-"""XDP-04 — an installed PFCP session is reflected in the eBPF maps (TS 29.244 §5.2).
+"""XDP-04: an installed PFCP session is reflected in the eBPF maps (TS 29.244 §5.2).
 
 The core control→dataplane binding proof: install one session over N4 (pfcpsim) and confirm its
 F-TEID appears as a PDR in the eBPF map. This is what "the UPF applies the PDRs/FARs it receives

@@ -1,4 +1,4 @@
-"""NT-01 Unknown TEID — N3 negative suite. A GTP-U packet whose TEID has no matching PDR
+"""NT-01 Unknown TEID, N3 negative suite. A GTP-U packet whose TEID has no matching PDR
 must be dropped (not forwarded) and must not crash the UPF; valid traffic on the known
 TEID must still forward."""
 from upfbench.suites.base import TestCase, RunContext

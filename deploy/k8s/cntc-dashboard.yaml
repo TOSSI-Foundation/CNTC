@@ -1,4 +1,4 @@
-# CNTC dashboard — runs IN the cluster, LIVE over a shared campaigns/ volume.
+# CNTC dashboard: runs IN the cluster, LIVE over a shared campaigns/ volume.
 # Whatever writes to that volume (host CLI runs, or the test-runner Job) shows up here.
 # The dashboard auto-refreshes the runs list every 15s (UPFBENCH_DASH_LIVE_MS).
 #

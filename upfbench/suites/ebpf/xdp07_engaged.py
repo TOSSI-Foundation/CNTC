@@ -1,7 +1,7 @@
-"""XDP-07 — the XDP fast path is engaged: stats increment under N3 traffic.
+"""XDP-07: the XDP fast path is engaged: stats increment under N3 traffic.
 
 Attachment alone doesn't prove packets traverse XDP. Install a session, blast valid GTP-U on its
-TEID at the XDP hook, and confirm the XDP counters move — GTP-U PDUs seen AND packets forwarded
+TEID at the XDP hook, and confirm the XDP counters move, GTP-U PDUs seen AND packets forwarded
 (XDP_TX/REDIRECT). This is the real forwarded-packet proof for the eBPF datapath. Essential."""
 import time
 
@@ -14,7 +14,7 @@ _BASE = 701001
 
 
 class Xdp07Engaged(TestCase):
-    id, name = "XDP-07", "XDP fast-path engaged — stats map increments under N3 traffic (packets traverse XDP)"
+    id, name = "XDP-07", "XDP fast-path engaged, stats map increments under N3 traffic (packets traverse XDP)"
 
     def run(self, ctx: RunContext) -> TestResult:
         if not_ebpf(ctx):

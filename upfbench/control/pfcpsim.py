@@ -75,7 +75,7 @@ class Control(ControlPlane):
         # OMEC/SD-Core BESS-UPF accepts URRs, so this defaults off.
         self.no_urr = bool(e.get("pfcpsim_no_urr", False))
         # Some UPFs (e.g. OAI-UPF) never answer a PFCP Association Release Request
-        # (TS 29.244 §7.4.5) — they tear associations down via heartbeat loss only.
+        # (TS 29.244 §7.4.5), they tear associations down via heartbeat loss only.
         # When declared, we skip the release (it would just time out) and the
         # conformance suite reports it as a documented capability gap, not a failure.
         self.release_supported = not bool(e.get("pfcp_no_assoc_release", False))
@@ -89,7 +89,7 @@ class Control(ControlPlane):
         self.dnn = e.get("pfcpsim_dnn", "")
         # Override every QER MBR (kbps) installed per session. Set very high to make
         # the QER effectively unlimited so a QER-enforcing UPF (BESS) is measured at
-        # its raw datapath ceiling — the same way a UPF that ignores QER (OAI) is.
+        # its raw datapath ceiling, the same way a UPF that ignores QER (OAI) is.
         # Unset -> pfcpsim's defaults (rate-limited subscriber model).
         self.mbr_kbps = e.get("pfcpsim_mbr_kbps")
         self._server: subprocess.Popen | None = None
@@ -216,7 +216,7 @@ class Control(ControlPlane):
     def disassociate(self) -> dict[str, Any]:
         if not self.release_supported:
             # Release is a no-op for this UPF (no Association Release Response), so nothing
-            # is actually torn down — the association is still live. Keep it: forcing a
+            # is actually torn down, the association is still live. Keep it: forcing a
             # re-association (fresh server, new Recovery Time Stamp) would needlessly churn
             # UPFs that run PFCP restoration on a peer recovery-timestamp change (Open5GS),
             # which flakes the first establishment of the next test.
@@ -251,7 +251,7 @@ class Control(ControlPlane):
         (re)association can flake on strict UPFs (e.g. OAI under back-to-back suite
         churn), so retry up to twice with a clean re-association before reporting
         failure. A genuine capacity/limit rejection still fails on every attempt, so
-        this never masks a real ceiling — it only absorbs the first-attempt flake."""
+        this never masks a real ceiling, it only absorbs the first-attempt flake."""
         def _do() -> dict[str, Any]:
             return self._ctl("session", "create", "--count", str(count), "--baseID", str(base_id),
                              "--ue-pool", kw.get("ue_pool", self.ue_pool),

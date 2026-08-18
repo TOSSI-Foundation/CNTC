@@ -1,8 +1,8 @@
-"""TC-02 Bidirectional throughput (UL+DL) — Suite 1 (performance). RFC 2544 §3.10.
+"""TC-02 Bidirectional throughput (UL+DL), Suite 1 (performance). RFC 2544 §3.10.
 
 Drives uplink and downlink simultaneously and measures each direction:
-  * UPLINK   — GTP-U on N3 (access VF), the UPF decaps -> N6/core TX.
-  * DOWNLINK — plain IP (dst = UE-IP) on N6 (a 2nd gen VF on the core PF), the UPF runs the
+  * UPLINK, GTP-U on N3 (access VF), the UPF decaps -> N6/core TX.
+  * DOWNLINK, plain IP (dst = UE-IP) on N6 (a 2nd gen VF on the core PF), the UPF runs the
                full DL fast-path (coreMetadata -> pktParse -> pdrLookup -> QER -> FAR) -> N3/
                access TX.
 

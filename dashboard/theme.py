@@ -1,4 +1,4 @@
-"""Shared visual language for the dashboard — colors, a Plotly template, status helpers.
+"""Shared visual language for the dashboard, colors, a Plotly template, status helpers.
 
 Keeping this in one place means every chart and card looks like it belongs to the same
 product (TOSSI Foundation / upfbench), which is the whole point of a "showcase" dashboard.
@@ -8,7 +8,7 @@ from __future__ import annotations
 import plotly.graph_objects as go
 import plotly.io as pio
 
-# --- palette (kept in sync with assets/style.css :root tokens — light enterprise) -------
+# --- palette (kept in sync with assets/style.css :root tokens: light enterprise) -------
 BG = "#ffffff"          # page background (white)
 PANEL = "#ffffff"       # card / panel
 PANEL2 = "#f6f8fa"      # nested panel / table header
@@ -16,7 +16,7 @@ BORDER = "#d0d7de"
 GRID = "#e6e9ec"        # chart gridlines (lighter than border)
 INK = "#1f2328"         # primary text
 MUTE = "#656d76"        # secondary text
-ACCENT = "#0d9488"      # brand teal (signal — matches CSS --accent)
+ACCENT = "#0d9488"      # brand teal (signal, matches CSS --accent)
 ACCENT2 = "#b13a77"     # brand magenta/lotus
 GOOD = "#1a7f37"        # pass / measured
 WARN = "#9a6700"        # skipped / other

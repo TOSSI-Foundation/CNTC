@@ -1,4 +1,4 @@
-# Open5GS 5G SA core — deployment from scratch
+# Open5GS 5G SA core: deployment from scratch
 
 How the Open5GS 5G core (the third UPF target for upfbench) was deployed on a fresh
 Ubuntu host, and how to reproduce it. For a one-shot deploy, run
@@ -7,7 +7,7 @@ exactly what that script does and why.
 
 ## What we deploy and why
 
-We use **[herlesupreeth/docker_open5gs](https://github.com/herlesupreeth/docker_open5gs)** —
+We use **[herlesupreeth/docker_open5gs](https://github.com/herlesupreeth/docker_open5gs)**: 
 the most actively maintained Docker-Compose packaging of Open5GS 5G SA, which also bundles
 UERANSIM (gNB + UE). It runs every network function as a container on one Docker bridge
 (`172.22.0.0/24`), with a WebUI for subscriber management. This matches how we run OAI
@@ -26,7 +26,7 @@ UERANSIM (gNB + UE). It runs every network function as a container on one Docker
   sudo chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
   docker compose version
   ```
-- **`gtp5g` kernel module** — THE key Open5GS-specific requirement. Open5GS's 5G UPF
+- **`gtp5g` kernel module**: THE key Open5GS-specific requirement. Open5GS's 5G UPF
   (`open5gs-upfd`) builds its GTP-U data path on the out-of-tree `gtp5g` module, which must
   be compiled against the host kernel and loaded (containers share the host kernel):
   ```bash
@@ -53,7 +53,7 @@ UERANSIM (gNB + UE). It runs every network function as a container on one Docker
 
    The Docker network (`TEST_NETWORK=172.22.0.0/24`) does not clash with our other
    deployments (demo-oai `192.168.70.0/26`, SD-Core `192.168.250/252.x`).
-3. **Get the base image** (prebuilt from GHCR — faster than building from source):
+3. **Get the base image** (prebuilt from GHCR, faster than building from source):
    ```bash
    sudo docker pull ghcr.io/herlesupreeth/docker_open5gs:master
    sudo docker tag  ghcr.io/herlesupreeth/docker_open5gs:master docker_open5gs
@@ -109,9 +109,9 @@ sudo docker compose -f sa-deploy.yaml down       # stop (add -v to wipe volumes/
 
 ## Notes / gotchas
 
-- **`gtp5g` must stay loaded** across reboots — `make install` writes `/etc/modules-load.d/gtp5g.conf`, so it auto-loads. After a kernel upgrade, rebuild it against the new headers.
+- **`gtp5g` must stay loaded** across reboots, `make install` writes `/etc/modules-load.d/gtp5g.conf`, so it auto-loads. After a kernel upgrade, rebuild it against the new headers.
 - The bundled UERANSIM gNB/UE (`nr-gnb.yaml` / `nr-ue.yaml`) run as containers on the same
   bridge and are templated from `.env`, so they line up with the provisioned subscriber.
 - For driving the UPF directly from upfbench (pfcpsim over N4 + tcpreplay over N3), the UPF
-  sits at `172.22.0.8` on the `172.22.0.0/24` bridge — reachable from the host, same idea as
+  sits at `172.22.0.8` on the `172.22.0.0/24` bridge, reachable from the host, same idea as
   the OAI standalone path.

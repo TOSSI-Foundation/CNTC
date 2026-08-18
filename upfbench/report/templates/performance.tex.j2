@@ -1,4 +1,4 @@
-% UPF Data-Plane Benchmark Report — Suite 1 (performance)
+% UPF Data-Plane Benchmark Report, Suite 1 (performance)
 % Jinja statements use parenthesised delimiters so they do not collide with LaTeX braces.
 \documentclass[11pt,a4paper]{article}
 \usepackage[margin=1in]{geometry}
@@ -60,7 +60,7 @@ Latency avg / p99        & (((  c.kpis.lat | default("--") | tex  ))) \textmu s 
 
 \section{Results}
 ((* for t in suite.tests *))
-\subsection{(((  t.id | tex  ))) — (((  t.name | tex  )))}
+\subsection{(((  t.id | tex  ))), (((  t.name | tex  )))}
 ((* if t.status == "error" *))
 \textit{\fillin{(((  t.notes | tex  )))}}
 ((* else *))

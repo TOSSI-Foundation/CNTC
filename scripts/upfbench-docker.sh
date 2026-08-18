@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# upfbench-docker.sh — run the containerized tester with the same UX as the host command.
+# upfbench-docker.sh: run the containerized tester with the same UX as the host command.
 #
 #   ./scripts/upfbench-docker.sh list
 #   ./scripts/upfbench-docker.sh run --config configs/oai-upf.yaml --suite pfcp

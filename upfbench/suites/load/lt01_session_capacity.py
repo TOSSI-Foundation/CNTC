@@ -1,4 +1,4 @@
-"""LT-01 Max concurrent UE sessions (capacity ceiling) — Suite 2 (multi-UE load).
+"""LT-01 Max concurrent UE sessions (capacity ceiling), Suite 2 (multi-UE load).
 
 Control-plane only: pfcpsim installs increasing batches of real PFCP sessions (one
 PDR/FAR/QER set per UE) and we record how many the UPF accepts and how fast. The

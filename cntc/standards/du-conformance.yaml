@@ -1,0 +1,106 @@
+# CNTC requirement catalog: O-DU LEVEL 1 "Conformance & Observable Security"
+#
+# Product class: gNB-DU (3GPP TS 33.523 clause 7). The O-DU terminates F1-C and F1-U toward the
+# O-CU and hosts RLC/MAC/PHY plus the cell.
+#
+# NOTE ON DU SECURITY SCOPE: TS 33.523 clause 7 gives the gNB-DU product class exactly FOUR
+# security functional requirements, all of them F1 transport protection, and it inherits nothing
+# from the gNB class in TS 33.511: the DU holds no AS keys. This catalog reflects that rather
+# than inventing DU security tests it cannot justify.
+#
+# LEVEL 1 = provable with spec-compliant peers (a real CU over F1, a real UE on the cell) plus
+# on-the-wire capture. Level 2 lives in du-adversarial.yaml.
+#
+# Gate: all ESSENTIAL tests must PASS -> certificate. An essential that cannot be judged is
+# 'na' -> INCOMPLETE, never a silent pass.
+version: 1.0.0
+profile: du-conformance
+title: "O-DU (gNB-DU), CNTC Level 1 (Conformance & Observable Security)"
+standards:
+- 3GPP TS 38.473 (F1AP / F1-C)
+- 3GPP TS 38.425 (NR user plane protocol / F1-U)
+- 3GPP TS 38.331 (NR RRC, system information)
+- 3GPP TS 38.321 (NR MAC, random access)
+- "3GPP TS 33.523 (SCAS, split gNB)"
+defaults:
+  class: normal
+gate:
+  essential: all
+tests:
+# --- F1AP / F1-C, DU side (TS 38.473) --------------------------------------------------
+- id: DU-F1-01
+  name: "F1 Setup Request -> Response; served-cell list well-formed, cells activated (38.473 §8.2.3)"
+  category: protocol
+  class: essential
+  verdict: status_pass
+- id: DU-F1-02
+  name: "Initial UL RRC Message Transfer with C-RNTI and DU-to-CU RRC container (38.473 §8.4.1)"
+  category: protocol
+  class: essential
+  verdict: status_pass
+- id: DU-F1-03
+  name: "UE Context Setup Request -> Response; SRB/DRB admitted, DL F1-U TNL returned (38.473 §8.3.1)"
+  category: protocol
+  class: essential
+  verdict: status_pass
+- id: DU-F1-04
+  name: "UL RRC Message Transfer carries the UE RRC to the CU (38.473 §8.4.3)"
+  category: protocol
+  class: normal
+  verdict: status_pass
+- id: DU-F1-05
+  name: "UE Context Release Complete on CU-initiated release (38.473 §8.3.3)"
+  category: protocol
+  class: normal
+  verdict: status_pass
+- id: DU-F1-06
+  name: "gNB-DU Configuration Update -> Acknowledge (38.473 §8.2.4)"
+  category: protocol
+  class: normal
+  verdict: status_pass
+- id: DU-F1-07
+  name: "F1 recovery after CU restart, SCTP re-established, F1 Setup re-run (38.473 §8.2.3 / TS 38.472)"
+  category: robustness
+  class: essential
+  verdict: status_pass
+# --- Cell / radio (TS 38.331, TS 38.321) -----------------------------------------------
+- id: DU-CELL-01
+  name: "MIB + SIB1 broadcast consistent with the F1 Setup served-cell info (38.331 §5.2.1)"
+  category: protocol
+  class: essential
+  verdict: status_pass
+- id: DU-CELL-02
+  name: "Random access Msg1 -> Msg4 completes for the UE (38.321)"
+  category: protocol
+  class: normal
+  verdict: status_pass
+- id: DU-CELL-03
+  name: "DRB scheduling, non-zero UL and DL throughput sustained"
+  category: dataplane
+  class: normal
+  verdict: status_pass
+# --- User plane (F1-U) -----------------------------------------------------------------
+- id: DU-UP-01
+  name: "F1-U tunnel with the O-CU-UP on the signalled TEID; uplink data forwarded (38.425)"
+  category: dataplane
+  class: essential
+  verdict: status_pass
+# --- Security assurance (TS 33.523 clause 7) -------------------------------------------
+- id: DU-SEC-01
+  name: "F1-C transport confidentiality and integrity (33.523 §7.2.2.1.1 / §7.2.2.1.2)"
+  category: security
+  class: normal
+  verdict: status_pass
+- id: DU-SEC-02
+  name: "F1-U transport confidentiality and integrity (33.523 §7.2.2.1.3 / §7.2.2.1.4)"
+  category: security
+  class: normal
+  verdict: status_pass
+# --- Robustness ------------------------------------------------------------------------
+  # The O-DU initiates the F1-C association (TS 38.472) and so exposes no F1-C listener; its
+  # reachable socket is F1-U GTP-U. A rogue-CU test needs us to *be* the CU -> Level 2.
+- id: DU-NEG-01
+  name: "Malformed GTP-U on F1-U -> dropped, no O-DU crash"
+  category: robustness
+  class: essential
+  verdict: status_pass

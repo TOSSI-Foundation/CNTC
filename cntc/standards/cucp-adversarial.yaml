@@ -1,0 +1,74 @@
+# CNTC requirement catalog: O-CU-CP LEVEL 2 "Adversarial Robustness & Privileged Interop"
+#
+# LEVEL 2 = requirements that need a NON-COMPLIANT or PRIVILEGED peer: forged, replayed or
+# downgraded protocol state, a rogue O-DU or rogue AMF identity, and network-initiated or
+# mobility-driven procedures a compliant peer cannot trigger on demand.
+#
+# STATUS: ROADMAP. These tests are NOT implemented: they grade 'na', so a Level 2 run is
+# INCOMPLETE by design until the tooling lands (raw F1AP/NGAP crafter, rogue-peer identities,
+# a second cell / Xn peer). Never read a Level 2 'na' as a pass.
+version: 0.1.0-roadmap
+profile: cucp-adversarial
+title: "O-CU-CP (gNB-CU-CP), CNTC Level 2 (Adversarial Robustness & Privileged Interop)"
+standards:
+- 3GPP TS 38.413 (NGAP / N2)
+- 3GPP TS 38.473 (F1AP / F1-C)
+- 3GPP TS 38.423 (XnAP)
+- 3GPP TS 33.501 (5G security)
+- "3GPP TS 33.511 (SCAS, gNB)"
+- "3GPP TS 33.523 (SCAS, split gNB)"
+defaults:
+  class: normal
+gate:
+  essential: all
+tests:
+- id: CUCP-SEC-07
+  name: "RRC replay protection, replayed RRC rejected (33.511 §4.2.2.1.9)"
+  category: security
+  class: essential
+  verdict: status_pass
+- id: CUCP-SEC-08
+  name: "RRC integrity check failure handled correctly (33.511 §4.2.2.1.4)"
+  category: security
+  class: essential
+  verdict: status_pass
+- id: CUCP-SEC-09
+  name: "Key refresh at the gNB, no key reuse (33.511 §4.2.2.1.13)"
+  category: security
+  class: normal
+  verdict: status_pass
+- id: CUCP-SEC-10
+  name: "Bidding-down prevention in Xn handover (33.511 §4.2.2.1.14)"
+  category: security
+  class: essential
+  verdict: status_pass
+- id: CUCP-SEC-11
+  name: "AS protection algorithm selection at gNB change (33.511 §4.2.2.1.15)"
+  category: security
+  class: normal
+  verdict: status_pass
+- id: CUCP-SEC-12
+  name: "Key update on dual connectivity (33.511 §4.2.2.1.18)"
+  category: security
+  class: normal
+  verdict: status_pass
+- id: CUCP-SEC-13
+  name: "UP security activation on transition from RRC-INACTIVE (33.511 §4.2.2.1.19)"
+  category: security
+  class: normal
+  verdict: status_pass
+- id: CUCP-MOB-01
+  name: "Xn handover preparation with a peer NG-RAN node (38.423)"
+  category: protocol
+  class: normal
+  verdict: status_pass
+- id: CUCP-NEG-03
+  name: "Rogue O-DU, F1 Setup from an unauthenticated DU is rejected"
+  category: robustness
+  class: essential
+  verdict: status_pass
+- id: CUCP-NEG-04
+  name: "Well-formed ASN.1 with invalid IE values on F1AP / NGAP -> reject, no crash"
+  category: robustness
+  class: normal
+  verdict: status_pass

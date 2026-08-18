@@ -1,4 +1,4 @@
-"""Test catalog — the full menu of what upfbench can measure, suite by suite, with the
+"""Test catalog, the full menu of what upfbench can measure, suite by suite, with the
 standard each test maps to. Static showcase content (describes the framework, not a run)."""
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-"""Runs — the results browser: every campaign on disk, newest first, with a search + mode
+"""Runs: the results browser: every campaign on disk, newest first, with a search + mode
 filter (client-side, via app.js)."""
 from __future__ import annotations
 

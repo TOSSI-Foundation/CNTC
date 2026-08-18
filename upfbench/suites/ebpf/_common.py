@@ -3,7 +3,7 @@
 The tests read the adapter's ``bpf_introspect()`` (XDP attach state + BPF map contents) and,
 for the binding tests, drive pfcpsim to install/delete a session and re-read the maps. Fast-path
 tests inject GTP-U straight to the UPF's N3 address on UDP 2152: an eBPF/XDP UPF's program sits
-on the netdev RX, so a plain datagram to ``n3_addr:2152`` reaches the XDP hook (verified — it
+on the netdev RX, so a plain datagram to ``n3_addr:2152`` reaches the XDP hook (verified, it
 increments ``rx_gtp_pdu`` and the forward counter). No external generator / veth is needed, which
 also makes injection robust to the eUPF pod IP changing across restarts.
 """
@@ -15,7 +15,7 @@ from upfbench.results import TestResult
 
 
 def not_ebpf(ctx) -> bool:
-    """True when this UPF's dataplane isn't eBPF/XDP — every XDP test then grades 'na'."""
+    """True when this UPF's dataplane isn't eBPF/XDP, every XDP test then grades 'na'."""
     return ctx.upf.dataplane_kind() != "ebpf"
 
 
@@ -38,7 +38,7 @@ def _gtpu(teid: int, ue_ip: str, dst: str = "8.8.8.8", payload: int = 64,
     from scapy.contrib.gtp import GTP_U_Header
     from scapy.all import IP, UDP, Raw
     if malformed:
-        # GTP-U header advertising a huge length over a truncated, non-IP body — a parser that
+        # GTP-U header advertising a huge length over a truncated, non-IP body, a parser that
         # trusts the length or dereferences the inner header without bounds-checking crashes.
         return bytes(GTP_U_Header(teid=teid, length=0xFFFF))[:8] + b"\x45\x00\x00\x02"
     inner = IP(src=ue_ip, dst=dst) / UDP(sport=1234, dport=80) / Raw(b"\x00" * payload)

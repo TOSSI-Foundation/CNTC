@@ -6,7 +6,7 @@ workflow, validated on server `three` (Intel XXV710 / i40e, 25 GbE).
 
 > **Why this is different from af_packet.** In `af_packet` mode the UPF's N3 access port
 > is a kernel socket, so the framework injects with `tcpreplay` from the host. In
-> **DPDK/AF_XDP/CNDP** the access port is a **DPDK/XDP-owned VF inside the pod** — there is
+> **DPDK/AF_XDP/CNDP** the access port is a **DPDK/XDP-owned VF inside the pod**: there is
 > *no host kernel socket to inject into*, and the UPF forwards millions of pps (far above
 > tcpreplay's ~0.06 Mpps ceiling). So we drive it with **TRex on a spare SR-IOV VF**, whose
 > frames hairpin through the NIC's on-chip switch (VEB) into the UPF's access VF. The
@@ -107,7 +107,7 @@ Record: **UPF access VF MAC** (e.g. `00:11:22:33:44:33`) and the **gen VF PCI** 
 
 ## 5. Configure the framework (two files)
 
-### `configs/trex_cfg.yaml` — pins TRex to your gen VF(s) only
+### `configs/trex_cfg.yaml`: pins TRex to your gen VF(s) only
 ```yaml
 - version: 2
   interfaces: ['0000:18:0a.2', '0000:18:0a.3']   # YOUR free gen VFs
@@ -122,13 +122,13 @@ Record: **UPF access VF MAC** (e.g. `00:11:22:33:44:33`) and the **gen VF PCI** 
     latency_thread_id: 3
     dual_if:
       - socket: 0
-        threads: [4, 5, 6, 7]         # TRex cores — MUST be OFF the UPF worker cores
+        threads: [4, 5, 6, 7]         # TRex cores, MUST be OFF the UPF worker cores
 ```
 > Pinning to explicit interfaces keeps TRex's DPDK EAL from probing other vfio devices.
 > `limit_memory` + the framework's auto-cleanup of leaked `rtemap_*` files prevent TRex
 > from starving the UPF's hugepages.
 
-### `configs/sdcore-bess-trex.yaml` — the campaign
+### `configs/sdcore-bess-trex.yaml`: the campaign
 ```yaml
 campaign: UPF-BM-SDCORE-DPDK
 reset_between_suites: true            # fresh bessd per suite (clears WildcardMatch tuples)
@@ -156,7 +156,7 @@ performance:
   generator: trex                     # DPDK injection
   frame_sizes: [128, 256, 512, 1024, 1518]   # GTP-U min ~82B, so 64 is omitted
   trial_duration_s: 8
-  max_rate_mpps: 15.0                 # search ceiling — raise if the UPF doesn't saturate
+  max_rate_mpps: 15.0                 # search ceiling, raise if the UPF doesn't saturate
   pdr_tolerance: 0.001
   search_resolution_mpps: 0.1
   search_max_iters: 7
@@ -223,7 +223,7 @@ workers:4 → --campaign DPDK-4W
 Compare the NDR across the three campaign reports. (`rss_flows: 64` stays fixed.)
 
 ### Same config for AF_XDP / CNDP
-This *same* TRex path works for **af_xdp** and **cndp** too — just redeploy the UPF in
+This *same* TRex path works for **af_xdp** and **cndp** too, just redeploy the UPF in
 that mode (the adapter auto-detects and stamps the live mode in the report). Use distinct
 campaign ids (`--campaign UPF-BM-SDCORE-AFXDP`, etc.).
 
@@ -245,7 +245,7 @@ cd <repo>/third_party/pfcpsim
 CGO_ENABLED=0 go build -o pfcpsim ./cmd/pfcpsim
 CGO_ENABLED=0 go build -o pfcpctl ./cmd/pfcpctl
 ```
-(The binaries are git-ignored — rebuild per machine.)
+(The binaries are git-ignored, rebuild per machine.)
 
 ### 8.2 pfcpsim config knobs
 Add to `configs/sdcore-bess-trex.yaml` under `upf:` (alongside the TRex knobs):
@@ -256,14 +256,14 @@ Add to `configs/sdcore-bess-trex.yaml` under `upf:` (alongside the TRex knobs):
   ue_pool: "10.250.0.0/24"       # UE pool for created sessions
   pfcpsim_mbr_kbps: 10000000     # ~10 Gbps: make the QER effectively unlimited (raw ceiling)
 ```
-- **N4 address is auto-resolved** from the `upf` Kubernetes service ClusterIP — stable
+- **N4 address is auto-resolved** from the `upf` Kubernetes service ClusterIP, stable
   across pod restarts (no need to chase the pod IP). `n4_addr` is only a fallback.
 - **`pfcpsim_iface`** must be the **node** interface (the pod must route PFCP responses
   back to it). Find it: `kubectl get node -o wide` → the interface holding the InternalIP.
 
 ### 8.3 Run them
 ```bash
-# PFCP conformance (no traffic — fastest check that pfcpsim reaches the UPF over N4):
+# PFCP conformance (no traffic: fastest check that pfcpsim reaches the UPF over N4):
 sudo -E python3 -m upfbench.cli run --config configs/sdcore-bess-trex.yaml --suite pfcp --campaign DPDK-PFCP
 # Multi-UE load (pfcpsim installs N real sessions; TRex sends GTP-U on matching TEIDs):
 sudo -E python3 -m upfbench.cli run --config configs/sdcore-bess-trex.yaml --suite load --campaign DPDK-LOAD
@@ -285,32 +285,32 @@ traffic. It uses the same plumbing as load (pfcpsim installs one known session; 
 hairpins the GTP-U through the NIC VEB), plus a **crash-detection + auto-recovery** layer.
 
 Three tests:
-- **NT-01 Unknown TEID** — GTP-U on a TEID with no PDR must be **dropped** (and a valid TEID
+- **NT-01 Unknown TEID**: GTP-U on a TEID with no PDR must be **dropped** (and a valid TEID
   on the same session must still forward). *Pass on DPDK.*
-- **NT-02 Malformed GTP-U** — six variants (control/reserved message type, GTPv0 version,
+- **NT-02 Malformed GTP-U**: six variants (control/reserved message type, GTPv0 version,
   truncated header, zero-inner G-PDU, length-overflow), each its own burst with per-variant
   crash detection.
-- **NT-03 PSC (0x85) ext-header** — a well-formed 5G PDU-Session-Container vs a **malformed**
+- **NT-03 PSC (0x85) ext-header**: a well-formed 5G PDU-Session-Container vs a **malformed**
   PSC ext-header.
 
 **How crash detection works.** Packets are crafted in a clean subprocess with the *system*
 scapy (TRex bundles an older scapy that can't build the PSC ext-header and can't coexist in
-the TRex process — so no scapy object ever crosses into TRex; only raw bytes do). After each
-burst the suite polls the bessd container's k8s `restartCount` (and liveness) for ~20 s — a
-BESS worker segfault can lag the burst that triggers it — then, on a detected crash, **waits
+the TRex process, so no scapy object ever crosses into TRex; only raw bytes do). After each
+burst the suite polls the bessd container's k8s `restartCount` (and liveness) for ~20 s, a
+BESS worker segfault can lag the burst that triggers it, then, on a detected crash, **waits
 for bessd to come back, re-installs the session + short-circuit, and continues**, attributing
 the crash to the culprit packet. A crash ⇒ the test is **FAIL** (a single malformed N3 packet
 that drops the user plane is a remote DoS).
 
 ```bash
-# run it on its own (it deliberately tries to crash the UPF — NOT part of --suite all):
+# run it on its own (it deliberately tries to crash the UPF: NOT part of --suite all):
 sudo -E python3 -m upfbench.cli run --config configs/sdcore-bess-trex.yaml --suite n3neg --campaign DPDK-N3NEG
 ```
 Knobs (config `n3neg:` block): `burst_pkts` (per-variant burst, default 20000),
 `frame_size` (default 256).
 
 **Finding on SD-Core BESS-UPF (omec).** NT-01 passes (TEID/PDR enforced). NT-02/NT-03
-reproducibly **crash `bessd` with a SIGSEGV in `GtpuDecap::ProcessBatch`** — a malformed PSC
+reproducibly **crash `bessd` with a SIGSEGV in `GtpuDecap::ProcessBatch`**: a malformed PSC
 ext-header and the truncation/length-overflow GTP-U variants make the fixed-offset decap read
 past the buffer (null-deref). The data plane drops for ~1 min until k8s restarts the
 container; the suite detects this, recovers, and reports it as FAIL. This is a genuine
@@ -321,7 +321,7 @@ backtrace and `restartCount`).
 
 ## 9. Reading the results (what the number means)
 
-- **What's measured:** the **dataplane-processing throughput** — access RX → full
+- **What's measured:** the **dataplane-processing throughput**: access RX → full
   PDR/QER/FAR pipeline → core TX, with the egress route-lookup/MAC-rewrite short-circuited
   (the same method the reference benchmarks used). It isolates the I/O backend, which is
   exactly what you want when comparing modes.
@@ -329,7 +329,7 @@ backtrace and `restartCount`).
   i40e, scalar Rx). Multi-flow with N workers ≈ aggregate. Report both.
 - **Generator vs UPF limited:** the report logs the generator ceiling. If NDR ≈ that
   ceiling, you're generator-limited, not UPF-limited. With TRex the UPF often does **not**
-  saturate on a trivial pipeline — you hit the **NIC VEB internal bandwidth (~92 Gbps,
+  saturate on a trivial pipeline, you hit the **NIC VEB internal bandwidth (~92 Gbps,
   ~80–90 Mpps @128B)** before the UPF CPU. State which limit you hit.
 
 ---

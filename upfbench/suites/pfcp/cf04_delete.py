@@ -1,4 +1,4 @@
-"""CF-04 Session deletion — Suite 3 (PFCP conformance, 3GPP TS 29.244)."""
+"""CF-04 Session deletion, Suite 3 (PFCP conformance, 3GPP TS 29.244)."""
 from upfbench.suites.base import TestCase, RunContext
 from upfbench.results import TestResult
 from upfbench.suites.pfcp.cf01_association import needs_pfcpsim

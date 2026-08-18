@@ -1,4 +1,4 @@
-# CNTC requirement catalog — CONFORMANCE profile
+# CNTC requirement catalog: CONFORMANCE profile
 # Hardware-INDEPENDENT correctness. Certifiable on any rig, because these outcomes do not
 # depend on the packet-per-second capacity of the box: either the UPF implements the N4/PFCP
 # procedures correctly and survives malformed N3 input, or it does not.

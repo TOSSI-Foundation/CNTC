@@ -1,4 +1,4 @@
-"""cpbench command-line entry point — the CNTC control-plane test engine.
+"""cpbench command-line entry point, the CNTC control-plane test engine.
 
     cpbench list                                    # NFs + their catalogs/test counts
     cpbench doctor --config configs/free5gc-cp.yaml # preflight the rig
@@ -19,7 +19,7 @@ from cpbench import __version__, config as cfgmod
 def _cmd_list(_args) -> int:
     from cntc.standards import load_catalog
     from cpbench.suites.registry import NF_REQUIRES
-    print("cpbench — control-plane NFs and their CNTC catalogs:")
+    print("cpbench, control-plane NFs and their CNTC catalogs:")
     for nf in cfgmod.NFS:
         try:
             cat = load_catalog(cfgmod.Campaign.profile_for(nf))
@@ -49,7 +49,7 @@ def _cmd_run(args) -> int:
         import termios
         if sys.stdout.isatty():
             saved = termios.tcgetattr(sys.stdout.fileno())
-    except Exception:  # noqa: BLE001 — not a tty / no termios: nothing to restore
+    except Exception:  # noqa: BLE001, not a tty / no termios: nothing to restore
         saved = None
     try:
         runner.run(args.config, nf=args.nf, campaign=args.campaign)

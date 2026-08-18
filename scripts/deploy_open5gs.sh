@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# deploy_open5gs.sh — deploy an Open5GS 5G SA core from scratch on a fresh Ubuntu host.
+# deploy_open5gs.sh: deploy an Open5GS 5G SA core from scratch on a fresh Ubuntu host.
 #
 # Uses herlesupreeth/docker_open5gs (Docker-Compose 5G SA core + UERANSIM). Handles the
 # Open5GS-specific prerequisites: Docker Compose v2 and the gtp5g kernel module (the 5G
-# UPF data plane needs it). Idempotent — safe to re-run. See docs/open5gs-deployment.md.
+# UPF data plane needs it). Idempotent: safe to re-run. See docs/open5gs-deployment.md.
 #
 # Usage:   sudo-capable user:  ./scripts/deploy_open5gs.sh
 # Override defaults via env, e.g.:  HOST_IP=10.0.0.5 UE_POOL=10.45.0.0/16 ./deploy_open5gs.sh

@@ -75,7 +75,7 @@ def restarts(ctx) -> int:
 
 
 def crashed_since(ctx, base) -> bool:
-    """True if the data plane crashed (k8s restarted bessd) since `base` — or if it's
+    """True if the data plane crashed (k8s restarted bessd) since `base`, or if it's
     simply not responsive right now."""
     if hasattr(ctx.upf, "restart_count") and restarts(ctx) > base:
         return True
@@ -109,7 +109,7 @@ def recover(ctx, base_id) -> int:
 
 
 def _build_packets(s, frame) -> dict:
-    """Run _pktgen.py in a child process (system scapy only — no TRex path) and decode the
+    """Run _pktgen.py in a child process (system scapy only, no TRex path) and decode the
     base64 variants to raw bytes."""
     params = {"teid": s["teid"], "ue_ip": s["ue_ip"], "dst_mac": s["dst_mac"],
               "src_mac": s["src_mac"], "gnb_ip": s["gnb_ip"], "remote_ip": s["remote_ip"],

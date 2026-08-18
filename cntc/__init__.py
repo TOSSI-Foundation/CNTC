@@ -1,4 +1,4 @@
-"""CNTC — Cloud Native Telecom Certification Framework.
+"""CNTC: Cloud Native Telecom Certification Framework.
 
 CNTC is the umbrella layer that turns raw test output from the ``upfbench`` engine (and,
 in future, other network-function test engines) into a *graded, standards-aligned verdict*:

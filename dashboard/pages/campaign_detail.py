@@ -1,4 +1,4 @@
-"""Campaign detail — one run: a scorecard summary (verdict + stats), a sticky scorebar
+"""Campaign detail, one run: a scorecard summary (verdict + stats), a sticky scorebar
 (revealed on scroll by app.js), suite jump-links, the SUT card, and every suite with its
 charts/tables/notes."""
 from __future__ import annotations
@@ -22,7 +22,7 @@ def _stat(val, label, color=None, mono=False):
 def _scorecard(c):
     t = c.totals
     cv = c.verdict or {}
-    if c.is_running:   # LIVE: campaign still executing — show a pulsing RUNNING state
+    if c.is_running:   # LIVE: campaign still executing, show a pulsing RUNNING state
         sub = f"running {c.running_suite}…" if c.running_suite else "running…"
         verdict = html.Div(className="running-pill", style={"fontSize": "13px", "padding": "6px 14px"},
                            children=[html.Span(className="running-dot"), html.Span("RUNNING"),

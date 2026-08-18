@@ -2,11 +2,11 @@
 
 CNTC issues a **technical conformance certificate** automatically **iff every essential test
 in the profile passed** (verdict.result == "PASS"). A FAIL or INCOMPLETE verdict yields no
-certificate — you cannot certify a UPF that failed an essential test (e.g. one that crashes
+certificate, you cannot certify a UPF that failed an essential test (e.g. one that crashes
 on malformed input).
 
 NOTE ON SCOPE: this certifies *technical conformance to a versioned CNTC profile on a stated
-rig* — a technical result, not a governance-backed brand. The certificate records exactly
+rig*, a technical result, not a governance-backed brand. The certificate records exactly
 what was verified so it is auditable.
 """
 from __future__ import annotations
@@ -17,7 +17,7 @@ from typing import Any
 
 def _certificate_id(subject: str, profile: str, catalog_version: str, stamp: str) -> str:
     seed = f"{subject}|{profile}|{catalog_version}|{stamp}".encode()
-    # Tag = the leading token of the profile (before the first '-'), capped — so
+    # Tag = the leading token of the profile (before the first '-'), capped, so
     # "amf-conformance" -> "AMF" (not "AMF-"), "conformance" -> "CONF", "upf-ebpf" -> "UPF".
     tag = profile.upper().split("-", 1)[0][:4]
     return f"CNTC-{tag}-{hashlib.sha256(seed).hexdigest()[:10].upper()}"
@@ -54,10 +54,10 @@ def refusal_reason(verdict: dict[str, Any]) -> str:
     r = verdict.get("result")
     if r == "FAIL":
         fe = ", ".join(verdict.get("failed_essentials", [])) or "(unknown)"
-        return f"verdict is FAIL — failed essential test(s): {fe}"
+        return f"verdict is FAIL, failed essential test(s): {fe}"
     if r == "INCOMPLETE":
         nr = ", ".join(verdict.get("not_run_essentials", [])) or "(unknown)"
-        return f"verdict is INCOMPLETE — essential test(s) did not run: {nr}"
+        return f"verdict is INCOMPLETE, essential test(s) did not run: {nr}"
     return f"verdict is {r!r}, not PASS"
 
 
@@ -69,7 +69,7 @@ def render_markdown(cert: dict[str, Any]) -> str:
         "```",
         "════════════════════════════════════════════════════════════════════",
         "                    CNTC CONFORMANCE CERTIFICATE",
-        "         Cloud Native Telecom Certification Framework — PASS",
+        "         Cloud Native Telecom Certification Framework, PASS",
         "════════════════════════════════════════════════════════════════════",
         "```",
         "",
@@ -81,11 +81,11 @@ def render_markdown(cert: dict[str, Any]) -> str:
         "| Field | Value |",
         "|---|---|",
         f"| Subject (UPF) | **{cert['subject']}** |",
-        f"| UPF image | `{cert.get('upf_image','') or '—'}` |",
-        f"| Profile | {cert['profile']} — {cert.get('title','')} |",
+        f"| UPF image | `{cert.get('upf_image','') or ', '}` |",
+        f"| Profile | {cert['profile']}, {cert.get('title','')} |",
         f"| Catalog version | v{cert['catalog_version']} |",
-        f"| Standards | {std or '—'} |",
-        f"| Rig | {rig or '—'} |",
+        f"| Standards | {std or ', '} |",
+        f"| Rig | {rig or ', '} |",
         f"| Essential gate | {e.get('passed',0)}/{e.get('total',0)} passed, 0 failed |",
         f"| Grade | **PASS** |",
         f"| Issued | {cert['issued']} |",
@@ -116,17 +116,17 @@ def render_html(cert: dict[str, Any]) -> str:
  .grade{{color:#1a7f37;font-weight:bold}} .scope{{color:#57606a;font-size:13px;font-style:italic}}
 </style></head><body>
 <h1>CNTC CONFORMANCE CERTIFICATE</h1>
-<div class="sub">Cloud Native Telecom Certification Framework — <span class="grade">PASS</span></div>
+<div class="sub">Cloud Native Telecom Certification Framework, <span class="grade">PASS</span></div>
 <div class="id">{esc(cert['certificate_id'])}</div>
 <p>This certifies that the network function below passed <b>every essential test</b> of the
 CNTC <b>{esc(cert['profile'])}</b> profile (catalog v{esc(cert['catalog_version'])}).</p>
 <table>
  <tr><td>Subject (UPF)</td><td><b>{esc(cert['subject'])}</b></td></tr>
- <tr><td>UPF image</td><td><code>{esc(cert.get('upf_image','') or '—')}</code></td></tr>
- <tr><td>Profile</td><td>{esc(cert['profile'])} — {esc(cert.get('title',''))}</td></tr>
+ <tr><td>UPF image</td><td><code>{esc(cert.get('upf_image','') or ', ')}</code></td></tr>
+ <tr><td>Profile</td><td>{esc(cert['profile'])}, {esc(cert.get('title',''))}</td></tr>
  <tr><td>Catalog version</td><td>v{esc(cert['catalog_version'])}</td></tr>
- <tr><td>Standards</td><td>{std or '—'}</td></tr>
- <tr><td>Rig</td><td>{rig or '—'}</td></tr>
+ <tr><td>Standards</td><td>{std or ', '}</td></tr>
+ <tr><td>Rig</td><td>{rig or ', '}</td></tr>
  <tr><td>Essential gate</td><td>{e.get('passed',0)}/{e.get('total',0)} passed, 0 failed</td></tr>
  <tr><td>Grade</td><td class="grade">PASS</td></tr>
  <tr><td>Issued</td><td>{esc(cert['issued'])}</td></tr>

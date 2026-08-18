@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# cntc-run-all.sh — full e2e: run every suite, merge, grade, certify, (optionally) launch dashboard.
+# cntc-run-all.sh: full e2e: run every suite, merge, grade, certify, (optionally) launch dashboard.
 # Usage:  ./scripts/cntc-run-all.sh <config.yaml> [campaign-id]
 set -euo pipefail
 
@@ -37,7 +37,7 @@ python3 -m cntc.cli certify "campaigns/$CAMP/results.json" || true
 
 cat <<EOF
 
->>> DONE — campaign: $CAMP
+>>> DONE, campaign: $CAMP
     scorecard:  campaigns/$CAMP/scorecard.md   (+ .html)
     verdict:    campaigns/$CAMP/results.json   (verdict block)
     cert:       campaigns/$CAMP/certificate.*  (present only if PASS)

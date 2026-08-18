@@ -1,4 +1,4 @@
-"""Real NRF test cases — driven directly over SBI (TS 29.510 / TS 33.518).
+"""Real NRF test cases, driven directly over SBI (TS 29.510 / TS 33.518).
 
 These talk to a live NRF. Anchored to the spec:
   NRF-SEC-02  discovery without a valid token must be rejected (401/403)     [TS 33.501 §13]
@@ -50,9 +50,9 @@ class NrfSec02(NfTestCase):
         if 200 <= st < 300:
             return TestResult(self.id, self.name, "fail", metrics={"status": st},
                               notes=f"unauthenticated discovery -> HTTP {st} "
-                                    f"(NF list served without a token — auth bypass)")
+                                    f"(NF list served without a token, auth bypass)")
         return TestResult(self.id, self.name, "na", metrics={"status": st},
-                          notes=f"unauthenticated discovery -> HTTP {st} — not an auth decision; "
+                          notes=f"unauthenticated discovery -> HTTP {st}, not an auth decision; "
                                 f"cannot judge authz enforcement")
 
 
@@ -76,7 +76,7 @@ class NrfSec03(NfTestCase):
         return TestResult(self.id, self.name, "fail",
                           metrics={"tls": False, "cleartext_status": http.get("status")},
                           notes=f"no TLS listener on {host}:{port} ({tls.get('error')}); "
-                                f"cleartext HTTP answered ({http.get('status')}) — SBI not TLS-protected")
+                                f"cleartext HTTP answered ({http.get('status')}), SBI not TLS-protected")
 
 
 class NrfNeg01(NfTestCase):
@@ -111,7 +111,7 @@ class NrfDisc01(NfTestCase):
         base = _base(ctx)
         url = f"{base}/nnrf-disc/v1/nf-instances?target-nf-type=AMF&requester-nf-type=SMF"
         # Try with an OAuth2 token if the NRF will grant us one; otherwise fall back to a
-        # token-less request (some deployments don't enforce SBI authorization — whether they
+        # token-less request (some deployments don't enforce SBI authorization, whether they
         # *should* is NRF-SEC-02's concern; here we test that discovery itself works).
         tok = ctx.sbi.get_access_token(base, nf_type="SMF", target_nf_type="NRF", scope="nnrf-disc")
         r = ctx.sbi.request("GET", url, token=tok.get("token"))
@@ -126,7 +126,7 @@ class NrfDisc01(NfTestCase):
         if r.get("status") in (401, 403):
             return TestResult(self.id, self.name, "na",
                               notes=f"discovery requires a token we can't obtain (HTTP {r.get('status')}) "
-                                    f"— not exercisable without registered-NF creds")
+                                    f", not exercisable without registered-NF creds")
         return TestResult(self.id, self.name, "fail",
                           metrics={"status": r.get("status")},
                           notes=f"discovery returned HTTP {r.get('status')} without an NF list")
@@ -152,7 +152,7 @@ class NrfSec01(NfTestCase):
         if st in (400, 401, 403):
             return TestResult(self.id, self.name, "pass", metrics={"status": st},
                               notes=f"OAuth2 token endpoint present and rejects an unregistered "
-                                    f"client (HTTP {st}) — token authorization enforced [TS 33.501 §13]")
+                                    f"client (HTTP {st}), token authorization enforced [TS 33.501 §13]")
         return TestResult(self.id, self.name, "fail", metrics={"status": st},
                           notes=f"token endpoint returned HTTP {st} (missing or misbehaving)")
 
@@ -206,7 +206,7 @@ class NrfNeg02(NfTestCase):
                               notes=f"unknown NF type -> HTTP {st} (rejected/empty), NRF alive")
         if st in (401, 403):
             return TestResult(self.id, self.name, "na",
-                              notes=f"needs a token we can't obtain (HTTP {st}) — not exercisable")
+                              notes=f"needs a token we can't obtain (HTTP {st}), not exercisable")
         return TestResult(self.id, self.name, "fail", metrics={"status": st},
                           notes=f"unknown NF type -> HTTP {st} (expected 400/empty)")
 
@@ -228,7 +228,7 @@ class NrfReg01(NfTestCase):
         if status in (401, 403):
             return TestResult(self.id, self.name, "na",
                               notes=f"NRF requires authorized identity (HTTP {status}); positive "
-                                    f"NFRegister needs registered-NF creds — not exercisable here")
+                                    f"NFRegister needs registered-NF creds, not exercisable here")
         if status in (200, 201):
             return TestResult(self.id, self.name, "pass",
                               metrics={"status": status}, notes="NFRegister accepted")

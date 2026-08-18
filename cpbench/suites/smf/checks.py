@@ -1,4 +1,4 @@
-"""Real SMF test cases — exercised via a UERANSIM PDU session against the live core.
+"""Real SMF test cases, exercised via a UERANSIM PDU session against the live core.
 
   SMF-SESS-01 PDU session establishment succeeds              [TS 24.501 §6.4.1]
   SMF-SESS-05 UE IP address allocated                         [TS 23.501 §5.8.2]
@@ -74,7 +74,7 @@ class SmfSess03(NfTestCase):
                                     "[TS 24.501 §6.4.3]")
         if o.get("pdu_released") is None:
             return TestResult(self.id, self.name, "na",
-                              notes="release not driven on this deployment (observe-only) — not judged")
+                              notes="release not driven on this deployment (observe-only), not judged")
         return TestResult(self.id, self.name, "na" if o.get("error") else "fail",
                           metrics={"pdu_released": o.get("pdu_released")},
                           notes=o.get("error") or "release did not complete")
@@ -84,7 +84,7 @@ def _n4(ctx, tid, name, key, msg, spec) -> TestResult:
     o = _obs(ctx)
     if not o.get("n4_capture"):
         return TestResult(tid, name, "na",
-                          notes="N4 not captured (needs tcpdump+tshark on the N4 interface) — "
+                          notes="N4 not captured (needs tcpdump+tshark on the N4 interface), "
                                 "cannot observe PFCP")
     val = o.get(key)
     types = o.get("n4_msg_types")
@@ -118,10 +118,10 @@ class SmfSess04(NfTestCase):
                               notes="2nd PDU session (PSI[2]) established alongside the first "
                                     "[TS 23.501 §5.6]")
         # A 2nd session needs a 2nd DNN in the subscriber (this profile has only 'internet'),
-        # so we can't currently drive it — 'na', never a fake fail against the SMF.
+        # so we can't currently drive it, 'na', never a fake fail against the SMF.
         return TestResult(self.id, self.name, "na",
                           notes="second PDU session not exercised (subscriber has a single DNN; "
-                                "provision a 2nd DNN to test multi-session) — not judged")
+                                "provision a 2nd DNN to test multi-session), not judged")
 
 
 class SmfSec03(NfTestCase):

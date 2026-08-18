@@ -6,7 +6,7 @@ namespace ``aether-5gc``), so this adapter reads facts and counters by shelling 
 that container with ``kubectl exec ... -- bessctl ...``. All commands are captured into
 the result store for the report's reproducibility appendix.
 
-Config knobs (campaign YAML ``upf.extra``, all optional — defaults shown)::
+Config knobs (campaign YAML ``upf.extra``, all optional, defaults shown)::
 
     upf:
       adapter: sdcore_bess
@@ -158,7 +158,7 @@ class Adapter(UPFAdapter):
         """CPU cores the bessd workers are pinned to (from ``bessctl show worker``).
 
         Used by the framework to keep co-located load (e.g. the traffic generator)
-        OFF these cores — af_packet RX throughput is very sensitive to contention
+        OFF these cores, af_packet RX throughput is very sensitive to contention
         on the worker core.
         """
         cores = []
@@ -303,8 +303,8 @@ class Adapter(UPFAdapter):
 
     # --- downlink datapath (TC-02 bidirectional) ------------------------------
     # Empirically (probe), an injected downlink plain-IP packet (N6->UE) DOES traverse the
-    # full DL fast-path — coreMetadata(src_iface=Core) -> pktParse -> pdrLookup -> QER ->
-    # farLookup -> executeFAR — but lands on executeFAR gate 2 (farDrop), because there is
+    # full DL fast-path, coreMetadata(src_iface=Core) -> pktParse -> pdrLookup -> QER ->
+    # farLookup -> executeFAR, but lands on executeFAR gate 2 (farDrop), because there is
     # no real forwarding DL FAR for our synthetic UE on this testbed. So we short-circuit the
     # DROP gate to the access egress: the packet is counted out N3 after the entire DL
     # ingress+lookup+QER pipeline has run on it (the per-packet cost we want to measure),
@@ -360,7 +360,7 @@ class Adapter(UPFAdapter):
 
     # --- liveness (for the N3 negative/robustness suite) ----------------------
     def healthy(self) -> bool:
-        """True if bessd is responsive — i.e. it did NOT crash. The N3 negative suite
+        """True if bessd is responsive, i.e. it did NOT crash. The N3 negative suite
         sends malformed/edge-case GTP-U and asserts the UPF stays up."""
         try:
             self._bessctl("show", "worker")
@@ -370,7 +370,7 @@ class Adapter(UPFAdapter):
 
     def restart_count(self) -> int:
         """k8s restartCount of the bessd container. A malformed packet that crashes the
-        BESS datapath makes this increment (k8s recreates the container) — that's how the
+        BESS datapath makes this increment (k8s recreates the container), that's how the
         N3 negative suite detects a data-plane crash even when bessd recovers."""
         cmd = [*self._kubectl_base(), "get", "pod", self.pod, "-n", self.namespace,
                "-o", f"jsonpath={{.status.containerStatuses[?(@.name=='{self.container}')]"

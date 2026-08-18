@@ -1,12 +1,12 @@
-"""TC-01 Throughput sweep (NDR/PDR per frame size) — RFC 2544 26.1 / ETSI TST009.
+"""TC-01 Throughput sweep (NDR/PDR per frame size), RFC 2544 26.1 / ETSI TST009.
 
 For each frame size we binary-search the offered packet rate to find:
-  * NDR  — highest offered rate with zero loss,
-  * PDR  — highest offered rate with loss <= tolerance (default 0.1%).
+  * NDR, highest offered rate with zero loss,
+  * PDR, highest offered rate with loss <= tolerance (default 0.1%).
 
 Loss is measured against *offered* traffic (what the generator sent) vs *forwarded*
 (the UPF's N6/core TX counter), so it captures af_packet RX drops as well as pipeline
-drops — the honest black-box throughput of the UPF.
+drops, the honest black-box throughput of the UPF.
 """
 from __future__ import annotations
 

@@ -18,7 +18,7 @@ def render_console(v: dict[str, Any]) -> str:
     lines: list[str] = []
     lines.append("")
     lines.append("  " + "=" * 68)
-    lines.append(f"  CNTC VERDICT  —  profile: {v['profile']}  (catalog v{v['catalog_version']})")
+    lines.append(f"  CNTC VERDICT, profile: {v['profile']}  (catalog v{v['catalog_version']})")
     if v.get("title"):
         lines.append(f"  {v['title']}")
     lines.append("  " + "=" * 68)
@@ -61,7 +61,7 @@ def render_console(v: dict[str, Any]) -> str:
 def render_markdown(v: dict[str, Any]) -> str:
     """A shareable Markdown scorecard (also consumable by the dashboard later)."""
     out: list[str] = []
-    out.append(f"# CNTC Scorecard — {v.get('title') or v['profile']}")
+    out.append(f"# CNTC Scorecard, {v.get('title') or v['profile']}")
     out.append("")
     out.append(f"**Result: {v['result']}**  ")
     out.append(f"Profile: `{v['profile']}` (catalog v{v['catalog_version']})  ")
@@ -136,7 +136,7 @@ def render_html(v: dict[str, Any]) -> str:
     warns = "".join(f'<p style="color:#9a6700">⚠️ {_esc(w)}</p>' for w in v.get("warnings", []))
     standards = ", ".join(_esc(s) for s in v.get("standards", []))
     return f"""<!doctype html><html><head><meta charset="utf-8">
-<title>CNTC Scorecard — {_esc(v.get('title') or v['profile'])}</title>
+<title>CNTC Scorecard, {_esc(v.get('title') or v['profile'])}</title>
 <style>
  body{{font:14px/1.5 -apple-system,Segoe UI,Roboto,sans-serif;color:#1f2328;max-width:900px;margin:2rem auto;padding:0 1rem}}
  .banner{{display:inline-block;padding:.35rem .9rem;border-radius:6px;color:#fff;font-weight:700;background:{color}}}
@@ -149,7 +149,7 @@ def render_html(v: dict[str, Any]) -> str:
 <p class="meta">Profile <b>{_esc(v['profile'])}</b> (catalog v{_esc(v['catalog_version'])})
  &nbsp;·&nbsp; {_esc(v.get('title',''))}</p>
 <p class="meta">Standards: {standards}</p>
-<p class="meta">Rig: {rig or '—'}</p>
+<p class="meta">Rig: {rig or ', '}</p>
 <p><b>Essential gate</b> (<code>{_esc(v['gate']['policy'])}</code>):
  {e['passed']} passed / {e['failed']} failed / {e['na']} n/a of {e['total']}.</p>
 {warns}

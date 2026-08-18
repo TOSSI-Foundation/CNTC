@@ -24,7 +24,7 @@ def expand_user_path(p: str | Path) -> Path:
     The run command is documented as ``sudo python3 -m cpbench.cli run …`` (tcpdump /
     pfcpsim / docker need root). Under sudo ``$HOME`` becomes ``/root``, so a plain
     ``Path("~/UERANSIM").expanduser()`` would look in ``/root`` and miss the user's build.
-    When ``SUDO_USER`` is set we expand ``~`` against that user's real home instead — so the
+    When ``SUDO_USER`` is set we expand ``~`` against that user's real home instead, so the
     non-sudo ``doctor`` and the sudo ``run`` resolve the same path.
     """
     s = str(p)

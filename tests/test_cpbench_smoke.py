@@ -1,4 +1,4 @@
-"""cpbench engine smoke tests — config parsing, suite assembly, composite verdict.
+"""cpbench engine smoke tests, config parsing, suite assembly, composite verdict.
 
 No live core needed: these exercise the plugin wiring and the composite grader directly.
 """

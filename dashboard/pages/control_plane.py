@@ -1,8 +1,8 @@
-"""Control plane — the coverage registry for the 5G core network functions: every NF the
+"""Control plane, the coverage registry for the 5G core network functions: every NF the
 harness certifies (AMF/SMF/NRF/AUSF/UDM), the interfaces and specs each is driven against, its
 Level-1 test counts, and the latest live verdict for the ones that have campaigns.
 
-The control-plane counterpart to the UPFs page — same card layout, so the dashboard tells the
+The control-plane counterpart to the UPFs page, same card layout, so the dashboard tells the
 whole-core story (user plane AND control plane), not just the UPF."""
 from __future__ import annotations
 
@@ -95,7 +95,7 @@ def _card(nf, counts, runs):
         html.Div(className="upf-head", children=[
             html.Div(nf["logo"], className="upf-logo"),
             html.Div(className="upf-tt", children=[
-                html.Div(f"{nf['name']} — {nf['full']}", className="upf-name"),
+                html.Div(f"{nf['name']}, {nf['full']}", className="upf-name"),
                 html.Div(nf["iface"], className="upf-dp")]),
             status]),
         html.Div(body, className="upf-body"),
@@ -118,7 +118,7 @@ def layout(**_):
         html.P(["Every 5G-core network function the harness certifies, driven over its real "
                 "interfaces (N1/N2 signalling and the Service-Based Interface) and graded against "
                 "its own 3GPP protocol + SCAS security spec. An NF earns a certificate only when "
-                "all of its essential tests pass — INCOMPLETE (not a pass) when a case can't be "
+                "all of its essential tests pass, INCOMPLETE (not a pass) when a case can't be "
                 "judged on a deployment."],
                className="muted small", style={"margin": "2px 0 0"}),
         html.Div(cards, className="upf-grid"),

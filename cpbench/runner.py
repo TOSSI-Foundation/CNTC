@@ -40,7 +40,7 @@ def run(config_path: str, campaigns_root: str = "campaigns", nf: str | None = No
     try:
         live_facts = core.describe()
         store.set_sut_live(live_facts)
-    except Exception as e:  # noqa: BLE001 — surface as a note, don't abort
+    except Exception as e:  # noqa: BLE001, surface as a note, don't abort
         print(f"[cpbench] warning: could not read core facts: {e}")
         store.set_sut_live({"core_probe_error": str(e)})
 
@@ -81,7 +81,7 @@ def run(config_path: str, campaigns_root: str = "campaigns", nf: str | None = No
                     print(f"  - {case.id} {case.name}")
                     try:
                         sres.tests.append(case.run(ctx))
-                    except Exception as e:  # noqa: BLE001 — one bad test must not kill the suite
+                    except Exception as e:  # noqa: BLE001, one bad test must not kill the suite
                         msg = f"{type(e).__name__}: {e}"
                         print(f"    ! {case.id} errored: {msg}")
                         sres.tests.append(TestResult(case.id, case.name, "error", notes=msg))
@@ -160,9 +160,9 @@ def _apply_verdicts(store, cfg, live_facts: dict) -> None:
         print("[cntc] no per-NF verdicts produced this campaign.")
         return
 
-    # When a single NF ran, the campaign IS that NF — write back its own <nf>-conformance
+    # When a single NF ran, the campaign IS that NF, write back its own <nf>-conformance
     # verdict (not a composite-of-one wrapper). This keeps the top-level verdict, the dashboard
-    # certificate banner, and a later `certify --profile <nf>-conformance` all consistent — the
+    # certificate banner, and a later `certify --profile <nf>-conformance` all consistent, the
     # same profile, the same certificate ID. Only a multi-NF run needs the composite.
     if len(verdicts) == 1:
         top = next(iter(verdicts.values()))
@@ -199,7 +199,7 @@ def _composite(verdicts: dict[str, dict], rig: dict) -> dict:
     return {
         "framework": "CNTC", "profile": "cp-control-plane (composite)",
         "catalog_version": "0.1.0",
-        "title": "5G Core Control-Plane — composite over " + ", ".join(verdicts),
+        "title": "5G Core Control-Plane, composite over " + ", ".join(verdicts),
         "standards": ["3GPP TS 24.501 / 38.413 / 29.5xx", "3GPP TS 33.51x (SCAS)"],
         "rig": rig, "result": result,
         "gate": {"policy": "all NFs must PASS"},

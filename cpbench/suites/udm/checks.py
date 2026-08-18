@@ -7,7 +7,7 @@
 
 UDM-AUTH-01 and UDM-SDM-01 are verified *transitively*: a successful UE registration + PDU
 session is only possible if the UDM generated the auth vector (Nudm_UEAuthentication_Get) AND
-served the access-mobility + session-management subscription (Nudm_SDM) — otherwise the attach
+served the access-mobility + session-management subscription (Nudm_SDM), otherwise the attach
 fails. Direct Nudm probes are blocked by the NRF-enforced OAuth2, so these are graded from the
 real attach with that stated in the note (never a silent pass).
 """
@@ -88,7 +88,7 @@ class UdmSec01(NfTestCase):
     id, name, nf = "UDM-SEC-01", "SUCI de-concealment (SIDF) authorization", "udm"
     def run(self, ctx):
         # A completed 5G-AKA requires the UDM/SIDF to de-conceal the SUCI into a SUPI before it
-        # can generate the auth vector — so a successful registration proves the SIDF ran.
+        # can generate the auth vector, so a successful registration proves the SIDF ran.
         return _transitive(ctx, self.id, self.name,
                            "de-conceal the SUCI to a SUPI (SIDF) before generating the vector",
                            "TS 33.501 §6.12")

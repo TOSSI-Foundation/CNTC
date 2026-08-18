@@ -1,6 +1,6 @@
-# CNTC Governance — how the standard is versioned and changed
+# CNTC Governance: how the standard is versioned and changed
 
-The value of a verdict comes from the standard being **stable, reviewed, and versioned** —
+The value of a verdict comes from the standard being **stable, reviewed, and versioned**: 
 not something an individual run can quietly redefine. This note keeps the CNTC catalogs
 trustworthy. (It is intentionally lightweight; scale it up if CNTC becomes an external
 program.)
@@ -30,7 +30,7 @@ catalog versions without noting it.
 ## Who may change a threshold
 
 - A change to any `class: essential` test, the `gate:` policy, or a `verdict:` rule is a
-  **standard change** — it must be reviewed by a second maintainer (PR review), and the
+  **standard change**: it must be reviewed by a second maintainer (PR review), and the
   catalog `version` bumped in the same change.
 - `normal` / `bonus` additions and comment edits are lower-friction but still versioned.
 - Per-campaign tuning belongs in the **campaign config** (`profile:`, `baseline:`), **not**

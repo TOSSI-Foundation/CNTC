@@ -1,11 +1,11 @@
-"""OAI-UPF adapter (second UPF — proves the framework is UPF-agnostic).
+"""OAI-UPF adapter (second UPF, proves the framework is UPF-agnostic).
 
 OAI-UPF runs as a Docker container (default ``oai-upf``) and forwards via Linux
-interfaces (simpleswitch datapath), not BESS — so this adapter shells into the
+interfaces (simpleswitch datapath), not BESS, so this adapter shells into the
 container with ``docker exec`` and reads facts + per-interface netdev counters
 (``/proc/net/dev``) instead of ``bessctl``. It is driven over N4 by the pfcpsim
 control (with PFCPSIM_NO_URR, since OAI rejects URRs) and over N3 by tcpreplay,
-exactly like the SD-Core adapter — the suites are unchanged.
+exactly like the SD-Core adapter, the suites are unchanged.
 
 Config knobs (campaign YAML ``upf.extra``, defaults shown)::
 

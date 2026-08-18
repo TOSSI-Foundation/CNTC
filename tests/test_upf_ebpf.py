@@ -1,9 +1,9 @@
-"""UPF eBPF/XDP Dataplane Assurance — catalog grading + eUPF adapter logic.
+"""UPF eBPF/XDP Dataplane Assurance, catalog grading + eUPF adapter logic.
 
 Proves the optional ``upf-ebpf`` certificate gate is real (all-pass -> PASS -> certificate;
 non-eBPF -> every test 'na' -> INCOMPLETE -> no certificate; one essential FAIL -> FAIL), and
 that the eUPF adapter synthesizes its N3/N6 counters and BPF introspection correctly from the
-eUPF REST API shape — the same ``status_pass`` discipline as the UPF conformance profile.
+eUPF REST API shape, the same ``status_pass`` discipline as the UPF conformance profile.
 """
 from __future__ import annotations
 

@@ -6,7 +6,7 @@
 
 AUSF-AUTH-01 is verified *transitively*: a successful UE registration proves the AUSF ran the
 5G-AKA UEAuthentication exchange (a direct Nausf probe is blocked by the NRF-enforced OAuth2,
-so it is graded from the real attach, with that stated in the note — never a silent pass).
+so it is graded from the real attach, with that stated in the note, never a silent pass).
 The wrong-RES negative (AUSF-AUTH-03) needs a bad-credential attach not built yet -> stub/na.
 """
 from __future__ import annotations
@@ -48,11 +48,11 @@ class AusfAuth01(NfTestCase):
         return TestResult(self.id, self.name, "fail",
                           metrics={"auth_request": o.get("auth_request"),
                                    "registered": o.get("registered")},
-                          notes="registration did not complete — 5G-AKA not confirmed")
+                          notes="registration did not complete, 5G-AKA not confirmed")
 
 
 class AusfAuth02(NfTestCase):
-    id, name, nf = "AUSF-AUTH-02", "Confirm RES* — successful authentication", "ausf"
+    id, name, nf = "AUSF-AUTH-02", "Confirm RES*, successful authentication", "ausf"
     def run(self, ctx: RunContext):
         if ctx.driver is None or not hasattr(ctx.driver, "observe_registration"):
             return TestResult(self.id, self.name, "na", notes="no UERANSIM driver")

@@ -1,4 +1,4 @@
-"""LT-03 Latency / jitter vs UE count & offered load — Suite 2 (multi-UE load).
+"""LT-03 Latency / jitter vs UE count & offered load, Suite 2 (multi-UE load).
 
 Reuses the in-pipeline latency probe (pktParse->executeFAR) from TC-03, but drives
 N-UE GTP-U load (real pfcpsim sessions, matched TEIDs/UE-IPs) and reports how latency

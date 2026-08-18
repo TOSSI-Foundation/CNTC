@@ -1,12 +1,12 @@
 # upfbench dashboard
 
-A live, **view-only** Plotly Dash app over `campaigns/` — showcases the framework and
+A live, **view-only** Plotly Dash app over `campaigns/`, showcases the framework and
 browses every result. Reads `campaigns/` fresh on each page load, so new runs appear
 without a restart.
 
 ## Run
 
-No package install needed — run it straight from the repo root (dash + plotly are the
+No package install needed, run it straight from the repo root (dash + plotly are the
 only deps):
 
 ```bash
@@ -38,13 +38,13 @@ Then open `http://<server-ip>:8050`.
 
 ## Layout
 
-- `data.py` — scans/normalizes `campaigns/*/results.json` into a typed model. **Single
+- `data.py`: scans/normalizes `campaigns/*/results.json` into a typed model. **Single
   source of truth**; every page reads from here.
-- `theme.py` — colors + the Plotly template (one visual language).
-- `charts.py` — Plotly figure builders keyed by test id (`TC-01`, `LT-02`, `NT-02`, …).
-- `components.py` — reusable Dash html (cards, KPI tiles, pills, tables, test panels).
-- `pages/` — one module per route (`dash.register_page`).
-- `assets/style.css` — auto-served dark theme.
+- `theme.py`: colors + the Plotly template (one visual language).
+- `charts.py`: Plotly figure builders keyed by test id (`TC-01`, `LT-02`, `NT-02`, …).
+- `components.py`: reusable Dash html (cards, KPI tiles, pills, tables, test panels).
+- `pages/`: one module per route (`dash.register_page`).
+- `assets/style.css`: auto-served dark theme.
 
 View-only by design (v1): it never triggers runs. To add a result, run a suite with the
 CLI; it shows up on next page load.

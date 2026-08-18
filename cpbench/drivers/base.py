@@ -1,8 +1,8 @@
-"""Driver — how the control plane is exercised over an interface.
+"""Driver: how the control plane is exercised over an interface.
 
 Drivers are the control-plane analog of ``upfbench.control`` / ``upfbench.traffic``:
-  * ``ueransim`` / ``gnbsim`` / ``packetrusher`` — drive N1/N2 (NAS + NGAP) through the AMF.
-  * ``sbi_client``                               — drive SBI (HTTP/2 + TLS + OAuth2) directly.
+  * ``ueransim`` / ``gnbsim`` / ``packetrusher``, drive N1/N2 (NAS + NGAP) through the AMF.
+  * ``sbi_client``, drive SBI (HTTP/2 + TLS + OAuth2) directly.
 
 Each owns its lifecycle (``setup``/``teardown``) and exposes the procedures its interface
 supports as methods returning a structured ``{ok, ...}`` result the NF test cases assert on.

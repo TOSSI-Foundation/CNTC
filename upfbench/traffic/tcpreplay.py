@@ -2,11 +2,11 @@
 
 This VM has no spare DPDK NIC, so instead of external testpmd we inject real
 GTP-U uplink packets from the host's access macvlan into the UPF pod's ``access``
-interface — which is the UPF's genuine af_packet RX socket (the N3 ingress).
+interface, which is the UPF's genuine af_packet RX socket (the N3 ingress).
 Frames are crafted with scapy and replayed by ``tcpreplay`` at a controlled
 packet rate. We only *send* here and report what was sent; the throughput/loss
 math is done by the test case from the UPF's own port counters (the adapter),
-so "loss" is measured against offered traffic — capturing both af_packet RX
+so "loss" is measured against offered traffic, capturing both af_packet RX
 drops and pipeline drops, which is the honest black-box result.
 
 Requires scapy (craft) + tcpreplay (replay) on the host, and passwordless sudo
@@ -125,7 +125,7 @@ class Generator(TrafficGenerator):
         tcpreplay on the host access interface. The bytes are written to the pcap VERBATIM
         (no scapy re-parse) so malformed / truncated frames survive exactly as crafted. The
         caller bakes the UPF access MAC into the frame's dst (upf.extra.n3_remote_mac) so the
-        frame lands on the UPF's access macvlan — the same delivery path the perf suite uses.
+        frame lands on the UPF's access macvlan, the same delivery path the perf suite uses.
         Returns the number of packets sent."""
         import struct
         pkt = bytes(pkt_bytes)
@@ -201,8 +201,8 @@ class Generator(TrafficGenerator):
     def _resolve_mac_pod(self) -> str:
         """Read the UPF access interface MAC straight from the pod (authoritative).
 
-        Host ARP can return the wrong MAC here — other macvlans on the same parent
-        answer for the N3 IP — so we read /sys/class/net/<iface>/address in the pod.
+        Host ARP can return the wrong MAC here, other macvlans on the same parent
+        answer for the N3 IP, so we read /sys/class/net/<iface>/address in the pod.
         """
         cmd = [self.kubectl]
         if self.kubeconfig:

@@ -1,4 +1,4 @@
-"""Certification outputs — turn a verdict block into human-facing scorecards."""
+"""Certification outputs, turn a verdict block into human-facing scorecards."""
 from __future__ import annotations
 
 from cntc.certification.scorecard import (  # noqa: F401

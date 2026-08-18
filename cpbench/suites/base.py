@@ -52,4 +52,4 @@ class StubCase(NfTestCase):
 
     def run(self, ctx: RunContext) -> TestResult:
         return TestResult(self.id, self.name, "not_implemented",
-                          notes="stub — real test pending (see docs/PLAN-CONTROL-PLANE.md)")
+                          notes="stub, real test pending (see docs/PLAN-CONTROL-PLANE.md)")

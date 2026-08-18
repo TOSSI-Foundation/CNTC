@@ -1,4 +1,4 @@
-"""XDP-08 — the XDP program stays attached after a malformed-N3 burst (no silent detach).
+"""XDP-08: the XDP program stays attached after a malformed-N3 burst (no silent detach).
 
 A robustness check specific to the fast path: a burst of malformed GTP-U must not knock the XDP
 program off the interface (a silent detach would drop the whole datapath to the slow path or
@@ -26,7 +26,7 @@ class Xdp08StaysAttached(TestCase):
         after = intro(ctx)
         if not after:
             return TestResult(self.id, self.name, "fail", metrics={"sent": sent},
-                notes="adapter/API unreachable after the malformed burst — possible datapath crash.")
+                notes="adapter/API unreachable after the malformed burst, possible datapath crash.")
         attached = any(v.get("attached") for v in (after.get("xdp") or {}).values())
         alive = ctx.upf.healthy()
         ok = attached and alive

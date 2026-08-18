@@ -1,4 +1,4 @@
-/* upfbench dashboard — UI interactions. Portable, framework-agnostic.
+/* upfbench dashboard, UI interactions. Portable, framework-agnostic.
    All behaviors are progressive: pages render fully without JS.
    ----------------------------------------------------------------------------
    1. Campaign switcher  : <select data-switcher> navigates on change

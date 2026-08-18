@@ -1,4 +1,4 @@
-% UPF Data-Plane Benchmark — COMBINED report (all suites in one document).
+% UPF Data-Plane Benchmark, COMBINED report (all suites in one document).
 % Jinja statements use parenthesised delimiters so they do not collide with LaTeX braces.
 \documentclass[11pt,a4paper]{article}
 \usepackage[margin=1in]{geometry}
@@ -8,9 +8,9 @@
 \newcommand{\fillin}[1]{\textcolor{red}{#1}}
 
 ((* set suite_titles = {
-  "performance": "Suite 1 — Performance (throughput, latency, burst, multi-flow)",
-  "load": "Suite 2 — Load / Multi-UE (session capacity, per-UE throughput)",
-  "pfcp": "Suite 3 — PFCP / N4 Conformance (TS 29.244)"
+  "performance": "Suite 1, Performance (throughput, latency, burst, multi-flow)",
+  "load": "Suite 2, Load / Multi-UE (session capacity, per-UE throughput)",
+  "pfcp": "Suite 3, PFCP / N4 Conformance (TS 29.244)"
 } *))
 
 ((* set suite_intro = {
@@ -19,7 +19,7 @@
   "pfcp": "This suite checks the N4/PFCP control interface against 3GPP TS\\,29.244 --- the language the core uses to tell the UPF to set up, modify, delete, and error-handle user sessions. These are pass/fail conformance checks rather than performance numbers; all five should pass for a standards-compliant UPF."
 } *))
 
-\title{\textbf{UPF Data-Plane Benchmark Report}\\[4pt]\large All Suites — (((  c.sut.upf | default("System under test") | tex  )))}
+\title{\textbf{UPF Data-Plane Benchmark Report}\\[4pt]\large All Suites, (((  c.sut.upf | default("System under test") | tex  )))}
 \author{Campaign (((  c.campaign | tex  )))}
 \date{(((  c.started  )))}
 
@@ -49,7 +49,7 @@ Aggregate load           & (((  c.kpis.load_aggregate_mpps | default("--")  ))) 
 \end{center}
 
 ((* if c.verdict *))
-\section{CNTC Verdict — (((  c.verdict.profile | tex  ))) profile}
+\section{CNTC Verdict, (((  c.verdict.profile | tex  ))) profile}
 \noindent A standards-aligned verdict graded by the CNTC verdict layer against catalog
 v(((  c.verdict.catalog_version | tex  ))). \textbf{Result:}
 \textcolor{((* if c.verdict.result == "PASS" *))green((* elif c.verdict.result == "FAIL" *))red((* else *))orange((* endif *))}{\textbf{(((  c.verdict.result | tex  )))}}
@@ -93,7 +93,7 @@ v(((  c.verdict.catalog_version | tex  ))). \textbf{Result:}
 \textit{No tests recorded for this suite.}
 ((* endif *))
 ((* for t in suite.tests *))
-\subsection{(((  t.id | tex  ))) — (((  t.name | tex  )))}
+\subsection{(((  t.id | tex  ))), (((  t.name | tex  )))}
 ((* if t.status == "error" *))
 \textit{\fillin{(((  t.notes | tex  )))}}
 ((* else *))

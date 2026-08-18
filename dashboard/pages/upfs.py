@@ -1,4 +1,4 @@
-"""UPFs — the coverage registry: every UPF the harness can drive, by datapath, with live
+"""UPFs: the coverage registry: every UPF the harness can drive, by datapath, with live
 run stats for the ones that have campaigns. The multi-UPF story, told honestly."""
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ _REGISTRY = [
      "telemetry": "Black-box", "tel_sub": "UPF port counters", "status": "live",
      "match": "open5gs", "modes": [("TUN", "ghost")]},
     {"logo": "F5", "name": "free5GC UPF-G", "dp": "gtp5g kernel module",
-     "telemetry": "Black-box", "tel_sub": "—", "status": "planned",
+     "telemetry": "Black-box", "tel_sub": ", ", "status": "planned",
      "match": "free5gc", "modes": []},
     {"logo": "eU", "name": "eUPF", "dp": "eBPF / XDP",
      "telemetry": "Prometheus", "tel_sub": "white-box XDP counters", "status": "planned",
@@ -42,7 +42,7 @@ def _card(u, runs, latest):
     status = html.Span(className=f"status {u['status']}", children=[
         html.Span(className="dotc"), "Live" if u["status"] == "live" else "Planned"])
     modes = [html.Span(m, className=f"pill pill--{v}") for m, v in u["modes"]] or \
-        [html.Span("adapter ready — no modes profiled", className="muted small")]
+        [html.Span("adapter ready, no modes profiled", className="muted small")]
     body = [
         _fact("Telemetry", u["telemetry"], sub=u["tel_sub"]),
         _fact("Runs on record", str(runs) if runs else "none yet",
@@ -52,8 +52,8 @@ def _card(u, runs, latest):
             html.Div(modes, className="upf-modes")]),
     ]
     if latest:
-        body += [_fact("Latest throughput", latest.get("tput", "—")),
-                 _fact("Latest p99 latency", latest.get("lat", "—"))]
+        body += [_fact("Latest throughput", latest.get("tput", ", ")),
+                 _fact("Latest p99 latency", latest.get("lat", ", "))]
     foot = html.Div(className="upf-foot", children=[
         html.A(f"View {runs} run{'s' if runs != 1 else ''} →" if runs else "No runs yet",
                href="/campaigns", className="finding-link",
@@ -78,9 +78,9 @@ def layout(**_):
         if mine:
             top = mine[0]
             k = top.kpis or {}
-            latest = {"tput": f"{k.get('pdr', '—')} Mpps",
-                      "lat": f"{(k.get('lat') or '—').split('/')[-1].strip()} µs"
-                             if k.get("lat") else "—"}
+            latest = {"tput": f"{k.get('pdr', ', ')} Mpps",
+                      "lat": f"{(k.get('lat') or ', ').split('/')[-1].strip()} µs"
+                             if k.get("lat") else ", "}
         cards.append(_card(u, len(mine), latest))
     n_live = sum(1 for u in _REGISTRY if u["status"] == "live")
     return html.Div(className="page", children=[

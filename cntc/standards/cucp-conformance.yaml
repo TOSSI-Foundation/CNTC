@@ -1,0 +1,190 @@
+# CNTC requirement catalog: O-CU-CP LEVEL 1 "Conformance & Observable Security"
+#
+# Product class: gNB-CU-CP (3GPP TS 33.523 clause 5). The CU-CP terminates N2/NGAP toward the
+# AMF, F1-C toward the O-DU, E1 toward the O-CU-UP, and hosts RRC.
+#
+# LEVEL 1 = every requirement provable by driving the target with SPEC-COMPLIANT peers (a real
+# AMF, a real DU, a real CU-UP, a real UE) and observing the result, including on-the-wire
+# capture. No forged, replayed or downgraded protocol state and no privileged identity, those
+# are Level 2 (cucp-adversarial.yaml).
+#
+# Observation note: in a split gNB every RRC message crosses F1 inside an F1AP RRC container
+# (TS 38.473 clause 8.4), so RRC conformance and AS-security activation are observable on the
+# F1-C link without any radio decoding.
+#
+# Gate: all ESSENTIAL tests must PASS -> certificate. An essential FAIL -> no certificate. A test
+# that cannot be judged on a deployment is 'na' -> INCOMPLETE, never a silent pass.
+version: 1.0.0
+profile: cucp-conformance
+title: "O-CU-CP (gNB-CU-CP), CNTC Level 1 (Conformance & Observable Security)"
+standards:
+- 3GPP TS 38.413 (NGAP / N2)
+- 3GPP TS 38.473 (F1AP / F1-C)
+- 3GPP TS 38.463 (E1AP / E1)
+- 3GPP TS 38.331 (NR RRC)
+- 3GPP TS 33.501 (5G security)
+- "3GPP TS 33.511 (SCAS, gNB)"
+- "3GPP TS 33.523 (SCAS, split gNB)"
+defaults:
+  class: normal
+gate:
+  essential: all
+tests:
+# --- NGAP / N2 (TS 38.413) -------------------------------------------------------------
+- id: CUCP-NGAP-01
+  name: "NG Setup Request -> NG Setup Response (38.413 §8.7.1)"
+  category: protocol
+  class: essential
+  verdict: status_pass
+- id: CUCP-NGAP-02
+  name: "Initial UE Message carries the UE NAS + RAN UE NGAP ID (38.413 §8.6.1)"
+  category: protocol
+  class: essential
+  verdict: status_pass
+- id: CUCP-NGAP-03
+  name: "Initial Context Setup Request -> Response (38.413 §8.3.1)"
+  category: protocol
+  class: essential
+  verdict: status_pass
+- id: CUCP-NGAP-04
+  name: "PDU Session Resource Setup -> Response with DL NG-U TNL info (38.413 §8.2.1)"
+  category: protocol
+  class: essential
+  verdict: status_pass
+- id: CUCP-NGAP-05
+  name: "UL / DL NAS Transport carries NAS transparently (38.413 §8.6.2 / §8.6.3)"
+  category: protocol
+  class: normal
+  verdict: status_pass
+- id: CUCP-NGAP-06
+  name: "UE Context Release Command -> Complete (38.413 §8.3.3)"
+  category: protocol
+  class: normal
+  verdict: status_pass
+- id: CUCP-NGAP-07
+  name: "PDU Session Resource Release Command -> Response (38.413 §8.2.2)"
+  category: protocol
+  class: normal
+  verdict: status_pass
+- id: CUCP-NGAP-08
+  name: "NG association recovery after AMF restart (38.413 §8.7.1 / TS 38.412)"
+  category: robustness
+  class: essential
+  verdict: status_pass
+# --- F1AP / F1-C, CU side (TS 38.473) --------------------------------------------------
+- id: CUCP-F1-01
+  name: "F1 Setup Request (from O-DU) -> F1 Setup Response, cells activated (38.473 §8.2.3)"
+  category: protocol
+  class: essential
+  verdict: status_pass
+- id: CUCP-F1-02
+  name: "UE Context Setup Request -> Response toward the O-DU (38.473 §8.3.1)"
+  category: protocol
+  class: essential
+  verdict: status_pass
+- id: CUCP-F1-03
+  name: "DL RRC Message Transfer delivers RRC to the UE via the O-DU (38.473 §8.4.2)"
+  category: protocol
+  class: normal
+  verdict: status_pass
+- id: CUCP-F1-04
+  name: "UE Context Modification Request -> Response (38.473 §8.3.4)"
+  category: protocol
+  class: normal
+  verdict: status_pass
+- id: CUCP-F1-05
+  name: "UE Context Release Command -> Complete, CU-initiated (38.473 §8.3.3)"
+  category: protocol
+  class: normal
+  verdict: status_pass
+- id: CUCP-F1-06
+  name: "gNB-DU Configuration Update -> Acknowledge (38.473 §8.2.4)"
+  category: protocol
+  class: normal
+  verdict: status_pass
+# --- E1AP / E1, CP side (TS 38.463) ----------------------------------------------------
+- id: CUCP-E1-01
+  name: "gNB-CU-UP E1 Setup Request -> Response, CU-UP registered (38.463 §8.2.3)"
+  category: protocol
+  class: essential
+  verdict: status_pass
+- id: CUCP-E1-02
+  name: "Bearer Context Setup Request -> Response (38.463 §8.3.1)"
+  category: protocol
+  class: essential
+  verdict: status_pass
+- id: CUCP-E1-03
+  name: "Bearer Context Modification, CP-initiated -> Response (38.463 §8.3.2)"
+  category: protocol
+  class: normal
+  verdict: status_pass
+- id: CUCP-E1-04
+  name: "Bearer Context Release Command -> Complete (38.463 §8.3.4)"
+  category: protocol
+  class: normal
+  verdict: status_pass
+# --- RRC (TS 38.331), observed inside the F1AP RRC containers --------------------------
+- id: CUCP-RRC-01
+  name: "RRC Setup / RRC Setup Complete, SRB1 established (38.331 §5.3.3)"
+  category: protocol
+  class: essential
+  verdict: status_pass
+- id: CUCP-RRC-02
+  name: "AS Security Mode Command / Complete (38.331 §5.3.4)"
+  category: protocol
+  class: essential
+  verdict: status_pass
+- id: CUCP-RRC-03
+  name: "RRC Reconfiguration / Complete establishing the DRB (38.331 §5.3.5)"
+  category: protocol
+  class: essential
+  verdict: status_pass
+- id: CUCP-RRC-04
+  name: "RRC Release (38.331 §5.3.8)"
+  category: protocol
+  class: normal
+  verdict: status_pass
+# --- Security assurance (TS 33.523 §5.2.2.1, inheriting TS 33.511 §4.2.2.1) -------------
+- id: CUCP-SEC-01
+  name: "RRC integrity protection after AS SMC (33.511 §4.2.2.1.1)"
+  category: security
+  class: essential
+  verdict: status_pass
+- id: CUCP-SEC-02
+  name: "RRC ciphering after AS SMC (33.511 §4.2.2.1.6)"
+  category: security
+  class: essential
+  verdict: status_pass
+- id: CUCP-SEC-03
+  name: "AS algorithm selection, highest-priority algorithm, no NIA0/NEA0 downgrade (33.511 §4.2.2.1.12)"
+  category: security
+  class: essential
+  verdict: status_pass
+- id: CUCP-SEC-04
+  name: "UP security policy from the SMF is propagated to the CU-UP over E1 (33.523 §5.2.2.1.4)"
+  category: security
+  class: normal
+  verdict: status_pass
+- id: CUCP-SEC-05
+  name: "F1-C / E1 transport protection, IPsec or DTLS (33.523 §5.2.2.1.2 / §5.2.2.1.3)"
+  category: security
+  class: normal
+  verdict: status_pass
+- id: CUCP-SEC-06
+  name: "N2 transport protection, IPsec or DTLS (33.511 §4.2.2.1.16 / §4.2.2.1.17)"
+  category: security
+  class: normal
+  verdict: status_pass
+# --- Robustness ------------------------------------------------------------------------
+  # The CU-CP is the only split-gNB product that listens on SCTP (F1-C 38472, E1 38462), so it
+  # is the one that can be probed with malformed input by a compliant-but-crude peer.
+- id: CUCP-NEG-01
+  name: "Malformed input on the F1-C / E1 SCTP listener -> reject, no CU-CP crash"
+  category: robustness
+  class: essential
+  verdict: status_pass
+- id: CUCP-NEG-02
+  name: "Unknown / unsupported F1AP procedure -> Error Indication, no crash (38.473 §8.2.2)"
+  category: robustness
+  class: normal
+  verdict: status_pass

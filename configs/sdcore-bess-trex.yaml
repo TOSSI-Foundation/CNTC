@@ -1,8 +1,8 @@
-# SD-Core BESS-UPF — kernel-bypass modes (DPDK / AF_XDP / CNDP) via the TRex generator.
+# SD-Core BESS-UPF: kernel-bypass modes (DPDK / AF_XDP / CNDP) via the TRex generator.
 #
 # Use this config whenever the UPF is deployed in a mode whose access port is a
 # DPDK/XDP-owned VF (no host kernel socket). The adapter reads the LIVE mode from the pod
-# and stamps it in the report, so you don't set the mode here — deploy the mode in
+# and stamps it in the report, so you don't set the mode here: deploy the mode in
 # aether-onramp, then run this config. Distinguish runs with --campaign:
 #
 #   sudo -E python3 -m upfbench.cli run --config configs/sdcore-bess-trex.yaml \
@@ -11,7 +11,7 @@
 # Injection: TRex on gen VF 0000:18:0a.2 (enp24s0f1) hairpins GTP-U through the NIC VEB
 # into the UPF access VF (MAC 00:11:22:33:44:33). See configs/trex_cfg.yaml.
 campaign: UPF-BM-SDCORE-DPDK
-reset_between_suites: true         # fresh bessd per suite — clears WildcardMatch tuple saturation
+reset_between_suites: true         # fresh bessd per suite, clears WildcardMatch tuple saturation
 
 sut:
   cpu: "2x Xeon Gold 6148 (40c)"
@@ -24,7 +24,7 @@ upf:
   mode: dpdk                       # informational; adapter reads the live mode from upf.jsonc
   n3_iface: access
   n6_iface: core
-  n4_addr: "10.42.0.13:8805"       # UPF pod IP : PFCP port (pfcpsim, Suites 2/3) — see note
+  n4_addr: "10.42.0.13:8805"       # UPF pod IP : PFCP port (pfcpsim, Suites 2/3), see note
   namespace: aether-5gc
   pod: upf-0
   bessd_container: bessd
@@ -34,7 +34,7 @@ upf:
   trex_tx_port: 0
   n3_remote_mac: "00:11:22:33:44:33"   # UPF access VF MAC (VEB hairpin target)
   trex_src_mac: "00:11:22:33:44:35"    # gen VF2 MAC
-  n6_remote_mac: "00:11:22:33:44:34"   # UPF core VF (N6) MAC — downlink VEB target (TC-02)
+  n6_remote_mac: "00:11:22:33:44:34"   # UPF core VF (N6) MAC, downlink VEB target (TC-02)
   trex_dl_src_mac: "00:11:22:33:44:36" # gen VF3 MAC (downlink injector, on the core PF)
   trex_dl_port: 1                      # TRex port that hairpins into the UPF core VF
   gnb_ip: "192.168.252.10"

@@ -1,8 +1,8 @@
-# SD-Core BESS-UPF — RAW MAX-FORWARDING profile (apples-to-apples vs OAI).
+# SD-Core BESS-UPF: RAW MAX-FORWARDING profile (apples-to-apples vs OAI).
 # Same method as oai-rawmax.yaml: drive the UPF over N4 with pfcpsim (real PFCP
 # sessions) and set the QER MBR effectively unlimited, so BESS is measured at its
 # raw datapath ceiling instead of the 20 Mbps subscriber AMBR. NOT the validated
-# per-UE profile — use sdcore-bess.yaml for that.
+# per-UE profile: use sdcore-bess.yaml for that.
 campaign: UPF-BM-SDCORE-RAWMAX
 
 sut:

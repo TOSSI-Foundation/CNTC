@@ -1,9 +1,9 @@
-# CNTC requirement catalog — PERFORMANCE profile
+# CNTC requirement catalog: PERFORMANCE profile
 # Hardware-DEPENDENT. A raw Mpps number is meaningless without the rig it was earned on
 # (af_packet on a shared VM is ~1/5 of a dedicated DPDK box, and af_packet throughput is
 # even non-monotonic). Therefore this profile does NOT use absolute Mpps thresholds:
 #   - throughput/latency are graded RELATIVE to a trusted baseline on the same rig_class
-#     (verdict.kind: baseline_rel) — requires `baseline:` in the campaign config.
+#     (verdict.kind: baseline_rel): requires `baseline:` in the campaign config.
 #   - only genuinely absolute properties (e.g. a session-capacity floor) use `kind: metric`.
 # Until a baseline is supplied, baseline_rel tests grade 'na' (reported, never faked).
 #

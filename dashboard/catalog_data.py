@@ -1,13 +1,13 @@
-"""The test catalog — suites, test cases, and the standard each maps to.
+"""The test catalog, suites, test cases, and the standard each maps to.
 
 Kept Dash-free so both the live page (pages/catalog.py) and the static export can import it
 without instantiating a Dash app.
 
 Two domains are shown, in release order:
-  * control plane (cpbench) — AMF/SMF/NRF/AUSF/UDM, built LIVE from cntc/standards/*-conformance.yaml
-    (single source of truth — the same catalogs the verdict engine grades against, so this page
+  * control plane (cpbench), AMF/SMF/NRF/AUSF/UDM, built LIVE from cntc/standards/*-conformance.yaml
+    (single source of truth, the same catalogs the verdict engine grades against, so this page
     can never drift from what actually runs).
-  * user plane   (upfbench) — the UPF suites, curated below.
+  * user plane   (upfbench), the UPF suites, curated below.
 """
 from __future__ import annotations
 
@@ -51,7 +51,7 @@ _CP_NF = {
     "nrf":  (T.GOOD,     "NRF · NF Repository (SBI)"),
 }
 # One-line "what it measures" per test id (supplements the catalog name; falls back to the
-# name if an id ever appears here without an entry — so a new test still shows, never hides).
+# name if an id ever appears here without an entry: so a new test still shows, never hides).
 _CP_WHAT = {
     "AMF-REG-01": "UE completes initial registration",
     "AMF-AUTH-01": "AMF runs 5G-AKA with the UE",
@@ -63,7 +63,7 @@ _CP_WHAT = {
     "AMF-NGAP-04": "UE context release",
     "AMF-SEC-01": "NAS integrity-protected after SMC (no cleartext)",
     "AMF-SEC-02": "NAS ciphered after SMC",
-    "AMF-SEC-04": "Wrong RES* rejected — no auth bypass",
+    "AMF-SEC-04": "Wrong RES* rejected, no auth bypass",
     "AMF-SEC-06": "SUPI concealed as SUCI on N2",
     "AMF-SEC-07": "Namf SBI requires TLS + OAuth2",
     "AMF-NEG-01": "Malformed NGAP rejected, no crash",
@@ -99,12 +99,81 @@ _CP_WHAT = {
     "UDM-NEG-01": "Unknown SUPI → 404, no crash",
 }
 
+# --- RAN: built live from the per-product-class conformance catalogs ----------------------
+# The split-gNB product classes of 3GPP TS 33.523, in pipeline order (DU -> CU-CP -> CU-UP).
+_RAN_TARGET = {
+    "du":   (T.ACCENT2, "O-DU · Distributed Unit (F1-C / F1-U + the cell)"),
+    "cucp": (T.ACCENT,  "O-CU-CP · Centralised Unit, control plane (N2 · F1-C · E1 · RRC)"),
+    "cuup": ("#0e7490", "O-CU-UP · Centralised Unit, user plane (E1 · F1-U · N3)"),
+}
+# One-line "what it proves" per RAN test id (falls back to the catalog name).
+_RAN_WHAT = {
+    "CUCP-NGAP-01": "NG Setup with the AMF succeeds",
+    "CUCP-NGAP-02": "Initial UE Message carries the UE's NAS",
+    "CUCP-NGAP-03": "Initial Context Setup accepted",
+    "CUCP-NGAP-04": "PDU Session Resource Setup returns the DL NG-U TEID",
+    "CUCP-NGAP-05": "UL/DL NAS transport is transparent",
+    "CUCP-NGAP-06": "UE Context Release completes",
+    "CUCP-NGAP-07": "PDU Session Resource Release completes",
+    "CUCP-NGAP-08": "NG association recovers after an AMF restart",
+    "CUCP-F1-01": "F1 Setup from the O-DU accepted, cells activated",
+    "CUCP-F1-02": "UE Context Setup toward the O-DU",
+    "CUCP-F1-03": "DL RRC Message Transfer delivers RRC",
+    "CUCP-F1-04": "UE Context Modification on session add",
+    "CUCP-F1-05": "CU-initiated UE Context Release",
+    "CUCP-F1-06": "gNB-DU Configuration Update acknowledged",
+    "CUCP-E1-01": "E1 Setup from the O-CU-UP accepted",
+    "CUCP-E1-02": "Bearer Context Setup on session establishment",
+    "CUCP-E1-03": "Bearer Context Modification carries the DL F1-U TNL",
+    "CUCP-E1-04": "Bearer Context Release on session release",
+    "CUCP-RRC-01": "RRC Setup / Complete, SRB1 up",
+    "CUCP-RRC-02": "AS Security Mode Command / Complete",
+    "CUCP-RRC-03": "RRC Reconfiguration establishes the DRB",
+    "CUCP-RRC-04": "RRC Release on deregistration",
+    "CUCP-SEC-01": "RRC integrity-protected after AS SMC",
+    "CUCP-SEC-02": "RRC ciphered after AS SMC",
+    "CUCP-SEC-03": "Highest-priority AS algorithm chosen, no NIA0/NEA0 downgrade",
+    "CUCP-SEC-04": "SMF's UP security policy reaches the CU-UP over E1",
+    "CUCP-SEC-05": "F1-C / E1 transport protected (IPsec / DTLS)",
+    "CUCP-SEC-06": "N2 transport protected (IPsec / DTLS)",
+    "CUCP-NEG-01": "Malformed F1-C / E1 input rejected, no crash",
+    "CUCP-NEG-02": "Unknown F1AP procedure → Error Indication",
+    "CUUP-E1-01": "E1 Setup advertises supported PLMNs / slices",
+    "CUUP-E1-02": "Bearer Context Setup allocates F1-U + NG-U TEIDs",
+    "CUUP-E1-03": "Bearer Context Modification applies the DL F1-U TNL",
+    "CUUP-E1-04": "Bearer Context Release frees the TEIDs",
+    "CUUP-E1-05": "gNB-CU-UP Configuration Update acknowledged",
+    "CUUP-UP-01": "F1-U tunnel to the O-DU on the signalled TEID",
+    "CUUP-UP-02": "N3 tunnel to the UPF, QFI marked",
+    "CUUP-UP-03": "End-to-end data path reaches the DN",
+    "CUUP-UP-04": "Unknown TEID dropped, no crash",
+    "CUUP-SEC-01": "User plane ciphered per the E1 security policy",
+    "CUUP-SEC-02": "User plane integrity when the policy requires it",
+    "CUUP-SEC-03": "E1 transport protected",
+    "CUUP-SEC-04": "F1-U / N3 transport protected",
+    "CUUP-NEG-01": "Malformed GTP-U dropped, no crash",
+    "DU-F1-01": "F1 Setup with a well-formed served-cell list",
+    "DU-F1-02": "Initial UL RRC Message Transfer on UE access",
+    "DU-F1-03": "UE Context Setup admits SRB/DRB, returns the F1-U TNL",
+    "DU-F1-04": "UL RRC Message Transfer carries the UE's RRC",
+    "DU-F1-05": "UE Context Release completes",
+    "DU-F1-06": "gNB-DU Configuration Update acknowledged",
+    "DU-F1-07": "F1 recovers after a CU restart",
+    "DU-CELL-01": "MIB/SIB1 match the F1 Setup served-cell info",
+    "DU-CELL-02": "Random access Msg1→Msg4 completes",
+    "DU-CELL-03": "DRB scheduling sustains UL and DL",
+    "DU-UP-01": "F1-U tunnel with the O-CU-UP forwards uplink",
+    "DU-SEC-01": "F1-C transport protected",
+    "DU-SEC-02": "F1-U transport protected",
+    "DU-NEG-01": "Malformed GTP-U dropped, no crash",
+}
+
 _SPEC_RE = re.compile(r"\b(\d{2}\.\d{3})\b")
 _CLAUSE_RE = re.compile(r"\s*\((?:[^)]*(?:§|\d{2}\.\d{3})[^)]*)\)\s*$")  # trailing spec clause only
 
 
 def _clean_name(name: str) -> str:
-    """Drop a trailing spec clause like '(24.501 §5.5.1.2)' — but keep descriptive parens."""
+    """Drop a trailing spec clause like '(24.501 §5.5.1.2)', but keep descriptive parens."""
     return _CLAUSE_RE.sub("", name).strip()
 
 
@@ -131,12 +200,17 @@ def _standards_dir() -> Path:
     return Path(__file__).resolve().parents[1] / "cntc" / "standards"
 
 
-def _build_cp_catalog():
-    """Read the per-NF conformance catalogs and shape them like the UPF CATALOG sections."""
+def _build_catalog(sections: dict, whats: dict):
+    """Read a domain's per-target conformance catalogs and shape them like the UPF CATALOG
+    sections: ``[(title, accent, [(id, name, what it measures, standard)])]``.
+
+    Shared by the control plane and the RAN so both stay a live view of the same YAML the
+    verdict engine grades against, a new test appears here the moment it is catalogued.
+    """
     out = []
     d = _standards_dir()
-    for nf, (accent, title) in _CP_NF.items():
-        f = d / f"{nf}-conformance.yaml"
+    for key, (accent, title) in sections.items():
+        f = d / f"{key}-conformance.yaml"
         if not f.exists():
             continue
         cat = yaml.safe_load(f.read_text()) or {}
@@ -144,13 +218,25 @@ def _build_cp_catalog():
         rows = []
         for t in cat.get("tests", []):
             tid = t["id"]
-            essential = t.get("class") == "essential"
-            what = _CP_WHAT.get(tid) or _clean_name(t["name"])
-            if essential:
+            what = whats.get(tid) or _clean_name(t["name"])
+            if t.get("class") == "essential":
                 what += "  · essential"
             rows.append((tid, _clean_name(t["name"]), what, _standard_for(t["name"], primary)))
         if rows:
             out.append((title, accent, rows))
+    return out
+
+
+def _target_counts(sections: dict) -> dict[str, tuple[int, int]]:
+    """{target: (total_tests, essential_tests)} from that domain's conformance catalogs."""
+    out: dict[str, tuple[int, int]] = {}
+    d = _standards_dir()
+    for key in sections:
+        f = d / f"{key}-conformance.yaml"
+        if not f.exists():
+            continue
+        tests = (yaml.safe_load(f.read_text()) or {}).get("tests", [])
+        out[key] = (len(tests), sum(1 for t in tests if t.get("class") == "essential"))
     return out
 
 
@@ -164,8 +250,8 @@ _UPF_CATALOG = [
         ("TC-08", "Multi-flow (RSS)", "Aggregate throughput with N flows spread across worker queues", "RFC 2544"),
     ]),
     ("Multi-UE Load", T.ACCENT2, [
-        ("LT-01", "Max concurrent sessions", "Capacity ceiling — install N UE sessions, measure rate & ceiling", "—"),
-        ("LT-02", "Aggregate + per-UE throughput", "Throughput under N UEs and per-UE forwarding fairness", "—"),
+        ("LT-01", "Max concurrent sessions", "Capacity ceiling, install N UE sessions, measure rate & ceiling", ", "),
+        ("LT-02", "Aggregate + per-UE throughput", "Throughput under N UEs and per-UE forwarding fairness", ", "),
         ("LT-03", "Latency vs UE count", "In-pipeline latency as session count & offered load scale", "RFC 8219"),
     ]),
     ("PFCP Conformance", T.GOOD, [
@@ -177,22 +263,26 @@ _UPF_CATALOG = [
     ]),
     ("N3 Robustness", T.BAD, [
         ("NT-01", "Unknown TEID", "GTP-U on a TEID with no PDR must be dropped, not leaked", "robustness"),
-        ("NT-02", "Malformed GTP-U", "6 variants (bad type/version, 3 truncation cases) — must not crash", "robustness"),
+        ("NT-02", "Malformed GTP-U", "6 variants (bad type/version, 3 truncation cases), must not crash", "robustness"),
         ("NT-03", "PSC (0x85) ext-header", "Valid vs malformed 5G PDU-Session-Container handling", "robustness"),
     ]),
 ]
 
 # Built at import time. Exposed per-domain so the catalog page can group them under headers,
 # and combined (control plane first, this release) for back-compatible callers.
-CP_CATALOG = _build_cp_catalog()
+CP_CATALOG = _build_catalog(_CP_NF, _CP_WHAT)
+RAN_CATALOG = _build_catalog(_RAN_TARGET, _RAN_WHAT)
 UPF_CATALOG = _UPF_CATALOG
-CATALOG = CP_CATALOG + UPF_CATALOG
+CATALOG = CP_CATALOG + RAN_CATALOG + UPF_CATALOG
 
-# The two domains, each with a heading + one-line blurb, for a sectioned catalog page.
+# The three domains, each with a heading + one-line blurb, for a sectioned catalog page.
 DOMAINS = [
-    ("Control plane", "5G core network functions — driven over N1/N2 (NAS/NGAP) and the "
+    ("Control plane", "5G core network functions, driven over N1/N2 (NAS/NGAP) and the "
      "Service-Based Interface, graded against each NF's protocol + SCAS spec.", CP_CATALOG),
-    ("User plane", "The UPF — black-box over N3 (GTP-U) and N4 (PFCP), plus optional white-box "
+    ("RAN", "The split gNB, each 3GPP TS 33.523 product class (O-CU-CP, O-CU-UP, O-DU) driven "
+     "over its own interfaces (N2 · F1-C · E1 · F1-U · N3) with RRC read out of the F1AP "
+     "containers, graded against its protocol + SCAS spec.", RAN_CATALOG),
+    ("User plane", "The UPF, black-box over N3 (GTP-U) and N4 (PFCP), plus optional white-box "
      "eBPF/XDP dataplane assurance.", UPF_CATALOG),
 ]
 
@@ -207,22 +297,18 @@ def domain_summary(catalog) -> str:
 
 
 def catalog_summary() -> str:
-    """One-line header sub: suite + test totals across both domains."""
+    """One-line header sub: suite + test totals across all domains."""
     n_suites = len(CATALOG)
     n_tests = sum(len(tests) for _, _, tests in CATALOG)
     return (f"{n_suites} suites · {n_tests} test cases · "
-            "5G control plane (N1/N2 + SBI) and user plane (N3/N4)")
+            "5G control plane (N1/N2 + SBI), RAN (N2 · F1 · E1) and user plane (N3/N4)")
 
 
 def cp_nf_counts() -> dict[str, tuple[int, int]]:
     """{nf: (total_tests, essential_tests)} from the per-NF conformance catalogs."""
-    out: dict[str, tuple[int, int]] = {}
-    d = _standards_dir()
-    for nf in _CP_NF:
-        f = d / f"{nf}-conformance.yaml"
-        if not f.exists():
-            continue
-        cat = yaml.safe_load(f.read_text()) or {}
-        tests = cat.get("tests", [])
-        out[nf] = (len(tests), sum(1 for t in tests if t.get("class") == "essential"))
-    return out
+    return _target_counts(_CP_NF)
+
+
+def ran_target_counts() -> dict[str, tuple[int, int]]:
+    """{target: (total_tests, essential_tests)} from the per-product-class RAN catalogs."""
+    return _target_counts(_RAN_TARGET)

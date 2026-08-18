@@ -191,7 +191,7 @@ func (c *PFCPClient) receiveFromN4() {
 				// Stamp. OAI-UPF heartbeats its PFCP peer (the SMF, i.e. us) and,
 				// getting no answer, declares the association dead and stops
 				// servicing session delete/release. We carry ONLY the Recovery
-				// Time Stamp — the Source IP Address IE (type 192) that
+				// Time Stamp, the Source IP Address IE (type 192) that
 				// SendHeartbeatRequest adds is rejected by OAI-UPF's parser.
 				hbRes := message.NewHeartbeatResponse(
 					msg.Sequence(),
@@ -341,7 +341,7 @@ func (c *PFCPClient) SendAssociationSetupRequest(ie ...*ieLib.IE) error {
 // invoking this function.
 func (c *PFCPClient) SendAssociationTeardownRequest(ie ...*ieLib.IE) error {
 	// The Association Release Request must carry the *sender's* Node ID (TS 29.244
-	// §7.4.5) with a valid sequence number — exactly like the Setup Request above.
+	// §7.4.5) with a valid sequence number, exactly like the Setup Request above.
 	// pfcpsim originally used the peer's address *including the :8805 port* as the
 	// Node ID, which is a malformed NodeID; OAI-UPF logged the message as "not
 	// handled, discarded" and never replied. Mirror the Setup Request instead.
@@ -360,7 +360,7 @@ func (c *PFCPClient) SendHeartbeatRequest() error {
 	// Source IP Address (type 192) is optional per TS 29.244 §7.4.3, and OAI-UPF's
 	// PFCP parser rejects it ("Unknown PFCP IE type 192"). When OAI can't parse our
 	// heartbeat it never replies, so SendAndRecvHeartbeat would time out and mark
-	// our own association dead — breaking every subsequent session operation.
+	// our own association dead, breaking every subsequent session operation.
 	hbReq := message.NewHeartbeatRequest(
 		c.getNextSequenceNumber(),
 		ieLib.NewRecoveryTimeStamp(time.Now()),
@@ -416,7 +416,7 @@ func (c *PFCPClient) SendSessionModificationRequest(
 
 func (c *PFCPClient) SendSessionDeletionRequest(localSEID uint64, remoteSEID uint64) error {
 	// A Session Deletion Request identifies the session solely by the peer's SEID
-	// in the PFCP header (remoteSEID) — TS 29.244 §7.5.6 defines no IEs for it.
+	// in the PFCP header (remoteSEID), TS 29.244 §7.5.6 defines no IEs for it.
 	// pfcpsim originally attached an F-SEID IE; OAI-UPF silently drops the request
 	// when it carries that unexpected IE (never sending a Deletion Response), so we
 	// send it bare. localSEID is retained in the signature for caller compatibility.

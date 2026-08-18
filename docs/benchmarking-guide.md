@@ -1,4 +1,4 @@
-# upfbench — Benchmarking Guide (run, reproduce, what we did)
+# upfbench: Benchmarking Guide (run, reproduce, what we did)
 
 One place that explains **how to run the framework** (host or Docker), **how to get
 trustworthy/reproducible numbers** (the per-suite reset hook), and **what changed** during
@@ -19,13 +19,13 @@ Three suites:
 |---|-------|----------|--------|
 | 1 | `performance` | throughput (NDR/PDR), latency, burst, multi-flow | rules + tcpreplay (GTP-U) |
 | 2 | `load` | session capacity, per-UE throughput, latency-under-load | pfcpsim (N sessions) + tcpreplay |
-| 3 | `pfcp` | N4 conformance (TS 29.244) — pass/fail | pfcpsim only (no traffic) |
+| 3 | `pfcp` | N4 conformance (TS 29.244), pass/fail | pfcpsim only (no traffic) |
 
 Validated UPFs: **SD-Core BESS-UPF** (k8s), **OAI-UPF** (docker), **Open5GS-UPF** (docker, control-plane).
 
 ---
 
-## 2. Two ways to run — same configs, same results
+## 2. Two ways to run: same configs, same results
 
 The framework runs **host-based** or **as a Docker container**. Both use the same
 `configs/*.yaml` and produce the same numbers (the container runs with `--network host`,
@@ -40,7 +40,7 @@ python3 -m upfbench.cli run --config configs/oai-upf.yaml     --suite all
 python3 -m upfbench.cli run --config configs/open5gs.yaml     --suite pfcp
 python3 -m upfbench.cli list          # show suites + test cases
 ```
-(One-time host setup: `pip install -e .` + build pfcpsim — see fresh-vm-setup.md, or run
+(One-time host setup: `pip install -e .` + build pfcpsim, see fresh-vm-setup.md, or run
 `scripts/bootstrap_fresh_vm.sh`.)
 
 ### Docker
@@ -62,12 +62,12 @@ docker socket + kubeconfig + `configs/` + `campaigns/`. See docker-deployment.md
 
 ---
 
-## 3. Getting trustworthy numbers — the reset hook
+## 3. Getting trustworthy numbers: the reset hook
 
 **Why it exists.** A UPF's datapath degrades under back-to-back stress: the `performance`
 suite's saturating traffic can **crash SD-Core's `bessd`** (it restarts forwarding ~0), and
 its session churn **wedges OAI's session table** (so a following `load`/`pfcp` suite can't
-establish). So a naive `--suite all` could have one suite poison the next — you'd see
+establish). So a naive `--suite all` could have one suite poison the next, you'd see
 `0 forwarded`, `capacity 0`, or `CF-02 fail` even though each suite passes on a clean UPF.
 (This is the "start from a clean UPF" guidance in RUNBOOK §7, now automated.)
 
@@ -124,7 +124,7 @@ To reproduce on demand (clean), per UPF:
 sudo docker stop oai-upf <open5gs containers>      # when testing SD-Core
 # (when testing OAI: kubectl scale statefulset/upf -n aether-5gc --replicas=0)
 
-# 2. run all suites — the reset hook gives each suite a fresh UPF
+# 2. run all suites: the reset hook gives each suite a fresh UPF
 sudo env KUBECONFIG=$HOME/.kube/config ./scripts/upfbench-docker.sh \
         run --config configs/sdcore-bess.yaml --suite all
 
@@ -136,7 +136,7 @@ With the reset hook + isolation, both UPFs reproduce (and SD-Core, on a quiet ho
 exceed) the baselines in a single `--suite all` run. Use a fresh `campaign:` id in the
 config if you want to keep the original reports untouched.
 
-Absolute af_packet NDR is **run-to-run noisy** and **host-load-dependent** — raise
+Absolute af_packet NDR is **run-to-run noisy** and **host-load-dependent**: raise
 `performance.trial_duration_s` (e.g. 20–30) for steadier numbers, and keep the host quiet.
 The structural results (capacity, forwarding-verified, latency, CF pass/fail) are stable.
 

@@ -61,7 +61,7 @@ def run(config_path: str, campaigns_root: str = "campaigns", suite: str | None =
                 print(f"[upfbench] resetting UPF for a clean {suite_name} run ...")
                 try:
                     upf.reset()
-                except Exception as e:  # noqa: BLE001 — a failed reset shouldn't abort the run
+                except Exception as e:  # noqa: BLE001, a failed reset shouldn't abort the run
                     print(f"[upfbench] warning: UPF reset failed ({e}); running on current state")
             print(f"[upfbench] running suite: {suite_name}")
             store.save(sut=cfg.sut, status="running", running_suite=suite_name)  # LIVE
@@ -86,7 +86,7 @@ def run(config_path: str, campaigns_root: str = "campaigns", suite: str | None =
                     print(f"  - {case.id} {case.name}")
                     try:
                         sres.tests.append(case.run(ctx))
-                    except Exception as e:  # noqa: BLE001 — one bad test must not kill the suite
+                    except Exception as e:  # noqa: BLE001, one bad test must not kill the suite
                         from upfbench.results import TestResult
                         msg = f"{type(e).__name__}: {e}"
                         print(f"    ! {case.id} errored: {msg}")
@@ -158,7 +158,7 @@ def _apply_cntc_verdict(store, cfg, profile: str | None, live_mode: str) -> None
 
     judged = sum(1 for t in verdict.get("tests", []) if t["outcome"] in ("pass", "fail"))
     if judged == 0:
-        # None of this profile's tests ran in this campaign — don't emit a misleading verdict.
+        # None of this profile's tests ran in this campaign, don't emit a misleading verdict.
         print(f"[cntc] profile {profile!r}: no applicable tests ran this campaign; "
               f"skipping verdict. (Run the pfcp / n3neg suites for a conformance verdict.)")
         return
@@ -172,17 +172,17 @@ def _apply_cntc_verdict(store, cfg, profile: str | None, live_mode: str) -> None
 # Which UPF dataplane modes each generator can actually inject into. tcpreplay needs a
 # host kernel socket (af_packet); trex/testpmd hairpin GTP-U through a NIC VF into the
 # UPF's DPDK/XDP-owned access VF (af_xdp/dpdk/cndp). Mixing them silently measures the
-# generator, not the UPF — so we fail fast with an explanation. (Empty/unknown live mode
+# generator, not the UPF: so we fail fast with an explanation. (Empty/unknown live mode
 # skips the guard rather than blocking.)
 _INJECTION_OK = {
     # OAI-UPF's "simpleswitch" datapath is a userspace switch on a normal container netdev
-    # (reachable via the host docker bridge + ARP) — i.e. host af_packet injection, which
+    # (reachable via the host docker bridge + ARP), i.e. host af_packet injection, which
     # tcpreplay drives. It is NOT a DPDK/XDP-owned VF, so allow it here.
     # "gtp5g" (Open5GS / free5GC) is the in-kernel GTP-U module bound to a normal netdev
-    # (eth0 on a docker bridge), so tcpreplay injects into it the same way — verified live
+    # (eth0 on a docker bridge), so tcpreplay injects into it the same way, verified live
     # on free5GC (a TEID-aligned GTP-U blast decapsulated on upfgtp). Not a DPDK/XDP VF.
     # "ebpf_xdp" (eUPF) attaches its XDP program to a normal kernel netdev (a Calico veth) in
-    # generic mode, so the hook is in the RX/skb path — host af_packet injection reaches it.
+    # generic mode, so the hook is in the RX/skb path, host af_packet injection reaches it.
     # Verified live: a TEID-aligned GTP-U blast via tcpreplay into the pod's veth decapsulated
     # and forwarded (xdp tx=5000/5000). It is NOT a DPDK/XDP-owned VF, so tcpreplay drives it.
     "tcpreplay": {"af_packet", "linux", "simpleswitch", "gtp5g", "ebpf_xdp"},

@@ -1,6 +1,6 @@
 """Plotly figure builders for each test's data.
 
-Each builder takes a ``Test`` and returns a list of ``(title, figure)`` — a test can yield
+Each builder takes a ``Test`` and returns a list of ``(title, figure)``, a test can yield
 more than one chart. ``charts_for(test)`` dispatches by test id; unknown tests fall back to
 a generic table render (handled by the page, not here). All numeric coercion is defensive
 because results.json values are JSON scalars (ints, floats, strings, lists).
@@ -74,7 +74,7 @@ def _saturation(test: Test, contains: str, title: str):
                            text=[f"{v:.2f}" for v in vals], textposition="outside"))
     drops = _num(r.get("pipeline_drops"))
     fig.update_layout(yaxis_title="Mpps",
-                      title=f"{title} — pipeline drops: {int(drops)}")
+                      title=f"{title}, pipeline drops: {int(drops)}")
     return [(title, T.apply(fig))]
 
 

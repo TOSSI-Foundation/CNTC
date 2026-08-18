@@ -1,9 +1,9 @@
-"""`upfbench doctor` — preflight check that a machine is ready to benchmark a UPF.
+"""`upfbench doctor`, preflight check that a machine is ready to benchmark a UPF.
 
 Installs nothing. It verifies the *software* the framework needs (deps, pfcpsim, TRex,
 kubectl) and reports the *hardware/testbed* items it can't auto-provision (hugepages,
 SR-IOV VFs, IOMMU) so you know exactly what's still missing on a fresh server. Every check
-is best-effort and never raises — a missing tool is a WARN/FAIL line, not a crash.
+is best-effort and never raises, a missing tool is a WARN/FAIL line, not a crash.
 """
 from __future__ import annotations
 
@@ -51,7 +51,7 @@ def _check_pfcpsim():
     base = ROOT / "third_party" / "pfcpsim"
     have = [b for b in ("pfcpsim", "pfcpctl") if (base / b).is_file()]
     if len(have) < 2:
-        return "pfcpsim built", WARN, ("not built — cd third_party/pfcpsim && "
+        return "pfcpsim built", WARN, ("not built, cd third_party/pfcpsim && "
                                        "go build -o pfcpsim ./cmd/pfcpsim (needs Go >=1.25)")
     return "pfcpsim built", OK, "third_party/pfcpsim/{pfcpsim,pfcpctl}"
 
@@ -100,7 +100,7 @@ def _check_vfio():
     n = out.strip()
     if rc == 0 and n.isdigit() and int(n) > 0:
         return "SR-IOV vfio-pci", OK, f"{n} device(s) bound to vfio-pci"
-    return "SR-IOV vfio-pci", WARN, ("no devices bound to vfio-pci — need >=1 free VF on the "
+    return "SR-IOV vfio-pci", WARN, ("no devices bound to vfio-pci, need >=1 free VF on the "
                                      "access PF for the generator")
 
 
@@ -119,7 +119,7 @@ CHECKS = [_check_core_deps, _check_dashboard_deps, _check_pfcpsim, _check_trex,
 
 
 def run() -> int:
-    print("\n  upfbench doctor — environment preflight\n")
+    print("\n  upfbench doctor, environment preflight\n")
     counts = {OK: 0, WARN: 0, FAIL: 0}
     for check in CHECKS:
         try:
@@ -131,12 +131,12 @@ def run() -> int:
         print(f"  {mark}  {label:22} {detail}")
     print(f"\n  Summary: {counts[OK]} OK, {counts[WARN]} warning(s), {counts[FAIL]} failure(s)")
     if counts[FAIL]:
-        print("  Core software is missing — run scripts/bootstrap_fresh_vm.sh.\n")
+        print("  Core software is missing, run scripts/bootstrap_fresh_vm.sh.\n")
     elif counts[WARN]:
         print("  Tester software is ready. Warnings are testbed-specific (see "
               "docs/dpdk-testing-guide.md §2).\n")
     else:
-        print("  All green — ready to benchmark.\n")
+        print("  All green, ready to benchmark.\n")
     return 1 if counts[FAIL] else 0
 
 

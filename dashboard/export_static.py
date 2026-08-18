@@ -2,7 +2,7 @@
 designer (or offline share).
 
 Why: designers work on HTML/CSS/JS, not Python/Dash. This renders the real pages with
-real campaign data, the actual style.css, and live Plotly charts — a renderable mini-site a
+real campaign data, the actual style.css, and live Plotly charts, a renderable mini-site a
 designer can open and redesign. It reuses the dashboard's own data loader and chart builders
 so the static output matches the live app.
 
@@ -44,7 +44,7 @@ def pill(text, color) -> str:
 
 
 def status_pill(status) -> str:
-    return pill((status or "—").upper(), T.status_color(status))
+    return pill((status or ", ").upper(), T.status_color(status))
 
 
 def kpi(label, value, sub="", accent=T.ACCENT) -> str:
@@ -82,7 +82,7 @@ def _fmt(v):
     if isinstance(v, float):
         return f"{v:.4g}"
     if isinstance(v, list):
-        return ", ".join(str(x) for x in v) if v else "—"
+        return ", ".join(str(x) for x in v) if v else ", "
     return str(v)
 
 
@@ -124,7 +124,7 @@ def page_overview(camps) -> str:
     hero = (
         '<div class="hero"><h1>A portable benchmark &amp; robustness framework for 5G UPFs</h1>'
         '<p class="hero-sub">upfbench drives any open-source UPF black-box over its real '
-        'interfaces — GTP-U on N3 (TRex) and PFCP on N4 (pfcpsim) — and reports '
+        'interfaces, GTP-U on N3 (TRex) and PFCP on N4 (pfcpsim), and reports '
         'standards-aligned performance, multi-UE load, N4 conformance, and data-plane '
         'robustness.</p><div class="hero-tags">'
         + pill("SD-Core BESS-UPF", T.ACCENT) + pill("DPDK · AF_XDP · CNDP · AF_PACKET", T.ACCENT2)
@@ -132,10 +132,10 @@ def page_overview(camps) -> str:
         + "</div></div>")
     if latest:
         k = latest.kpis
-        tiles = (kpi("Peak throughput", f"{k.get('pdr','—')} Mpps", "PDR @0.1% loss", T.ACCENT)
-                 + kpi("In-pipeline latency", f"{k.get('lat','—')} µs", "avg / p99", T.ACCENT2)
-                 + kpi("Max UE sessions", k.get("max_sessions", "—"), "concurrent", T.GOOD)
-                 + kpi("Load aggregate", f"{k.get('load_aggregate_mpps','—')} Mpps", "multi-UE", T.WARN))
+        tiles = (kpi("Peak throughput", f"{k.get('pdr',', ')} Mpps", "PDR @0.1% loss", T.ACCENT)
+                 + kpi("In-pipeline latency", f"{k.get('lat',', ')} µs", "avg / p99", T.ACCENT2)
+                 + kpi("Max UE sessions", k.get("max_sessions", ", "), "concurrent", T.GOOD)
+                 + kpi("Load aggregate", f"{k.get('load_aggregate_mpps',', ')} Mpps", "multi-UE", T.WARN))
         headline = card(f'<div class="kpi-row">{tiles}</div>'
                         f'<div class="muted small">From <b>{esc(latest.campaign_id)}</b> · '
                         f'{latest.mode.upper()} · {latest.date}</div>',
@@ -144,7 +144,7 @@ def page_overview(camps) -> str:
         headline = card('<div class="muted">No campaigns with data.</div>', title="Headline")
     finding = card(
         f'<div class="finding-tag">{pill("REMOTE DoS", T.BAD)} N3 negative suite</div>'
-        '<p><b>A single malformed GTP-U packet crashes the SD-Core BESS-UPF data plane</b> — '
+        '<p><b>A single malformed GTP-U packet crashes the SD-Core BESS-UPF data plane</b>, '
         'a SIGSEGV in <code>GtpuDecap::ProcessBatch</code> (malformed PSC 0x85 and truncation '
         'variants). The user plane drops until Kubernetes restarts the container. The suite '
         'detects the crash, attributes it to the culprit packet, recovers the UPF, and reports it.</p>'
@@ -154,7 +154,7 @@ def page_overview(camps) -> str:
         f'<div class="suite-card"><div class="suite-card-title">{esc(SUITE_LABEL.get(k,k))}</div>'
         f'<div class="suite-card-desc">{esc(d)}</div></div>'
         for k, d in [
-            ("performance", "Throughput (NDR/PDR), latency, jitter, burst, multi-flow — RFC 2544 / 8219 / 9004, ETSI TST009."),
+            ("performance", "Throughput (NDR/PDR), latency, jitter, burst, multi-flow, RFC 2544 / 8219 / 9004, ETSI TST009."),
             ("load", "Multi-UE: max concurrent sessions, aggregate + per-UE throughput, latency under load."),
             ("pfcp", "TS 29.244 N4 conformance: association, establish, modify, delete, error handling."),
             ("n3neg", "N3 data-plane negative/robustness: malformed GTP-U, unknown TEID, PSC (0x85) ext-header.")])
@@ -191,11 +191,11 @@ def page_campaigns(camps) -> str:
 
 
 def _sut_card(sut) -> str:
-    fields = [("Mode", (sut.get("mode") or "?").upper()), ("UPF", sut.get("upf", "—")),
-              ("Image", sut.get("upf_image", "—")), ("NIC", sut.get("nic", "—")),
-              ("CPU", sut.get("cpu", "—")), ("Platform", sut.get("platform", "—")),
+    fields = [("Mode", (sut.get("mode") or "?").upper()), ("UPF", sut.get("upf", ", ")),
+              ("Image", sut.get("upf_image", ", ")), ("NIC", sut.get("nic", ", ")),
+              ("CPU", sut.get("cpu", ", ")), ("Platform", sut.get("platform", ", ")),
               ("N3 / N6", f"{sut.get('n3_iface','?')} / {sut.get('n6_iface','?')}"),
-              ("UE pool", sut.get("ue_ip_pool", "—"))]
+              ("UE pool", sut.get("ue_ip_pool", ", "))]
     rows = "".join(f'<div class="sut-row"><span class="sut-k">{esc(k)}</span>'
                    f'<span class="sut-v">{esc(v)}</span></div>' for k, v in fields)
     return card(f'<div class="sut-grid">{rows}</div>', title="System under test")
@@ -297,7 +297,7 @@ def page_compare(camps) -> str:
                                  y=[_num(r.get("PDR_Mpps")) for r in rows],
                                  name=f"{c.mode.upper()} · {c.campaign_id}", mode="lines+markers",
                                  line=dict(color=T.mode_color(c.mode, i), width=3)))
-    # generator/NIC ceiling reference line — so a viewer sees when a run is rig-limited.
+    # generator/NIC ceiling reference line, so a viewer sees when a run is rig-limited.
     if any_data:
         fig.add_hline(y=14.88, line=dict(color=T.MUTE, width=1, dash="dash"),
                       annotation_text="generator / NIC VEB ceiling", annotation_position="top left",
@@ -313,7 +313,7 @@ def page_compare(camps) -> str:
             '<div class="muted">Overlay performance across UPFs and dataplane modes. '
             'Mpps-per-core is the fair cross-UPF metric.</div></div>'
             + _run_picker(camps) + tabs
-            + card(chart, title="Throughput vs frame size — PDR @0.1% loss",
+            + card(chart, title="Throughput vs frame size, PDR @0.1% loss",
                    sub="converging lines = both runs at the test-rig ceiling, not the UPF limit"))
     return shell("compare.html", "Compare runs", body)
 
@@ -350,7 +350,7 @@ def page_methodology() -> str:
                  f'<div class="flow-sub">{esc(su)}</div></div>')
         if i < len(steps) - 1:
             flow += '<div class="flow-arrow">→</div>'
-    plugins = [("Adapters", "deploy / configure / counters / teardown — per UPF", "sdcore_bess ▸ oai ▸ open5gs ▸ free5gc ▸ eupf", T.ACCENT),
+    plugins = [("Adapters", "deploy / configure / counters / teardown, per UPF", "sdcore_bess ▸ oai ▸ open5gs ▸ free5gc ▸ eupf", T.ACCENT),
                ("Control", "program the data plane", "pfcpsim (N4/PFCP) · pybess (white-box short-circuit)", T.ACCENT2),
                ("Traffic", "offer N3/N6 load", "TRex (DPDK/XDP/CNDP) · testpmd · tcpreplay", T.GOOD),
                ("Suites", "the test cases + pass/fail logic", "performance · load · pfcp · n3neg", T.WARN)]
@@ -361,14 +361,14 @@ def page_methodology() -> str:
     body = ('<div class="page-head"><h1>Methodology</h1></div>'
             + card(f'<div class="flow">{flow}</div>'
                    '<p class="body">Frames whose destination MAC equals the UPF access-VF MAC are '
-                   'hairpinned by the NIC internal switch (VEB) straight into the UPF — validated '
+                   'hairpinned by the NIC internal switch (VEB) straight into the UPF, validated '
                    '1:1. Throughput is computed from the UPF\'s own port counters, so it is '
                    'black-box and comparable across modes.</p>',
-                   title="N3 injection — kernel-bypass UPFs",
+                   title="N3 injection, kernel-bypass UPFs",
                    sub="no host kernel socket exists on a DPDK/XDP access port, so we hairpin")
             + card('<p class="body">A pybess splice (<code>executeFAR → ubench_sink → coreQSplit</code>) '
                    'rewrites the egress MAC and bypasses route lookup, so synthetic traffic reaches '
-                   'core TX without a real next-hop — and breaks the VEB re-circulation loop. On '
+                   'core TX without a real next-hop, and breaks the VEB re-circulation loop. On '
                    'non-BESS UPFs this is a no-op.</p>', title="Egress short-circuit")
             + "<h2>Plugin architecture</h2>" + f'<div class="plugin-grid">{pg}</div>')
     return shell("methodology.html", "Methodology", body)
@@ -388,7 +388,7 @@ def build(out: Path) -> Path:
         if c.totals["tests"]:
             (out / f"campaign-{c.key}.html").write_text(page_campaign(c))
             n_detail += 1
-    print(f"wrote {out} — 5 top pages + {n_detail} campaign detail pages")
+    print(f"wrote {out}, 5 top pages + {n_detail} campaign detail pages")
     return out
 
 

@@ -1,4 +1,4 @@
-"""CF-02 Session establishment (PDR/FAR/QER accepted) — Suite 3 (PFCP conformance)."""
+"""CF-02 Session establishment (PDR/FAR/QER accepted), Suite 3 (PFCP conformance)."""
 from upfbench.suites.base import TestCase, RunContext
 from upfbench.results import TestResult
 from upfbench.suites.pfcp.cf01_association import needs_pfcpsim

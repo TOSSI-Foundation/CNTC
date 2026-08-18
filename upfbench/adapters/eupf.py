@@ -1,10 +1,10 @@
-"""free5GC + eUPF adapter (fifth UPF — the first eBPF/XDP dataplane).
+"""free5GC + eUPF adapter (fifth UPF, the first eBPF/XDP dataplane).
 
 eUPF (github.com/edgecomllc/eupf) forwards with an **XDP program** attached to a netdev
 (here the pod's ``eth0`` / Calico veth, in ``generic`` mode) and keeps per-session forwarding
 state in **eBPF maps** (PDR/FAR/QER). That is a different shape from every prior UPF: there is
 no ``bessctl``, no ``/proc/net/dev`` egress port, no DPDK VF. But eUPF exposes a REST API on
-:8080 that is the authoritative — and, over the pod's ClusterIP, restart-stable — source for
+:8080 that is the authoritative, and, over the pod's ClusterIP, restart-stable, source for
 facts, counters, and the BPF program/map introspection, so this adapter reads that instead of
 shelling into the (minimal, tool-less) container.
 
@@ -17,7 +17,7 @@ It serves TWO certificates from one adapter:
 
 Two-port view: eUPF is single-interface (``eth0`` carries N3 in and, via XDP_TX, N6 out), so we
 synthesize the ``access``/``core`` ports the suites expect from the XDP counters. Uplink is
-forwarded by XDP_TX/XDP_REDIRECT (a genuine egress action — verified: a 5000-packet GTP-U blast
+forwarded by XDP_TX/XDP_REDIRECT (a genuine egress action, verified: a 5000-packet GTP-U blast
 on an installed TEID produced xdp ``tx``=5000), so ``fwd_field`` is the default ``tx_pkts``
 (NOT the TUN-style ``rx_pkts`` of the gtp5g adapters).
 
@@ -63,7 +63,7 @@ class Adapter(UPFAdapter):
     # --- REST API plumbing ----------------------------------------------------
     def _base(self) -> str:
         """REST API base URL. Prefer the service ClusterIP (survives pod restarts, unlike the
-        pod IP which changes each restart — and eUPF restarts on a datapath crash)."""
+        pod IP which changes each restart, and eUPF restarts on a datapath crash)."""
         if not self._api_base:
             ip = self._kubectl_out("get", "svc", self.api_service, "-n", self.namespace,
                                    "-o", "jsonpath={.spec.clusterIP}")
@@ -123,7 +123,7 @@ class Adapter(UPFAdapter):
     def reset(self) -> None:
         """Delete the eUPF pod so the Deployment recreates a clean XDP datapath, then block
         until the REST API answers again. (Session churn/saturation across suites can wedge a
-        datapath; a fresh pod restores it — same intent as the BESS/free5GC resets.)"""
+        datapath; a fresh pod restores it, same intent as the BESS/free5GC resets.)"""
         pod = self._pod()
         if pod:
             self.store.record_command(
@@ -148,7 +148,7 @@ class Adapter(UPFAdapter):
             facts["n3_iface"] = ifaces[0] if ifaces else (self.cfg.n3_iface or "eth0")
             facts["pfcp_node_id"] = c.get("pfcp_node_id", "")
             facts["map_sizes"] = {k: c[k] for k in c if k.endswith("_map_size")}
-        except Exception as ex:  # noqa: BLE001 — a probe failure becomes a report note
+        except Exception as ex:  # noqa: BLE001, a probe failure becomes a report note
             facts["api_error"] = str(ex)
         return facts
 
@@ -171,17 +171,17 @@ class Adapter(UPFAdapter):
         }
 
     def fwd_field(self) -> str:
-        return "tx_pkts"    # eUPF forwards uplink via XDP_TX/REDIRECT — genuine egress
+        return "tx_pkts"    # eUPF forwards uplink via XDP_TX/REDIRECT, genuine egress
 
     def n3_addr(self) -> str:
-        """Address to send N3 GTP-U to — the eUPF pod IP (its XDP program is on the pod's eth0).
+        """Address to send N3 GTP-U to, the eUPF pod IP (its XDP program is on the pod's eth0).
         The eBPF suite injects GTP-U to n3_addr:2152, which lands on the XDP hook directly."""
         return self._kubectl_out("get", "pod", "-n", self.namespace, "-l", self.selector,
                                  "-o", "jsonpath={.items[0].status.podIP}")
 
     # --- crash observability (conformance N3 robustness: NT-01/NT-02) ----------
     def healthy(self) -> bool:
-        """True if the eUPF REST API answers — i.e. the XDP datapath process is up. A malformed
+        """True if the eUPF REST API answers, i.e. the XDP datapath process is up. A malformed
         packet that crashes eUPF drops the API (k8s then restarts the container)."""
         return self._api_ok("health")
 
@@ -275,7 +275,7 @@ class Adapter(UPFAdapter):
         return {"xdp": xdp, "maps": maps, "stats": stats, "teids": teids, "pinned_objects": pinned}
 
     def _bpffs_objects(self) -> list[str]:
-        """Names pinned under /sys/fs/bpf in the pod (eUPF pins its program pipeline there —
+        """Names pinned under /sys/fs/bpf in the pod (eUPF pins its program pipeline there, 
         e.g. 'upf_pipeline'). Empty list if none/unreadable -> XDP-01/03 grade accordingly."""
         out = self._exec("ls", "/sys/fs/bpf")
         return [x for x in out.split() if x]

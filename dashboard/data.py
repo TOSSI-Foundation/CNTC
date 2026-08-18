@@ -2,7 +2,7 @@
 
 The framework writes one ``campaigns/<name>/results.json`` per run. This module scans that
 directory, parses each file into a small typed model, and exposes helpers the pages use.
-It is the single source of truth for the dashboard — every page reads from here, never from
+It is the single source of truth for the dashboard, every page reads from here, never from
 disk directly. Robust by design: a campaign with no/partial/corrupt ``results.json`` is
 skipped, not fatal.
 """
@@ -101,7 +101,7 @@ class Campaign:
 
     @property
     def workers(self) -> int | None:
-        """Data-plane worker count — from the SUT if captured, else parsed from a 'W<n>'
+        """Data-plane worker count, from the SUT if captured, else parsed from a 'W<n>'
         campaign name (e.g. W4-ALL), else None."""
         w = self.sut.get("workers")
         if w:

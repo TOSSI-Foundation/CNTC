@@ -1,4 +1,4 @@
-"""Campaign result store — re-exported from :mod:`cntc_common`.
+"""Campaign result store, re-exported from :mod:`cntc_common`.
 
 The result schema (``TestResult`` / ``SuiteResult`` / ``Store``) is shared by every CNTC
 measurement engine, so it lives in ``cntc_common.results``. This module keeps the historical

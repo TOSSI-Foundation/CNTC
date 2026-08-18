@@ -1,8 +1,8 @@
-# free5GC-UPF campaign — fourth UPF (gtp5g datapath, like Open5GS).
+# free5GC-UPF campaign: fourth UPF (gtp5g datapath, like Open5GS).
 # free5GC runs via docker-compose (~/free5gc-compose); the UPF container is `upf` on the
 # br-free5gc bridge (10.100.200.0/24). pfcpsim drives N4, tcpreplay drives N3.
 #
-# IMPORTANT — addresses are PER-DEPLOYMENT. Read them live before running:
+# IMPORTANT: addresses are PER-DEPLOYMENT. Read them live before running:
 #   docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' upf   # UPF IP
 #   ip -br addr | grep 10.100.200                                                      # host bridge IP
 # Then update n4_addr / pfcp_remote_addr / n3_remote_ip / pfcpsim_iface / gen_iface below.
@@ -21,7 +21,7 @@ sut:
 upf:
   adapter: free5gc_upf
   n3_iface: eth0                 # container iface carrying N3 (GTP-U)
-  n6_iface: upfgtp               # gtp5g TUN — decapsulated UE/N6 traffic
+  n6_iface: upfgtp               # gtp5g TUN, decapsulated UE/N6 traffic
   n4_addr: "10.100.200.3:8805"   # free5GC UPF PFCP (verify from upfcfg.yaml / container IP)
   container: upf
   docker_cmd: "sudo docker"

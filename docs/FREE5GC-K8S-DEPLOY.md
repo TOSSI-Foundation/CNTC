@@ -7,7 +7,7 @@ single-node RKE2 cluster. Chart: `free5gc/free5gc-helm` at `~/free5gc-helm` (cor
 > `kubectl` + `helm`, and the node's primary interface is `eth0` (the chart's `masterIf` default).
 
 ## 1. (If needed) tear down a conflicting core
-This box previously ran **SD-Core** in namespace `aether-5gc` (OMEC images — *not* free5GC). It was
+This box previously ran **SD-Core** in namespace `aether-5gc` (OMEC images, *not* free5GC). It was
 removed to free the N2 LoadBalancer / Multus attachments:
 ```bash
 kubectl delete ns aether-5gc
@@ -15,7 +15,7 @@ kubectl delete ns aether-5gc
 
 ## 2. Deploy the free5GC core
 [`deploy/free5gc-k8s/values.yaml`](../deploy/free5gc-k8s/values.yaml) carries every delta this
-node needs: `single` UPF, N6 `masterIf: eth0` (no `eth1`), **and a corrected mongo PV** — the
+node needs: `single` UPF, N6 `masterIf: eth0` (no `eth1`), **and a corrected mongo PV**: the
 chart ships a `local` PV pinned to a node literally named `ubuntu` at `/home/ubuntu/mongodbdb`,
 which never binds here (this node is `node1`). The override replaces it with a hostPath PV on
 `node1`, so Helm creates the right PV itself.
@@ -38,7 +38,7 @@ kubectl get pods -n free5gc
 helm install ueransim ~/free5gc-helm/charts/ueransim -n free5gc
 ```
 The chart's UE (`imsi-208930000000001`, Ki `8baf47…`) matches the subscriber in
-`configs/free5gc-k8s.yaml` — cpbench provisions it into the UDM/UDR via the WebUI on each run.
+`configs/free5gc-k8s.yaml`, cpbench provisions it into the UDM/UDR via the WebUI on each run.
 
 ## 4. Point CNTC at it and run
 The service naming (`free5gc-helm-free5gc-<nf>-service:8080`, `nrf-nnrf:8000`, WebUI NodePort 30500,
@@ -53,18 +53,18 @@ python3 -m cpbench.cli run   --config configs/free5gc-k8s.yaml --nf all --campai
 ## What a clean run shows (verified)
 | NF | Result | Note |
 |---|---|---|
-| **AMF** | **PASS → certified** (9/9) | registration · 5G-AKA · NAS ciphering/integrity · deregistration · **wrong-key negative attach (SEC-04)** all pass — the in-cluster UE drives the full cycle |
-| AUSF / UDM | INCOMPLETE | core auth/subscription **PASS** (transitive on registration); SBI-auth `na` — default free5GC doesn't enforce OAuth2 (400, not 401/403) |
+| **AMF** | **PASS → certified** (9/9) | registration · 5G-AKA · NAS ciphering/integrity · deregistration · **wrong-key negative attach (SEC-04)** all pass, the in-cluster UE drives the full cycle |
+| AUSF / UDM | INCOMPLETE | core auth/subscription **PASS** (transitive on registration); SBI-auth `na`, default free5GC doesn't enforce OAuth2 (400, not 401/403) |
 | **NRF** | FAIL | real findings: SBI serves discovery **without a token** (HTTP 200) **and** no TLS |
-| SMF | FAIL | in-cluster UPF data path (N6) — PDU session doesn't complete |
+| SMF | FAIL | in-cluster UPF data path (N6), PDU session doesn't complete |
 
 **AMF certifies on Kubernetes** (`cpbench run --nf amf` → `cntc certify … --profile amf-conformance`).
 The remaining gaps are honest: free5GC's default SBI posture (no TLS/OAuth2), an in-cluster UPF
-data-path limitation — never a fake pass.
+data-path limitation, never a fake pass.
 
 > **On enabling OAuth2:** free5GC's OAuth2 needs the NRF to write an access-token *signing cert*
 > (`./cert/nrf.pem`) at startup and that cert distributed to every NF to verify tokens. In this
 > chart the cert dir is read-only, so `oauth: true` makes the NRF CrashLoop, and the chart
 > provisions no shared OAuth2 certs. Enabling it therefore needs a cert-bootstrap step the chart
-> doesn't ship — the "no OAuth2 enforced" result CNTC reports is the correct finding for a
+> doesn't ship, the "no OAuth2 enforced" result CNTC reports is the correct finding for a
 > default free5GC deployment.

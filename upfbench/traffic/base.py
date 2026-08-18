@@ -1,8 +1,8 @@
-"""TrafficGenerator — drives packets into the UPF and reports counters.
+"""TrafficGenerator: drives packets into the UPF and reports counters.
 
 Implementations:
-  * ``testpmd`` — DPDK testpmd, raw-frame line-rate blast (Suite 1, the path we used).
-  * ``trex``    — Cisco TRex, GTP-U with multi-TEID per-UE flows (Suites 1 & 2).
+  * ``testpmd``, DPDK testpmd, raw-frame line-rate blast (Suite 1, the path we used).
+  * ``trex``, Cisco TRex, GTP-U with multi-TEID per-UE flows (Suites 1 & 2).
 
 One ``Trial`` runs steady-state at a target offered load and returns absorbed/forwarded
 counts so the caller (binary search) can compute the loss ratio.
@@ -44,7 +44,7 @@ class TrafficGenerator(abc.ABC):
                   encapsulation: str = "raw") -> Trial:
         """Run one steady-state trial; return measured rates.
 
-        ``teids`` + ``ue_ips`` (parallel lists) define per-UE flows — used by Suite 2
+        ``teids`` + ``ue_ips`` (parallel lists) define per-UE flows, used by Suite 2
         to match the TEID/UE-IP that pfcpsim assigned each session, so traffic hits the
         real per-UE PDRs. Both omitted = a single default flow.
         """

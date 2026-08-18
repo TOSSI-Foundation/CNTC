@@ -1,4 +1,4 @@
-"""XDP-05 — deleting a PFCP session removes its eBPF map entries (no stale dataplane state).
+"""XDP-05: deleting a PFCP session removes its eBPF map entries (no stale dataplane state).
 
 The unbinding half of TS 29.244 §5.2: after an N4 Session Deletion the UPF must drop the rule
 from the fast path, or it would keep forwarding for a torn-down session (a correctness and

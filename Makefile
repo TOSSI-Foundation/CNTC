@@ -1,4 +1,4 @@
-# CNTC — Cloud Native Telecom Certification Framework — one entrypoint over the automation.
+# CNTC: Cloud Native Telecom Certification Framework, one entrypoint over the automation.
 #
 #   make                     # help
 #   make prereqs             # install deps + build pfcpsim + doctor  (sudo)
@@ -18,12 +18,13 @@ export KUBECONFIG ?= $(HOME)/.kube/config
 export PATH := $(PATH):/var/lib/rancher/rke2/bin:$(HOME)/.local/bin
 
 .DEFAULT_GOAL := help
-.PHONY: help prereqs doctor configure cp-configure cp-doctor cp-run cp-certify run run-conformance run-perf run-n3neg \
+.PHONY: help prereqs doctor configure cp-configure cp-doctor cp-run cp-certify \
+        ran-list ran-doctor ran-run ran-certify run run-conformance run-perf run-n3neg \
         eupf-run eupf-certify verdict certify \
         dashboard dashboard-bg dashboard-stop profiles lint test k8s-deploy k8s-run k8s-clean clean
 
 help:  ## show targets
-> @echo "CNTC automation — targets:"
+> @echo "CNTC automation, targets:"
 > @grep -E '^[a-zA-Z_-]+:.*## ' $(MAKEFILE_LIST) | sort \
 >   | awk 'BEGIN{FS=":.*## "}{printf "  \033[36m%-18s\033[0m %s\n",$$1,$$2}'
 > @echo ""
@@ -52,6 +53,19 @@ cp-run:  ## run the control-plane suite  (CONFIG= NF=all|amf|smf|nrf|ausf|udm CA
 cp-certify:  ## issue a control-plane certificate  (CAMPAIGN= NF=amf|smf|nrf|ausf|udm)
 > python3 -m cntc.cli certify campaigns/$(CAMPAIGN)/results.json --profile $(or $(NF),amf)-conformance
 
+# --- RAN (ranbench) ------------------------------------------------------------
+ran-list:  ## list the split-gNB product classes + their catalogs
+> python3 -m ranbench.cli list
+
+ran-doctor:  ## preflight the RAN rig  (CONFIG=configs/ocudu-ran.yaml)
+> python3 -m ranbench.cli doctor --config $(CONFIG)
+
+ran-run:  ## run the RAN suite  (CONFIG= TARGET=all|cucp|cuup|du CAMPAIGN=)
+> python3 -m ranbench.cli run --config $(CONFIG) --target $(or $(TARGET),all) $(if $(CAMPAIGN),--campaign $(CAMPAIGN),)
+
+ran-certify:  ## issue a RAN certificate  (CAMPAIGN= TARGET=cucp|cuup|du)
+> python3 -m cntc.cli certify campaigns/$(CAMPAIGN)/results.json --profile $(or $(TARGET),cucp)-conformance
+
 # --- run ----------------------------------------------------------------------
 run:  ## full e2e: all + n3neg -> merge -> verdict -> certify  (CONFIG= CAMPAIGN=)
 > ./scripts/cntc-run-all.sh $(CONFIG) $(CAMPAIGN)
@@ -63,7 +77,7 @@ run-conformance:  ## pfcp + n3neg only (the certification set) + grade
 run-perf:  ## performance + load + pfcp only
 > python3 -m upfbench.cli run --config $(CONFIG) --suite all --campaign $(CAMPAIGN)
 
-# --- free5GC + eUPF (eBPF/XDP) — dual certificate --------------------------------
+# --- free5GC + eUPF (eBPF/XDP): dual certificate --------------------------------
 eupf-run:  ## eUPF: run one suite  (CONFIG=configs/eupf.yaml SUITE=conformance|ebpf CAMPAIGN=)
 > sudo python3 -m upfbench.cli run --config $(or $(CONFIG),configs/eupf.yaml) --suite $(or $(SUITE),conformance) --profile $(if $(filter ebpf,$(SUITE)),upf-ebpf,conformance) --campaign $(or $(CAMPAIGN),EUPF)
 

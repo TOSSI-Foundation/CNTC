@@ -1,8 +1,8 @@
-"""SBI client driver — drives the Service-Based Interface directly (HTTP/2 + TLS + OAuth2).
+"""SBI client driver, drives the Service-Based Interface directly (HTTP/2 + TLS + OAuth2).
 
 The one significant net-new component of Stage 2. It poses as a peer NF and calls the target
 NF's SBI services (Nnrf, Nausf, Nudm, Namf, Nsmf), parses ``ProblemDetails`` error bodies, and
-checks TLS + OAuth2 enforcement — the driver behind the NRF/AUSF/UDM suites and the AMF/SMF
+checks TLS + OAuth2 enforcement, the driver behind the NRF/AUSF/UDM suites and the AMF/SMF
 security cases. Built on ``httpx`` (HTTP/2 when the peer offers it; SBI peers that only speak
 h2c fall back to HTTP/1.1, which free5GC accepts).
 """
@@ -53,7 +53,7 @@ class Driver(BaseDriver):
             f"[sbi] {method} {url}" + (" (Bearer)" if token else " (no token)"))
         try:
             r = self._client.request(method, url, headers=headers, json=json, data=data)
-        except Exception as e:  # noqa: BLE001 — connection refused / TLS error is a result, not a crash
+        except Exception as e:  # noqa: BLE001, connection refused / TLS error is a result, not a crash
             return {"ok": False, "status": None, "error": f"{type(e).__name__}: {e}"}
         body: Any = None
         problem = None
@@ -62,7 +62,7 @@ class Driver(BaseDriver):
             # RFC 7807 ProblemDetails per TS 29.500 carry these keys
             if isinstance(body, dict) and ("title" in body or "cause" in body or "status" in body):
                 problem = body
-        except Exception:  # noqa: BLE001 — non-JSON body
+        except Exception:  # noqa: BLE001, non-JSON body
             body = r.text[:500]
         return {"ok": 200 <= r.status_code < 300, "status": r.status_code,
                 "http_version": r.http_version, "body": body, "problem_details": problem}
@@ -83,7 +83,7 @@ class Driver(BaseDriver):
     def get_access_token(self, base: str, nf_type: str, target_nf_type: str,
                          scope: str, nf_instance_id: str = "cpbench-probe") -> dict[str, Any]:
         """OAuth2 client-credentials grant from the NRF (TS 33.501 §13). Returns
-        {ok, token, status} — used to authorize discovery when the NRF enforces OAuth2."""
+        {ok, token, status}, used to authorize discovery when the NRF enforces OAuth2."""
         r = self.request("POST", f"{base}/oauth2/token", data={
             "grant_type": "client_credentials", "nfInstanceId": nf_instance_id,
             "nfType": nf_type, "targetNfType": target_nf_type, "scope": scope})

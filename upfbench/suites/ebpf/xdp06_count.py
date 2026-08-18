@@ -1,6 +1,6 @@
-"""XDP-06 — the eBPF session-map entry count matches the installed session count (no drift).
+"""XDP-06: the eBPF session-map entry count matches the installed session count (no drift).
 
-Installs N sessions over N4 and checks the session map holds exactly N — catching leaks (entries
+Installs N sessions over N4 and checks the session map holds exactly N, catching leaks (entries
 never freed) or drops (rules silently rejected). Normal."""
 import time
 

@@ -3,7 +3,7 @@
 Each NF has a package under ``cpbench/suites/<nf>/``; every module in it exposes a ``TESTS``
 list of real :class:`NfTestCase` classes. The registry merges those with :class:`StubCase`
 fillers for any requirement in that NF's catalog (``cntc/standards/<nf>-conformance.yaml``)
-that has no real case yet — so the suite always covers the full published standard, and an
+that has no real case yet, so the suite always covers the full published standard, and an
 unimplemented requirement is scored 'na', never dropped.
 
 Which driver(s) each NF's suite needs (used by the runner to wire the RunContext):

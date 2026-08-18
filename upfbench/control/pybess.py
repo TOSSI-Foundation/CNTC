@@ -5,15 +5,15 @@ the original benchmark methodology (the CNDP/AF_XDP reports, §12.b/§12.c):
 
   1. wildcard PDR (match any) + UL FAR (action=forward) + bypass QER, and
   2. a pipeline SHORT-CIRCUIT: rewire ``executeFAR:1`` straight into ``coreQSplit`` so
-     forwarded packets reach the N6/core TX, bypassing ``coreRoutes``/``IPLookup`` —
+     forwarded packets reach the N6/core TX, bypassing ``coreRoutes``/``IPLookup``, 
      which otherwise drops synthetic test traffic (no real route/ARP for the made-up
      destination) into a Sink *before* the TX counter. This isolates the dataplane
      processing path (I/O backend + parse + PDR + QER + FAR) and is the exact technique
      the reference DPDK/CNDP/AF_XDP numbers were produced with. The reported metric is
      therefore "dataplane-processing throughput" (egress route-lookup/MAC-rewrite
-     bypassed) — the right basis for comparing I/O modes, which share that egress stage.
+     bypassed), the right basis for comparing I/O modes, which share that egress stage.
 
-BESS-specific; not portable — Suites 2/3 use the standardized pfcpsim path instead.
+BESS-specific; not portable, Suites 2/3 use the standardized pfcpsim path instead.
 
 The BESS gRPC server (localhost:10514) lives inside the UPF pod, so pybess can't be
 imported on the host; we ship a short script into the bessd container and run it with

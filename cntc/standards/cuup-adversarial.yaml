@@ -1,0 +1,40 @@
+# CNTC requirement catalog: O-CU-UP LEVEL 2 "Adversarial Robustness & Privileged Interop"
+#
+# LEVEL 2 = requirements that need a NON-COMPLIANT or PRIVILEGED peer: forged or replayed user
+# plane, a rogue O-CU-CP identity on E1, and resource-exhaustion edges.
+#
+# STATUS: ROADMAP. Not implemented: these grade 'na', so a Level 2 run is INCOMPLETE by design.
+# Never read a Level 2 'na' as a pass.
+version: 0.1.0-roadmap
+profile: cuup-adversarial
+title: "O-CU-UP (gNB-CU-UP), CNTC Level 2 (Adversarial Robustness & Privileged Interop)"
+standards:
+- 3GPP TS 38.463 (E1AP / E1)
+- 3GPP TS 33.501 (5G security)
+- "3GPP TS 33.511 (SCAS, gNB)"
+- "3GPP TS 33.523 (SCAS, split gNB)"
+defaults:
+  class: normal
+gate:
+  essential: all
+tests:
+- id: CUUP-SEC-05
+  name: "UP integrity check failure handled correctly (33.511 §4.2.2.1.5 via 33.523 §6.2.2.1.1)"
+  category: security
+  class: essential
+  verdict: status_pass
+- id: CUUP-SEC-06
+  name: "Replay protection of user data between the UE and the CU-UP (33.511 §4.2.2.1.8 via 33.523 §6.2.2.1.1)"
+  category: security
+  class: essential
+  verdict: status_pass
+- id: CUUP-NEG-02
+  name: "Rogue O-CU-CP, E1 Setup from an unauthenticated CU-CP is rejected"
+  category: robustness
+  class: essential
+  verdict: status_pass
+- id: CUUP-NEG-03
+  name: "Bearer-context ceiling / resource exhaustion handled gracefully, no crash"
+  category: robustness
+  class: normal
+  verdict: status_pass

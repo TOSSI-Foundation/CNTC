@@ -7,7 +7,7 @@
 #
 # WHY: aether's BESS-UPF uses a DPDK fast path + macvlan interfaces and is wired for
 # its own in-cluster gnbsim. An external UERANSIM gNB (running on the host) needs the
-# datapath taught about it. Three things break — and they break AGAIN every time the
+# datapath taught about it. Three things break: and they break AGAIN every time the
 # upf-0 pod is recreated, because the pod/macvlan MACs are regenerated:
 #   1. BESS has no route to the external gNB's N3 IP        -> add a /32 route to accessRoutes
 #   2. BESS's static downlink next-hop MAC goes stale       -> align the host access MAC to it
@@ -73,4 +73,4 @@ done
 
 echo
 echo "DONE. Verify:  sudo ip netns exec \$(ip netns list | grep -oE 'uesimtun[^ ]*' | head -1) ping -c3 8.8.8.8"
-echo "Note: re-run after any 'kubectl delete pod $UPF_POD' — pod MACs change and items 1,3,4 go stale."
+echo "Note: re-run after any 'kubectl delete pod $UPF_POD', pod MACs change and items 1,3,4 go stale."

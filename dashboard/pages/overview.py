@@ -1,4 +1,4 @@
-"""Overview — dashboard landing. Compact title, a latest-run summary card (verdict + mini
+"""Overview: dashboard landing. Compact title, a latest-run summary card (verdict + mini
 throughput chart + stat cells), a KPI quad, and the suite coverage cards. Data-first, not a
 marketing hero (redesign v2)."""
 from __future__ import annotations
@@ -15,7 +15,7 @@ dash.register_page(__name__, path="/", name="Overview")
 
 # monochrome glyphs for the suite icon box (CSS tints them neutral)
 _SUITES = [
-    ("01", "performance", "▥", "Throughput (NDR/PDR), latency, jitter, burst, multi-flow — RFC 2544 / 8219 / 9004, ETSI TST009."),
+    ("01", "performance", "▥", "Throughput (NDR/PDR), latency, jitter, burst, multi-flow, RFC 2544 / 8219 / 9004, ETSI TST009."),
     ("02", "load", "☰", "Multi-UE: max concurrent sessions, aggregate + per-UE throughput, latency under load."),
     ("03", "pfcp", "⇄", "TS 29.244 N4 conformance: association, establish, modify, delete, error handling."),
     ("04", "n3neg", "⚠", "N3 data-plane negative/robustness: malformed GTP-U, unknown TEID, PSC (0x85) ext-header."),
@@ -75,11 +75,11 @@ def _latest_card(c):
     # af_packet / kernel-path generators cap ~0.01 Mpps: the number is generator-limited,
     # not the UPF's ceiling. Label it so a low value isn't misread as a slow UPF.
     rig_limited = c.mode in ("af_packet", "afpacket", "simpleswitch", "linux")
-    peak_sub = "af_packet rig — generator-limited" if rig_limited else None
+    peak_sub = "af_packet rig, generator-limited" if rig_limited else None
     stats = html.Div(className="lr-stats", children=[
-        _stat(f"{k.get('pdr', '—')}", " Mpps", "peak throughput", "var(--accent-fg)", sub=peak_sub),
-        _stat((lat[-1].strip() if len(lat) > 1 else "—"), " µs", "p99 latency", "var(--violet-fg)"),
-        _stat((lat[0].strip() if lat and lat[0] else "—"), " µs", "avg latency"),
+        _stat(f"{k.get('pdr', ', ')}", " Mpps", "peak throughput", "var(--accent-fg)", sub=peak_sub),
+        _stat((lat[-1].strip() if len(lat) > 1 else ", "), " µs", "p99 latency", "var(--violet-fg)"),
+        _stat((lat[0].strip() if lat and lat[0] else ", "), " µs", "avg latency"),
         dcc.Link("Open run →", href=f"/campaign/{c.key}", className="btn btn-ghost",
                  style={"marginLeft": "auto", "alignSelf": "center"})])
     return html.Div(className="card latest-run", style={"margin": "0"},
@@ -132,9 +132,9 @@ def layout(**_):
     cpc = cp_nf_counts()
     cp_tests = sum(t for t, _ in cpc.values())
     cp_ess = sum(e for _, e in cpc.values())
-    sub = html.P("Standards-graded certification for the whole 5G core — the control plane "
+    sub = html.P("Standards-graded certification for the whole 5G core, the control plane "
                  "(AMF/SMF/NRF/AUSF/UDM over N1/N2 + SBI) and the user plane (the UPF over "
-                 "N3 / N4) — conformance, observable security, performance and robustness.",
+                 "N3 / N4), conformance, observable security, performance and robustness.",
                  className="muted small", style={"margin": "2px 0 18px", "maxWidth": "720px"})
     quad = html.Div(className="kpi-quad", children=[
         _kq("Network functions", str(len(cpc)), f"control plane · {cp_ess} essential"),
@@ -143,7 +143,7 @@ def layout(**_):
         _kq("Runs", str(n_runs), "on record"),
         _kq("Findings", str(n_find), "remote DoS · high" if n_find else "none",
             "var(--bad-fg)" if n_find else None),
-        _kq("Last activity", latest.date[5:10] if latest else "—",
+        _kq("Last activity", latest.date[5:10] if latest else ", ",
             (latest.date[11:16] + " · " + latest.campaign_id) if latest else ""),
     ])
     dash_top = html.Div(className="dash-top", children=[

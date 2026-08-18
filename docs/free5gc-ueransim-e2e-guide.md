@@ -1,5 +1,5 @@
 ---
-title: "free5GC + UERANSIM — End-to-End Test Guide"
+title: "free5GC + UERANSIM, End-to-End Test Guide"
 subtitle: "Deploy check, subscriber provisioning, configs, and the data-path test"
 author: "TOSSI Foundation"
 date: "June 2026"
@@ -10,7 +10,7 @@ geometry: margin=2cm
 
 This guide walks the full end-to-end (e2e) test of **free5GC** (docker-compose) with a
 **native UERANSIM** gNB + UE: verify the core is healthy, **provision a subscriber**
-(free5GC does not auto-add one — the classic gotcha), point UERANSIM at the core, register
+(free5GC does not auto-add one, the classic gotcha), point UERANSIM at the core, register
 the UE, bring up a PDU session, and prove the data path with a ping. Every value used here
 is the one validated on this VM; addresses are environment-specific (read them live).
 
@@ -30,14 +30,14 @@ is the one validated on this VM; addresses are environment-specific (read them l
 # 2. Prerequisites
 
 - **free5GC deployed** via docker-compose at `~/free5gc-compose` (this used webui **v4.2.3**).
-- **gtp5g kernel module loaded** on the host — free5GC's UPF datapath needs it:
+- **gtp5g kernel module loaded** on the host, free5GC's UPF datapath needs it:
   ```bash
   lsmod | grep gtp5g     # must be present; else: cd ~/gtp5g && make && sudo make install && sudo modprobe gtp5g
   ```
 - **Native UERANSIM** built at `~/UERANSIM` (`build/nr-gnb`, `build/nr-ue`).
 - Run gNB/UE with `sudo` (they create the `uesimtun0` TUN + raw sockets).
 
-# 3. Step 1 — Verify the core is healthy
+# 3. Step 1: Verify the core is healthy
 
 ```bash
 cd ~/free5gc-compose
@@ -50,7 +50,7 @@ lsmod | grep gtp5g          # gtp5g present
 sudo docker exec upf ip -br addr | grep -vE 'lo'   # eth0 (N3) + upfgtp (the gtp5g tun)
 ```
 
-# 4. Step 2 — Read the live addresses (environment-specific)
+# 4. Step 2: Read the live addresses (environment-specific)
 
 ```bash
 ip -br addr | grep 10.100.200          # host IP on the free5gc bridge (here 10.100.200.1)
@@ -66,9 +66,9 @@ On this VM:
 | UPF (N3 / gtp5g) | **10.100.200.2** |
 | UE pool (assigned) | 10.60.0.0/16 -> UE got **10.60.0.1** |
 
-# 5. Step 3 — Provision the subscriber (the free5GC gotcha)
+# 5. Step 3: Provision the subscriber (the free5GC gotcha)
 
-free5GC ships **no subscribers** — the UE cannot register until you add one matching the UE
+free5GC ships **no subscribers**: the UE cannot register until you add one matching the UE
 config. Check first:
 ```bash
 sudo docker exec mongodb mongo --quiet free5gc \
@@ -141,7 +141,7 @@ Expect `login: 200`, `provision: 201`, `verify GET: 200`. Re-check mongo -> coun
 > Alternative: the WebUI at `http://<host>:5000` (login `admin`/`free5gc`) -> "Subscribers" ->
 > "New Subscriber" with the same values. The API is just faster/repeatable.
 
-# 6. Step 4 — UERANSIM configs (separate custom files)
+# 6. Step 4: UERANSIM configs (separate custom files)
 
 Keep the stock `free5gc-gnb.yaml`/`free5gc-ue.yaml` (which use `127.0.0.1`) **untouched**;
 create **custom** copies pointed at the live bridge:
@@ -160,7 +160,7 @@ gtpIp:  10.100.200.1     # N3 GTP-U source
 amfConfigs:
   - address: 10.100.200.16   # AMF NGAP (was 127.0.0.1)
     port: 38412
-# mcc '208' / mnc '93', slice sst 1 sd 0x010203 — already correct
+# mcc '208' / mnc '93', slice sst 1 sd 0x010203: already correct
 ```
 
 Edit in **`free5gc-custom-ue.yaml`** (must match the gNB's linkIp):
@@ -170,7 +170,7 @@ gnbSearchList:
 # supi imsi-208930000000001, key/op as provisioned, apn internet, sst 1 sd 0x010203
 ```
 
-# 7. Step 5 — Run the gNB and UE
+# 7. Step 5: Run the gNB and UE
 
 ```bash
 cd ~/UERANSIM
@@ -183,7 +183,7 @@ sleep 8; grep -iE "Registration|PDU Session|uesimtun" /tmp/f5_ue.log
 Expected: `Initial Registration is successful` -> `PDU Session establishment is successful PSI[1]`
 -> `TUN interface[uesimtun0, 10.60.0.1] is up`.
 
-# 8. Step 6 — Verify the data path (through the gtp5g UPF)
+# 8. Step 6: Verify the data path (through the gtp5g UPF)
 
 ```bash
 sudo ping -I uesimtun0 -c4 8.8.8.8
@@ -198,12 +198,12 @@ namespace, prefix with `sudo ip netns exec <ns> ping ...`.)
 | UE never registers / no subscriber | free5GC has **no subscriber** by default (count 0) | Provision via WebUI API (Step 3) |
 | `PLMN/Cell selection failure, no cells in coverage` | UE `gnbSearchList` (`127.0.0.1`) ≠ gNB `linkIp` | Set `gnbSearchList: 10.100.200.1` |
 | gNB SCTP `Connection refused` to AMF | gNB config pointed at `127.0.0.1` not the AMF container | `amfConfigs.address: 10.100.200.16` |
-| `Authentication Failure due to SQN out of range` | first-attach SQN resync (normal) | none — it auto-resyncs and registration succeeds |
+| `Authentication Failure due to SQN out of range` | first-attach SQN resync (normal) | none : it auto-resyncs and registration succeeds |
 
 # 10. Notes
 
 - **free5GC UPF uses the gtp5g kernel module** (a real GTP-U netdev), so it forwards fine
-  over Docker bridge veths — unlike OAI's eBPF/XDP datapath, which puts a bridge veth into
+  over Docker bridge veths, unlike OAI's eBPF/XDP datapath, which puts a bridge veth into
   NO-CARRIER on this VM. That's why free5GC e2e works here out of the box.
 - **Subscriber persistence:** the subscriber lives in free5GC's `mongodb`. It survives core
   restarts as long as the mongo volume persists; a full `docker compose down -v` wipes it ->
@@ -212,5 +212,5 @@ namespace, prefix with `sudo ip netns exec <ns> ping ...`.)
   host, re-read them (Step 2) and update the custom gNB/UE files accordingly.
 - **upfbench:** free5GC is a strong candidate as a 4th UPF target. Unlike Open5GS (whose UPF
   only programs gtp5g for its own SMF), free5GC's UPF may program gtp5g for an external
-  pfcpsim-driven session — worth testing whether Suites 1/2 forward before committing an
+  pfcpsim-driven session, worth testing whether Suites 1/2 forward before committing an
   adapter.

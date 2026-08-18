@@ -1,11 +1,11 @@
-# CNTC control-plane campaign — free5GC on Kubernetes (SD-Core / Aether-style Helm chart).
+# CNTC control-plane campaign: free5GC on Kubernetes (SD-Core / Aether-style Helm chart).
 #
 # This targets a deployment where the NF Services are named plainly (amf/smf/nrf/ausf/udm) on
 # their real 3GPP SBI ports, and pods are labelled app=<nf> (release=sd-core). The adapter
 # resolves each NF's ClusterIP live via `kubectl get svc`, so nothing here hardcodes an IP.
 #
 # There is no in-cluster UE/gNB in this deployment, so the N2 registration cases (full AMF/SMF
-# attach + AUSF/UDM transitive) grade `na` — the SBI-driven cases (TLS / OAuth2 / malformed ->
+# attach + AUSF/UDM transitive) grade `na`: the SBI-driven cases (TLS / OAuth2 / malformed ->
 # reject, discovery, subscription, auth-vector) run and reveal the deployment's SBI hardening.
 #
 #   cpbench doctor --config configs/free5gc-k8s-aether.yaml
@@ -32,7 +32,7 @@ drivers:
   gnb: ueransim_k8s
   ue_pod_match: ueransim-ue          # no in-cluster UE here -> registration cases grade na
   gnb_pod_match: ueransim-gnb
-  amf_n2_addr: 192.168.6.90          # AMF N2 LoadBalancer IP (SCTP 38412) — used only if a UE exists
+  amf_n2_addr: 192.168.6.90          # AMF N2 LoadBalancer IP (SCTP 38412), used only if a UE exists
   amf_n2_port: 38412
   k8s_drive: false                   # observe-only; no UE pod to restart
 

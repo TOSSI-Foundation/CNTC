@@ -1,7 +1,7 @@
-"""CF-03 Session modification — Suite 3 (PFCP conformance, 3GPP TS 29.244).
+"""CF-03 Session modification, Suite 3 (PFCP conformance, 3GPP TS 29.244).
 
 Previously thought blocked, but the vendored pfcpsim build *does* expose `session modify`
-and the SD-Core UPF accepts it — so CF-03 is a real conformance test.
+and the SD-Core UPF accepts it, so CF-03 is a real conformance test.
 """
 from upfbench.suites.base import TestCase, RunContext
 from upfbench.results import TestResult

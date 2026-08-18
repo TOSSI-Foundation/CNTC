@@ -1,4 +1,4 @@
-"""XDP-01 — an XDP/eBPF program is attached to the datapath (N3/access) interface.
+"""XDP-01: an XDP/eBPF program is attached to the datapath (N3/access) interface.
 
 The foundational check: if nothing is on the XDP hook, the UPF is not an eBPF/XDP dataplane and
 cannot earn this certificate. Essential."""

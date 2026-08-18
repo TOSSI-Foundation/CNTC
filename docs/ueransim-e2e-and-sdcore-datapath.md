@@ -10,10 +10,10 @@ makes SD-Core's downlink work with an *external* gNB. Configs live in
 Control plane (register + PDU session) works out of the box on both cores. SD-Core's
 **downlink** (internet → UE) does not, because aether's BESS-UPF (DPDK fast path +
 macvlan) is wired for its in-cluster gnbsim, not an external host gNB. Three things
-must be taught/refreshed — and they go stale every time `upf-0` is recreated:
+must be taught/refreshed, and they go stale every time `upf-0` is recreated:
 
 1. **No route to the external gNB.** BESS encapsulates the downlink GTP-U, then looks
-   up the gNB's N3 IP (192.168.252.1) in its `accessRoutes` (IPLookup) — which has no
+   up the gNB's N3 IP (192.168.252.1) in its `accessRoutes` (IPLookup), which has no
    entry → packets go to gate 8191 → `accessbad_route` Sink (dropped). Fix: add a
    `/32` route to gate 0 via the pybess gRPC API.
 2. **Stale downlink next-hop MAC.** BESS sends downlink to a *static* MAC
@@ -52,7 +52,7 @@ pfcpsim. e2e numbers are through the real UERANSIM gNB+UE.)
   OAI "simpleswitch" forwards through a Linux TUN in userspace → low PPS. BESS wins by
   ~2.5–5×. This is a real, intrinsic UPF-capability difference.
 - **The e2e internet test = the whole path**: external gNB ↔ UPF *datapath integration*
-  ↔ DN/NAT ↔ internet. Here the bottleneck is **not** BESS's forwarding engine — it's
+  ↔ DN/NAT ↔ internet. Here the bottleneck is **not** BESS's forwarding engine, it's
   the **downlink delivery from BESS's DPDK+macvlan datapath to an external, host-resident
   gNB**. aether's BESS-UPF is built for an in-cluster gnbsim (pod↔pod on the access
   net). Bolting on an external UERANSIM gNB means downlink frames cross a DPDK→macvlan→
@@ -74,7 +74,7 @@ datapath for an *external* gNB in this lab topology. Different layers, different
 
 - `iperf3` (default) uses **one** TCP stream. A single TCP flow's throughput is roughly
   `MSS / (RTT × √loss)` (Mathis equation). With even a little downlink loss, the one
-  stream halves its window on every loss and ramps back slowly — it can't keep the pipe
+  stream halves its window on every loss and ramps back slowly, it can't keep the pipe
   full, so it collapses to ~1.76 Mbps. (Local-RTT iperf was still ~1.76 Mbps, so it's
   loss-driven, not latency-driven.)
 - Ookla **speedtest** opens **multiple parallel** TCP streams. Loss is spread across

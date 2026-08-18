@@ -30,7 +30,7 @@ def pill(text: str, color: str = None, variant: str = None, dot: bool = False) -
 
 
 def status_pill(status: str) -> html.Span:
-    return pill(status.upper() or "—", T.status_color(status))
+    return pill(status.upper() or ", ", T.status_color(status))
 
 
 def kpi_tile(label: str, value, sub: str = "", accent: str = T.ACCENT) -> html.Div:
@@ -82,7 +82,7 @@ def _fmt(v):
     if isinstance(v, float):
         return f"{v:.4g}"
     if isinstance(v, list):
-        return ", ".join(str(x) for x in v) if v else "—"
+        return ", ".join(str(x) for x in v) if v else ", "
     return str(v)
 
 
@@ -139,11 +139,11 @@ def suite_section(suite: Suite, idx: int = 0) -> html.Div:
 
 
 def sut_card(sut: dict) -> html.Div:
-    fields = [("Mode", (sut.get("mode") or "?").upper()), ("UPF", sut.get("upf", "—")),
-              ("Image", sut.get("upf_image", "—")), ("NIC", sut.get("nic", "—")),
-              ("CPU", sut.get("cpu", "—")), ("Platform", sut.get("platform", "—")),
+    fields = [("Mode", (sut.get("mode") or "?").upper()), ("UPF", sut.get("upf", ", ")),
+              ("Image", sut.get("upf_image", ", ")), ("NIC", sut.get("nic", ", ")),
+              ("CPU", sut.get("cpu", ", ")), ("Platform", sut.get("platform", ", ")),
               ("N3 / N6", f"{sut.get('n3_iface','?')} / {sut.get('n6_iface','?')}"),
-              ("UE pool", sut.get("ue_ip_pool", "—"))]
+              ("UE pool", sut.get("ue_ip_pool", ", "))]
     return card(title="System under test",
                 children=html.Div(className="sut-grid", children=[
                     html.Div(className="sut-row", children=[

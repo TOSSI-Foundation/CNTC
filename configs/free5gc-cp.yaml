@@ -1,4 +1,4 @@
-# CNTC Stage 2 — control-plane campaign against free5GC (docker-compose).
+# CNTC Stage 2: control-plane campaign against free5GC (docker-compose).
 # Validated topology: docs/free5gc-ueransim-e2e-guide.md.
 #   cpbench doctor --config configs/free5gc-cp.yaml
 #   cpbench run    --config configs/free5gc-cp.yaml --nf amf
@@ -24,7 +24,7 @@ core:
 drivers:
   gnb: ueransim
   ueransim_dir: ~/UERANSIM
-  amf_n2_addr: 10.100.200.16          # AMF N2/NGAP (SCTP 38412) — read live from your bridge
+  amf_n2_addr: 10.100.200.16          # AMF N2/NGAP (SCTP 38412), read live from your bridge
   gnb_link_ip: 10.100.200.1           # host IP on the free5GC docker bridge
 
 # 5G-AKA subscribers to provision into UDM/UDR (free5GC does not auto-add one).

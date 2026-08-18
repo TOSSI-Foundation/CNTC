@@ -1,14 +1,14 @@
-"""LT-02 Aggregate + per-UE throughput under N UEs — Suite 2 (multi-UE load).
+"""LT-02 Aggregate + per-UE throughput under N UEs, Suite 2 (multi-UE load).
 
 Two measurements:
   1. Aggregate load: install N real PFCP sessions (pfcpsim), drive GTP-U on all N
      matching TEIDs/UE-IPs at saturation, read aggregate forwarded from core TX.
   2. Per-UE verification: drive a subset of UEs one-at-a-time at a low (no-drop) rate
-     and read each one's forwarded count from core TX — confirms every UE's session
+     and read each one's forwarded count from core TX, confirms every UE's session
      actually forwards (not just the aggregate) and shows per-UE consistency.
 
 True per-UE share *under simultaneous load* would need per-flow counters (BESS
-FlowMeasure) — noted as a follow-up; the aggregate's per-UE figure is the fair-share
+FlowMeasure), noted as a follow-up; the aggregate's per-UE figure is the fair-share
 average.
 """
 from __future__ import annotations

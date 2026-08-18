@@ -1,4 +1,4 @@
-"""CF-05 Error handling (unknown SEID) — Suite 3 (PFCP conformance, 3GPP TS 29.244).
+"""CF-05 Error handling (unknown SEID), Suite 3 (PFCP conformance, 3GPP TS 29.244).
 
 Negative tests: operations on a session that was never established must be REJECTED
 (the UPF/stack must not silently accept an unknown SEID). We assert that delete and

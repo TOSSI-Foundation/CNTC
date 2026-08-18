@@ -1,4 +1,4 @@
-# upfbench — containerized tester. Multi-stage: build the patched pfcpsim, then a lean
+# upfbench: containerized tester. Multi-stage: build the patched pfcpsim, then a lean
 # Python runtime with the host-tooling the adapters shell out to (docker CLI, kubectl,
 # tcpreplay, tcpdump). Run with --network host so it sources PFCP/GTP-U from the host's
 # interfaces and reaches the UPFs exactly like the host-based deployment does.
@@ -32,12 +32,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         iputils-ping iputils-arping ca-certificates curl \
  && rm -rf /var/lib/apt/lists/*
 
-# docker CLI only (no daemon) — talks to the host's daemon via the mounted socket
+# docker CLI only (no daemon): talks to the host's daemon via the mounted socket
 RUN curl -fsSL "https://download.docker.com/linux/static/stable/x86_64/docker-${DOCKER_CLI_VERSION}.tgz" \
       | tar -xz --strip-components=1 -C /usr/local/bin docker/docker \
  && docker --version
 
-# kubectl — drives the SD-Core UPF pod (k8s)
+# kubectl: drives the SD-Core UPF pod (k8s)
 RUN curl -fsSL -o /usr/local/bin/kubectl \
       "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl" \
  && chmod +x /usr/local/bin/kubectl \

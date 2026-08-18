@@ -1,4 +1,4 @@
-"""Findings — robustness/security feed. Today: the N3 GtpuDecap remote-DoS crash the n3neg
+"""Findings: robustness/security feed. Today: the N3 GtpuDecap remote-DoS crash the n3neg
 suite found, rendered as an incident report, sourced from the n3neg results on disk."""
 from __future__ import annotations
 
@@ -47,7 +47,7 @@ def _incident(c, variants):
     timeline = html.Div(className="timeline", children=[
         _tl("t+0", "malformed PSC GTP-U sent on N3", "bad"),
         _tl("t+~0", "bessd worker segfaults in GtpuDecap (SEGV_MAPERR, addr 0)", "bad"),
-        _tl("t+~1s", "user plane down — N3/N6 forwarding stops", "bad"),
+        _tl("t+~1s", "user plane down, N3/N6 forwarding stops", "bad"),
         _tl("t+~60s", "Kubernetes restarts the bessd container", "ok"),
         _tl("after", "suite re-establishes session; valid traffic forwards again", "ok")])
     return html.Div(className="incident", children=[
@@ -65,8 +65,8 @@ def _incident(c, variants):
             _cell("Culprit packet", packet),
             _cell("What happens", timeline, full=True),
         ]),
-        html.P(["A single crafted GTP-U packet — the malformed PSC (PDU-Session-Container, "
-                "ext-header 0x85), plus the truncation/length-overflow variants — makes the "
+        html.P(["A single crafted GTP-U packet, the malformed PSC (PDU-Session-Container, "
+                "ext-header 0x85), plus the truncation/length-overflow variants, makes the "
                 "fixed-offset decapsulator read past the buffer and segfault. Reproduced "
                 "across multiple runs. The suite detects the crash, attributes it to the "
                 "packet, waits for recovery, and continues."], className="body"),
@@ -85,7 +85,7 @@ def layout(**_):
                    className="muted small", style={"margin": "2px 0 0"})
     if not hit:
         return html.Div(className="page", children=[head, intro,
-            html.Div("No findings recorded yet — run the n3neg suite.", className="muted",
+            html.Div("No findings recorded yet, run the n3neg suite.", className="muted",
                      style={"padding": "40px 0"})])
     c, t, variants = hit
     return html.Div(className="page", children=[head, intro, _incident(c, variants)])

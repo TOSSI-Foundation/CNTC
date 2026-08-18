@@ -1,9 +1,9 @@
 ---
-title: "UPF Benchmark Framework — Project Plan"
+title: "UPF Benchmark Framework, Project Plan"
 author: "TOSSI Foundation"
 ---
 
-# UPF Benchmark Framework — Project Plan
+# UPF Benchmark Framework: Project Plan
 
 *A reusable, portable framework to test any open-source 5G UPF. The user picks a test
 suite; the framework runs it and produces a standards-aligned PDF report (RFC 2544 /
@@ -14,7 +14,7 @@ RFC 8219 / ETSI NFV-TST 009). SD-Core BESS-UPF first, then OAI / Open5GS / free5
 ## 1. The idea in one picture
 
 The user runs `upfbench`, picks a **test suite** (or several), and gets the matching
-report. The report template *is* the specification — the framework's job is to fill it
+report. The report template *is* the specification, the framework's job is to fill it
 in automatically.
 
 ```
@@ -47,17 +47,17 @@ and makes the per-UPF parts swappable so it extends to other UPFs without rewrit
   └──────────────────────────────────────────────────────────────┘
 ```
 
-### Suite 1 — UPF Performance
+### Suite 1: UPF Performance
 Single tunnel, maximum rate. The dataplane benchmark we already measured.
 
 - **Measures:** throughput (NDR/PDR per frame size), latency avg/p50/p99/p99.9, jitter,
   burst/drain, multi-flow.
-- **Needs:** traffic generator + rule install + counters — buildable today with the
+- **Needs:** traffic generator + rule install + counters, buildable today with the
   tools we already use (testpmd + pybess).
 - **Tests:** TC-01 throughput · TC-02 bidirectional · TC-03 latency/jitter · TC-04 burst
   · TC-08 multi-flow.
 
-### Suite 2 — Multi-UE Load (UPF-isolated)
+### Suite 2: Multi-UE Load (UPF-isolated)
 Many UEs at once. pfcpsim installs **N real PFCP sessions** (one PDR/FAR/QER set per UE);
 TRex sends **GTP-U on N distinct TEIDs**. Find the breaking point. No full core needed.
 
@@ -67,9 +67,9 @@ TRex sends **GTP-U on N distinct TEIDs**. Find the breaking point. No full core 
 - **Needs:** pfcpsim (sessions) + TRex multi-TEID (traffic) + session accounting.
 - **Tests:** LT-01 session capacity · LT-02 throughput per-UE · LT-03 latency-under-load.
 
-### Suite 3 — PFCP Conformance (TS 29.244 correctness)
+### Suite 3: PFCP Conformance (TS 29.244 correctness)
 pfcpsim drives each N4 procedure and asserts the UPF responds correctly (pass/fail).
-PFCP/N4 is implemented to 3GPP TS 29.244 — pfcpsim already encodes the spec messages/IEs.
+PFCP/N4 is implemented to 3GPP TS 29.244, pfcpsim already encodes the spec messages/IEs.
 
 - **Measures:** a conformance matrix (per-procedure pass/fail).
 - **Needs:** pfcpsim + an assertion engine.
@@ -78,7 +78,7 @@ PFCP/N4 is implemented to 3GPP TS 29.244 — pfcpsim already encodes the spec me
   IE → correct cause code).
 
 **Dependency insight:** Suite 1 runs today with existing tools. Suites 2 **and** 3 both
-depend on **pfcpsim** — so integrating pfcpsim lights up two suites at once.
+depend on **pfcpsim**: so integrating pfcpsim lights up two suites at once.
 
 ---
 
@@ -86,7 +86,7 @@ depend on **pfcpsim** — so integrating pfcpsim lights up two suites at once.
 
 | Layer | Reuse (existing code/spec) |
 |---|---|
-| N4 / PFCP control + conformance | **omec-project/pfcpsim** — speaks PFCP per 3GPP TS 29.244; emulates SMF/SGW-C; designed to test "various UPF implementations" |
+| N4 / PFCP control + conformance | **omec-project/pfcpsim**: speaks PFCP per 3GPP TS 29.244; emulates SMF/SGW-C; designed to test "various UPF implementations" |
 | N3/N6 traffic | **Cisco TRex** + Scapy/STLVM GTP-U builders (multi-TEID for per-UE) |
 | Metrics + search algorithm | **RFC 2544 / 8204 / 9004 + ETSI TST009** (zero-loss NDR, PDR tolerance, binary search, 24h soak) |
 | Architecture pattern | **VSPERF** switch/traffic-gen-agnostic design |
@@ -211,20 +211,20 @@ pfcp:
 
 ## 7. Phased roadmap
 
-- **Phase 0 — Scaffold (DONE):** repo + config + CLI + report templates; pipeline runs
+- **Phase 0, Scaffold (DONE):** repo + config + CLI + report templates; pipeline runs
   end-to-end.
-- **Phase 1 — Suite 1 Performance on SD-Core af_packet (DONE):** pybess rules + host-side
+- **Phase 1, Suite 1 Performance on SD-Core af_packet (DONE):** pybess rules + host-side
   GTP-U via **tcpreplay** (no DPDK NIC on this VM; testpmd/TRex deferred to real hardware),
   auto CPU-affinity tuning. TC-01 NDR/PDR, TC-03 latency, TC-04 burst, TC-08 multi-flow.
   TC-02 bidirectional deferred. Validated against the reference af_packet PDF (methodology +
   qualitative behavior match; absolute ~1/5 on this shared single-NIC VM).
-- **Phase 2 — Suite 3 PFCP Conformance (DONE):** pfcpsim built + wired; CF-01..05 pass
-  (incl. CF-03 modify — the earlier "blocked" assumption was wrong). Conformance matrix.
-- **Phase 3 — Suite 2 Multi-UE Load (DONE):** pfcpsim N real sessions + matched per-UE
+- **Phase 2, Suite 3 PFCP Conformance (DONE):** pfcpsim built + wired; CF-01..05 pass
+  (incl. CF-03 modify, the earlier "blocked" assumption was wrong). Conformance matrix.
+- **Phase 3, Suite 2 Multi-UE Load (DONE):** pfcpsim N real sessions + matched per-UE
   GTP-U (tcpreplay multi-flow). LT-01 capacity (5000), LT-02 per-UE throughput +
   forwarding verification, LT-03 latency-under-load.
 - **Reporting (DONE):** per-suite PDFs (LaTeX) + baseline comparison.
-- **Phase 4 — More UPFs + remaining items (NEXT):** OAI / Open5GS / free5GC / eUPF
+- **Phase 4, More UPFs + remaining items (NEXT):** OAI / Open5GS / free5GC / eUPF
   adapters; TC-02 bidirectional (real DL GTP-U); true per-UE fairness via BESS FlowMeasure;
   worker auto-tune (TC-05); TRex generator for DPDK hardware.
 
@@ -234,9 +234,9 @@ See **`docs/RUNBOOK.md`** for setup/run and the detailed remaining-work list.
 
 ## 8. Decisions
 
-1. **Python** — pybess, the TRex API, and Scapy are all Python.
-2. **One CLI, three selectable suites** — suites run alone or together (`--suite all`).
+1. **Python**: pybess, the TRex API, and Scapy are all Python.
+2. **One CLI, three selectable suites**: suites run alone or together (`--suite all`).
 3. **Suite 1 first**, because it is buildable with existing tools and can be validated
    against numbers we already trust before building the unproven parts.
-4. **Reuse omec-project/pfcpsim** for the N4/PFCP layer — it already implements the
+4. **Reuse omec-project/pfcpsim** for the N4/PFCP layer, it already implements the
    3GPP TS 29.244 message set, so we wrap it rather than re-implement PFCP.

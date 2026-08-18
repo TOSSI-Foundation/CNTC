@@ -1,4 +1,4 @@
-"""Requirement catalogs — the machine-checkable standard a UPF is graded against.
+"""Requirement catalogs, the machine-checkable standard a UPF is graded against.
 
 Each ``<profile>.yaml`` here is a versioned requirement catalog: it lists, per test
 ID, the category, the weight class (essential / normal / bonus), and the *verdict rule* that
@@ -29,7 +29,7 @@ _VALID_KINDS = {"status_pass", "metric", "baseline_rel"}
 
 
 def lint_catalog(cat: dict[str, Any]) -> list[str]:
-    """Structural lint of a requirement catalog — returns a list of human-readable issues
+    """Structural lint of a requirement catalog, returns a list of human-readable issues
     (empty == clean). Guards against the most common drift/typo bugs: bad verdict kinds,
     unknown operators, mis-spelled classes, and missing rule fields."""
     issues: list[str] = []

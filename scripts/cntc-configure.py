@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""cntc-configure.py — interactive wizard that builds a CNTC campaign config for YOUR SD-Core UPF.
+"""cntc-configure.py: interactive wizard that builds a CNTC campaign config for YOUR SD-Core UPF.
 
 Auto-detects what it can (UPF pod/namespace, BESS access/core ports, a host N3 interface) via
 kubectl/bessctl, prompts for the rest, and writes a ready-to-run configs/<name>.yaml with the
@@ -21,7 +21,7 @@ import sys
 try:
     import yaml
 except ImportError:
-    sys.exit("PyYAML missing — run ./scripts/cntc-prereqs.sh first.")
+    sys.exit("PyYAML missing, run ./scripts/cntc-prereqs.sh first.")
 
 
 def sh(cmd: list[str], timeout: int = 10) -> str:
@@ -41,7 +41,7 @@ def pick(prompt: str, options: list[str], default: str = "") -> str:
     if not options:
         return ask(prompt, default)
     if len(options) == 1:
-        print(f"  {prompt}: {options[0]}  (only option — using it)")
+        print(f"  {prompt}: {options[0]}  (only option, using it)")
         return options[0]
     print(f"  {prompt}:")
     for i, o in enumerate(options, 1):
@@ -91,10 +91,10 @@ def main() -> int:
     ap.add_argument("--out", default="", help="output config path (default configs/<campaign>.yaml)")
     args = ap.parse_args()
 
-    print("\n=== CNTC config wizard — build a campaign config for your SD-Core UPF ===\n")
+    print("\n=== CNTC config wizard, build a campaign config for your SD-Core UPF ===\n")
     have_kubectl = bool(sh(["kubectl", "version", "--client", "-o", "json"]))
     if not have_kubectl:
-        print("  ! kubectl/KUBECONFIG not detected — auto-detect disabled; answer everything by hand.\n")
+        print("  ! kubectl/KUBECONFIG not detected, auto-detect disabled; answer everything by hand.\n")
 
     # --- UPF pod / namespace ---
     pods = detect_upf_pods() if have_kubectl else []
@@ -108,7 +108,7 @@ def main() -> int:
 
     # --- BESS ports ---
     # The config uses the LOGICAL datapath port names (access/core), while `bessctl show port`
-    # lists the PMD ports as accessFast/coreFast — so strip the "Fast" suffix and drop control ports.
+    # lists the PMD ports as accessFast/coreFast, so strip the "Fast" suffix and drop control ports.
     raw = detect_bess_ports(ns, pod, container) if have_kubectl else []
     dp_ports = sorted({re.sub(r"Fast$", "", p, flags=re.I) for p in raw
                        if p.lower() not in ("notifycp", "pfcpport")}) or ["access", "core"]

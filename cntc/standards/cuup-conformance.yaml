@@ -1,0 +1,103 @@
+# CNTC requirement catalog: O-CU-UP LEVEL 1 "Conformance & Observable Security"
+#
+# Product class: gNB-CU-UP (3GPP TS 33.523 clause 6). The CU-UP terminates E1 toward the
+# O-CU-CP, F1-U toward the O-DU, and N3 (NG-U) toward the UPF; it hosts PDCP/SDAP for the
+# user plane and therefore enforces the UP security policy the SMF signalled.
+#
+# LEVEL 1 = provable with spec-compliant peers (a real CU-CP over E1, a real DU over F1-U, a
+# real UPF over N3, a real UE generating traffic) plus on-the-wire capture. Level 2 lives in
+# cuup-adversarial.yaml.
+#
+# Gate: all ESSENTIAL tests must PASS -> certificate. An essential that cannot be judged is
+# 'na' -> INCOMPLETE, never a silent pass.
+version: 1.0.0
+profile: cuup-conformance
+title: "O-CU-UP (gNB-CU-UP), CNTC Level 1 (Conformance & Observable Security)"
+standards:
+- 3GPP TS 38.463 (E1AP / E1)
+- 3GPP TS 38.425 (NR user plane protocol / F1-U)
+- 3GPP TS 29.281 (GTP-U)
+- 3GPP TS 38.415 (PDU session user plane protocol / QFI)
+- 3GPP TS 33.501 (5G security)
+- "3GPP TS 33.523 (SCAS, split gNB)"
+defaults:
+  class: normal
+gate:
+  essential: all
+tests:
+# --- E1AP / E1, UP side (TS 38.463) ----------------------------------------------------
+- id: CUUP-E1-01
+  name: "gNB-CU-UP E1 Setup Request -> Response; supported PLMN / slice list advertised (38.463 §8.2.3)"
+  category: protocol
+  class: essential
+  verdict: status_pass
+- id: CUUP-E1-02
+  name: "Bearer Context Setup Response allocates the UL F1-U and NG-U TNL info (38.463 §8.3.1)"
+  category: protocol
+  class: essential
+  verdict: status_pass
+- id: CUUP-E1-03
+  name: "Bearer Context Modification applies the DL F1-U TNL from the O-DU (38.463 §8.3.2)"
+  category: protocol
+  class: normal
+  verdict: status_pass
+- id: CUUP-E1-04
+  name: "Bearer Context Release Command -> Complete; TEIDs released (38.463 §8.3.4)"
+  category: protocol
+  class: normal
+  verdict: status_pass
+- id: CUUP-E1-05
+  name: "gNB-CU-UP Configuration Update -> Acknowledge (38.463 §8.2.5)"
+  category: protocol
+  class: normal
+  verdict: status_pass
+# --- User plane (F1-U + N3) ------------------------------------------------------------
+- id: CUUP-UP-01
+  name: "F1-U tunnel to the O-DU on the signalled TEID; NR-U PDU format valid (38.425 / 29.281)"
+  category: dataplane
+  class: essential
+  verdict: status_pass
+- id: CUUP-UP-02
+  name: "N3 tunnel to the UPF on the NGAP-signalled TEID; QFI carried in the PDU Session Container (38.415)"
+  category: dataplane
+  class: essential
+  verdict: status_pass
+- id: CUUP-UP-03
+  name: "End-to-end data path, UE traffic reaches the data network (23.501 §5.8)"
+  category: dataplane
+  class: essential
+  verdict: status_pass
+- id: CUUP-UP-04
+  name: "Unknown TEID on F1-U / N3 is dropped, no crash"
+  category: robustness
+  class: normal
+  verdict: status_pass
+# --- Security assurance (TS 33.523 clause 6) -------------------------------------------
+- id: CUUP-SEC-01
+  name: "UP ciphering applied per the security policy received over E1 (33.523 §6.2.2.1.7)"
+  category: security
+  class: essential
+  verdict: status_pass
+- id: CUUP-SEC-02
+  name: "UP integrity applied when the policy is 'required' (33.523 §6.2.2.1.6)"
+  category: security
+  class: normal
+  verdict: status_pass
+- id: CUUP-SEC-03
+  name: "E1 transport protection, IPsec or DTLS (33.523 §6.2.2.1.2 / §6.2.2.1.3)"
+  category: security
+  class: normal
+  verdict: status_pass
+- id: CUUP-SEC-04
+  name: "F1-U / N3 transport protection (33.523 §6.2.2.1.4 / §6.2.2.1.5)"
+  category: security
+  class: normal
+  verdict: status_pass
+# --- Robustness ------------------------------------------------------------------------
+  # The CU-UP is the SCTP *client* on E1 (TS 38.463) and so exposes no E1 listener; its
+  # reachable sockets are the F1-U and N3 GTP-U endpoints. Probe those, not E1.
+- id: CUUP-NEG-01
+  name: "Malformed GTP-U on F1-U / N3 -> dropped, no CU-UP crash"
+  category: robustness
+  class: essential
+  verdict: status_pass

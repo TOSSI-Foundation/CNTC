@@ -1,5 +1,5 @@
-# CNTC requirement catalog — CONTROL-PLANE PERFORMANCE profile  (Stage 2)
-# Hardware-DEPENDENT signaling capacity/latency — same discipline as the UPF performance
+# CNTC requirement catalog: CONTROL-PLANE PERFORMANCE profile  (Stage 2)
+# Hardware-DEPENDENT signaling capacity/latency: same discipline as the UPF performance
 # profile: NEVER absolute thresholds (a shared VM signals far slower than a tuned cluster).
 # Graded RELATIVE to a trusted baseline on the same rig_class (kind: baseline_rel).
 # Until a baseline is supplied, baseline_rel tests grade 'na' (reported, never faked).

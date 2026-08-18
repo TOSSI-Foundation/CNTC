@@ -1,4 +1,4 @@
-"""Methodology — how upfbench drives a UPF: the plugin architecture, the N3 injection
+"""Methodology: how upfbench drives a UPF: the plugin architecture, the N3 injection
 topology (TRex → NIC VEB → UPF access VF), and the egress short-circuit. Showcase content."""
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from dashboard.components import card, pill
 dash.register_page(__name__, path="/methodology", name="Methodology")
 
 _PLUGINS = [
-    ("Adapters", "deploy / configure / counters / teardown — per UPF", "sdcore_bess ▸ oai ▸ open5gs ▸ free5gc ▸ eupf", T.ACCENT),
+    ("Adapters", "deploy / configure / counters / teardown, per UPF", "sdcore_bess ▸ oai ▸ open5gs ▸ free5gc ▸ eupf", T.ACCENT),
     ("Control", "program the data plane", "pfcpsim (N4/PFCP) · pybess (white-box short-circuit)", T.ACCENT2),
     ("Traffic", "offer N3/N6 load", "TRex (DPDK/XDP/CNDP) · testpmd · tcpreplay", T.GOOD),
     ("Suites", "the test cases + pass/fail logic", "performance · load · pfcp · n3neg", T.WARN),
@@ -40,13 +40,13 @@ def layout(**_):
     return html.Div(className="page", children=[
         html.Div(className="page-head", children=[html.H1("Methodology")]),
 
-        card(title="N3 injection — kernel-bypass UPFs",
+        card(title="N3 injection, kernel-bypass UPFs",
              sub="no host kernel socket exists on a DPDK/XDP access port, so we hairpin",
              children=[
                  _flow(),
                  html.P(["Frames whose destination MAC equals the UPF's access-VF MAC are "
                          "hairpinned by the NIC's internal switch (VEB) straight into the "
-                         "UPF — validated 1:1 (sent on the gen VF = counted at the UPF RX). "
+                         "UPF, validated 1:1 (sent on the gen VF = counted at the UPF RX). "
                          "Throughput is computed from the UPF's own port counters, so the "
                          "measurement is black-box and comparable across modes."],
                         className="body"),
@@ -57,7 +57,7 @@ def layout(**_):
              children=html.P([
                  "A pybess splice (", html.Code("executeFAR → ubench_sink → coreQSplit"),
                  ") rewrites the egress MAC and bypasses route lookup, so synthetic traffic "
-                 "reaches core TX without a real next-hop — and it breaks the VEB "
+                 "reaches core TX without a real next-hop, and it breaks the VEB "
                  "re-circulation loop. On non-BESS UPFs this is a no-op."], className="body")),
 
         html.H2("Plugin architecture"),

@@ -1,4 +1,4 @@
-"""Compare — overlay runs across UPFs and dataplane modes. Grouped run-chip picker
+"""Compare: overlay runs across UPFs and dataplane modes. Grouped run-chip picker
 (verified shown, experimental collapsed) + metric tabs (throughput / latency / Mpps-per-
 core). Chip toggles and metric switch are Dash callbacks; the chart re-renders from the
 selection."""

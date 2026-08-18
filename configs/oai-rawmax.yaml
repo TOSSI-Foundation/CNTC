@@ -1,4 +1,4 @@
-# OAI-UPF — RAW MAX-FORWARDING profile (apples-to-apples vs SD-Core).
+# OAI-UPF: RAW MAX-FORWARDING profile (apples-to-apples vs SD-Core).
 # Same method as sdcore-rawmax.yaml: pfcpsim real PFCP sessions, QER MBR unlimited.
 # OAI's simpleswitch ignores QER anyway, but we set it explicitly so both UPFs are
 # driven identically. Compare against configs/sdcore-rawmax.yaml.

@@ -1,11 +1,11 @@
-"""free5GC UPF adapter (fourth UPF — gtp5g, like Open5GS).
+"""free5GC UPF adapter (fourth UPF, gtp5g, like Open5GS).
 
 free5GC's UPF (``free5gc-upfd``) runs as a Docker container (default ``upf``) and forwards
 via the **gtp5g kernel module**: GTP-U arrives on the N3 netdev (``eth0``) and the
 decapsulated inner packet is delivered into the kernel through the gtp5g TUN ``upfgtp``
 (then routed/NAT'd out N6). So, like the Open5GS and OAI adapters, this one shells into the
 container with ``docker exec`` and reads facts + per-interface netdev counters
-(``/proc/net/dev``). It is driven over N4 by the pfcpsim control and over N3 by tcpreplay —
+(``/proc/net/dev``). It is driven over N4 by the pfcpsim control and over N3 by tcpreplay, 
 the suites are unchanged.
 
 Note: free5GC, unlike Open5GS, may program gtp5g for an *external* pfcpsim-driven session
@@ -41,7 +41,7 @@ class Adapter(UPFAdapter):
         self.n6_iface = cfg.n6_iface or "upfgtp"
         # Which N6 counter reflects uplink-forwarded packets. upfgtp is the gtp5g TUN: the
         # decapsulated inner packet is delivered into the kernel and counts as rx_pkts on
-        # upfgtp (tx stays flat) — same pattern as Open5GS ogstun / OAI tun0. Configurable
+        # upfgtp (tx stays flat), same pattern as Open5GS ogstun / OAI tun0. Configurable
         # in case a deployment routes the uplink differently; verified live at bring-up.
         self._fwd = e.get("n6_fwd_field", "rx_pkts")
 

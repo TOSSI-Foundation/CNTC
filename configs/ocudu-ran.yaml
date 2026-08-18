@@ -1,0 +1,48 @@
+# CNTC Stage 3: RAN campaign against an OCUDU split gNB (O-CU-CP / O-CU-UP / O-DU).
+#
+#   ranbench doctor --config configs/ocudu-ran.yaml
+#   ranbench run    --config configs/ocudu-ran.yaml --target cucp
+#   ranbench run    --config configs/ocudu-ran.yaml --target all
+#   cntc  verdict   campaigns/<id>/results.json --profile cucp-conformance
+#
+# Addresses and pcap paths are NOT listed here: the adapter reads them live out of the YAML
+# each OCUDU process was started with (ran.configs below), so redeploying the RAN needs no
+# edits in this file.
+domain: ran
+campaign: OCUDU-RAN-001
+target: all                    # du | cucp | cuup | all
+
+ran:
+  adapter: ocudu               # ranbench/adapters/ocudu.py
+  bin_dir: ~/ocudu/build/apps  # apps/cu_cp/ocucp, apps/cu_up/ocuup, apps/du/odu
+  sudo: true
+  # The configuration each product class runs with, the adapter parses these for the live
+  # F1-C / E1 / F1-U / N3 addresses and for which per-interface pcaps are enabled.
+  configs:
+    cucp: ~/ocudu/configs/cu_cp.yml
+    cuup: ~/ocudu/configs/cu_up.yml
+    du:   ~/ocudu/configs/du_zmq.yml     # ZMQ radio DU config, written in phase P1
+
+# The 5G core the RAN peers with (N2 to the AMF, N3 to the UPF). Bring-your-own: it is a peer,
+# not the subject of the certificate.
+core:
+  adapter: free5gc_k8s
+  namespace: free5gc
+  webui: http://localhost:30500
+
+drivers:
+  ue: oai_nr_ue               # UE over the ZMQ virtual radio, lands in phase P1/P2
+  # zmq_tx_port / zmq_rx_port are read from the DU config; set here only to override.
+
+# 5G-AKA subscribers to provision into the core (the RAN cannot be exercised without one).
+subscribers:
+  - supi: "imsi-001010000000001"
+    ki: "8baf473f2f8fd09487cccbd7097c6862"
+    opc: "8e27b6af0e692e750f32667a3b14605d"
+    plmn: "00101"
+    dnn: "internet"
+
+sut:
+  rig_class: "shared-vm"
+  cpu: ""
+  ran_release: ""             # filled live by the adapter from `<binary> --version`

@@ -11,7 +11,7 @@
   .s-line{stroke:#b7c3c6;fill:#b7c3c6}
   .s-flow{stroke:#0c8f89;fill:none}
   .t{fill:#0f171c} .t-mono{fill:#33454e} .t-mut{fill:#5d6f77} .t-accent{fill:#0a6c67}
-</style><rect x="0" y="0" width="900" height="366" fill="#eef2f3"/><text x="26" y="42" class="t hd" font-size="21" fill="#0f171c">One engine, two deployments</text><text x="26" y="64" class="t-mut" font-size="12.5">Same tests, same NFs — only the core adapter's address resolution differs (docker inspect vs kubectl get svc)</text><g transform="translate(0,66)">
+</style><rect x="0" y="0" width="900" height="366" fill="#eef2f3"/><text x="26" y="42" class="t hd" font-size="21" fill="#0f171c">One engine, two deployments</text><text x="26" y="64" class="t-mut" font-size="12.5">Same tests, same NFs, only the core adapter's address resolution differs (docker inspect vs kubectl get svc)</text><g transform="translate(0,66)">
           <defs>
             <marker id="ah2" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
               <path d="M0 0 L10 5 L0 10 z" class="s-line" />

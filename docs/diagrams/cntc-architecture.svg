@@ -11,7 +11,7 @@
   .s-line{stroke:#b7c3c6;fill:#b7c3c6}
   .s-flow{stroke:#0c8f89;fill:none}
   .t{fill:#0f171c} .t-mono{fill:#33454e} .t-mut{fill:#5d6f77} .t-accent{fill:#0a6c67}
-</style><rect x="0" y="0" width="1180" height="728" fill="#eef2f3"/><text x="26" y="42" class="t hd" font-size="21" fill="#0f171c">CNTC — Control-Plane Certification Architecture</text><text x="26" y="64" class="t-mut" font-size="12.5">cpbench engine  ·  AMF · SMF · NRF · AUSF · UDM  →  graded against 3GPP protocol + SCAS specs  →  per-NF certificate</text><g transform="translate(0,78)">
+</style><rect x="0" y="0" width="1180" height="728" fill="#eef2f3"/><text x="26" y="42" class="t hd" font-size="21" fill="#0f171c">CNTC, Control-Plane Certification Architecture</text><text x="26" y="64" class="t-mut" font-size="12.5">cpbench engine  ·  AMF · SMF · NRF · AUSF · UDM  →  graded against 3GPP protocol + SCAS specs  →  per-NF certificate</text><g transform="translate(0,78)">
           <defs>
             <marker id="ah" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
               <path d="M0 0 L10 5 L0 10 z" class="s-line" />
@@ -36,15 +36,15 @@
           <text x="222" y="60" class="t-accent hd" font-size="12.5">cpbench engine · measures</text>
           <!-- inner rows -->
           <rect x="222" y="80" width="258" height="30" rx="6" class="s-box-2"/>
-          <text x="234" y="99" class="t-mono" font-size="11.5">runner — orchestrate · run per NF</text>
+          <text x="234" y="99" class="t-mono" font-size="11.5">runner, orchestrate · run per NF</text>
           <rect x="222" y="116" width="258" height="30" rx="6" class="s-box-2"/>
-          <text x="234" y="129" class="t-mono" font-size="10.5">adapters/ — free5gc (docker)</text>
+          <text x="234" y="129" class="t-mono" font-size="10.5">adapters/, free5gc (docker)</text>
           <text x="234" y="141" class="t-mono" font-size="10.5">· free5gc_k8s (kubectl)</text>
           <rect x="222" y="152" width="258" height="30" rx="6" class="s-box-2"/>
-          <text x="234" y="165" class="t-mono" font-size="10.5">drivers/ — UERANSIM (N1/N2)</text>
+          <text x="234" y="165" class="t-mono" font-size="10.5">drivers/, UERANSIM (N1/N2)</text>
           <text x="234" y="177" class="t-mono" font-size="10.5">· SBI client (HTTP/2) · tshark</text>
           <rect x="222" y="188" width="258" height="30" rx="6" class="s-box-2"/>
-          <text x="234" y="207" class="t-mono" font-size="11.5">suites/ — amf smf nrf ausf udm</text>
+          <text x="234" y="207" class="t-mono" font-size="11.5">suites/, amf smf nrf ausf udm</text>
           <text x="222" y="238" class="t-mut" font-size="10.5">observers/ nas_ngap · metrics/ signaling</text>
           <text x="222" y="256" class="t-mut" font-size="10.5">cntc_common → TestResult / Store</text>
           <text x="222" y="274" class="t-accent" font-size="10.5">└─ results.json (shared schema)</text>
@@ -94,7 +94,7 @@
 
           <!-- 5G CORE UNDER TEST band -->
           <rect x="18" y="356" width="900" height="274" rx="14" class="s-core"/>
-          <text x="34" y="382" class="t hd" font-size="13">5G core under test — bring-your-own</text>
+          <text x="34" y="382" class="t hd" font-size="13">5G core under test, bring-your-own</text>
           <text x="388" y="382" class="t-mut" font-size="11">free5GC · Open5GS · OAI  ·  docker-compose or Kubernetes</text>
 
           <!-- NF boxes -->
@@ -141,7 +141,7 @@
 
           <!-- UPF strip -->
           <rect x="34" y="562" width="868" height="52" rx="9" class="s-box-2"/>
-          <text x="48" y="583" class="t hd" font-size="12">UPF — user plane (N3 GTP-U · N4 PFCP)</text>
+          <text x="48" y="583" class="t hd" font-size="12">UPF, user plane (N3 GTP-U · N4 PFCP)</text>
           <text x="48" y="601" class="t-mut" font-size="10.5">tested by the sibling engine upfbench · same cntc grading · eBPF/XDP, DPDK, af_xdp, af_packet</text>
           <text x="720" y="592" class="t-accent" font-size="10.5">SMF ─N4→ UPF</text>
 

@@ -1,4 +1,4 @@
-"""TC-03 Latency / jitter — Suite 1 (performance).
+"""TC-03 Latency / jitter, Suite 1 (performance).
 
 Measures the in-pipeline latency of the uplink segment pktParse->executeFAR (the
 PDR/FAR/QER lookup cost) by splicing a BESS Timestamp+Measure pair into that path
@@ -22,7 +22,7 @@ class Tc03Latency(TestCase):
         if not hasattr(ctx.upf, "latency_probe_install"):
             # In-pipeline latency needs a white-box probe spliced into the datapath
             # (BESS Timestamp+Measure). UPFs without one (e.g. OAI-UPF simpleswitch)
-            # require a black-box RTT method instead — tracked as separate work.
+            # require a black-box RTT method instead, tracked as separate work.
             return TestResult(self.id, self.name, "skipped",
                               notes="no in-pipeline latency probe on this UPF "
                                     "(needs a black-box RTT measurement; not yet implemented).")

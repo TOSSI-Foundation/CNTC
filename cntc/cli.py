@@ -5,7 +5,7 @@
     cntc verdict <results.json> --profile performance --baseline <other results.json>
     cntc run --config configs/sdcore-bess.yaml      # run upfbench, then grade (delegates)
 
-`cntc verdict` re-grades any past results.json without re-running anything — the whole point
+`cntc verdict` re-grades any past results.json without re-running anything, the whole point
 of a data-driven verdict layer.
 """
 from __future__ import annotations
@@ -97,7 +97,7 @@ def _cmd_run(args) -> int:
 
 
 def _cmd_certify(args) -> int:
-    """Issue a formal CNTC conformance certificate from a results.json — only if PASS."""
+    """Issue a formal CNTC conformance certificate from a results.json, only if PASS."""
     from cntc.certification import certificate as C
     results_path = Path(args.results)
     if not results_path.exists():
@@ -106,7 +106,7 @@ def _cmd_certify(args) -> int:
     data = json.loads(results_path.read_text())
     if args.profile is not None:
         # An explicit --profile is authoritative: grade against it now, ignoring any verdict the
-        # run wrote back (which may be a different — e.g. composite — profile). This is what makes
+        # run wrote back (which may be a different, e.g. composite, profile). This is what makes
         # `certify --profile amf-conformance` after a `--nf amf` run yield the AMF certificate.
         catalog = load_catalog(args.profile)
         verdict = evaluate(data.get("suites", []), catalog, rig=_rig_from_results(data))
@@ -152,7 +152,7 @@ def main(argv=None) -> int:
                                        "conformance", "all"],
                    help="user-plane (upfbench) suite selector")
     r.add_argument("--nf", choices=["amf", "smf", "nrf", "ausf", "udm", "all"], default=None,
-                   help="control-plane (cpbench) NF selector — used when config domain is control-plane")
+                   help="control-plane (cpbench) NF selector, used when config domain is control-plane")
     r.add_argument("--campaign", default=None)
     r.add_argument("--profile", default="conformance")
     r.set_defaults(func=_cmd_run)
@@ -160,7 +160,7 @@ def main(argv=None) -> int:
     cert = sub.add_parser("certify", help="issue a formal conformance certificate from a results.json (PASS only)")
     cert.add_argument("results", help="path to a campaign results.json")
     cert.add_argument("--profile", default=None,
-                      help="grade against this profile (authoritative — overrides any written-back "
+                      help="grade against this profile (authoritative, overrides any written-back "
                            "verdict). Omit to reuse the run's own verdict, or default to 'conformance'.")
     cert.set_defaults(func=_cmd_certify)
 

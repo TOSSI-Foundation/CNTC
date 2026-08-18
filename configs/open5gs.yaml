@@ -1,4 +1,4 @@
-# Open5GS-UPF campaign — third UPF, proving the framework is UPF-agnostic.
+# Open5GS-UPF campaign: third UPF, proving the framework is UPF-agnostic.
 # Open5GS 5G UPF runs as a Docker container on the docker_open5gs bridge (172.22.0.0/24);
 # pfcpsim drives N4 and tcpreplay drives N3. For UPF-isolated benchmarking, stop the
 # Open5GS SMF first so pfcpsim is the sole SMF over N4:

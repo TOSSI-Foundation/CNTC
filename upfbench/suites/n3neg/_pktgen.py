@@ -1,7 +1,7 @@
 """Out-of-process GTP-U packet builder for the N3 negative suite.
 
 Why a subprocess: the TRex generator imports its *bundled* scapy-2.4.3, but the 5G PSC
-ext-header (``GTPPDUSessionContainer``) only exists in system scapy >= 2.4.4 — and loading
+ext-header (``GTPPDUSessionContainer``) only exists in system scapy >= 2.4.4, and loading
 the system scapy into the TRex process crashes TRex's import (mixed 2.4.3/2.4.4 ->
 ``conf.use_dnet``). So we craft every negative/valid variant here, in a clean process that
 uses ONLY the system scapy, and hand the parent raw bytes (base64). No scapy object ever
@@ -10,7 +10,7 @@ crosses into the TRex process; it just transmits the bytes.
 Reads one JSON object from stdin: {teid, ue_ip, dst_mac, src_mac, gnb_ip, remote_ip, frame}
 Writes one JSON object to stdout: {variant_name: base64(raw_frame), ...}
 
-GTP-U message types (TS 29.281): 0xFF (255) = G-PDU (the NORMAL user-data type — so a
+GTP-U message types (TS 29.281): 0xFF (255) = G-PDU (the NORMAL user-data type, so a
 G-PDU is *valid*, not malformed); 1 = Echo Request; 26 = Error Indication; 254 = End
 Marker. Anything else is reserved/undefined. The negative variants below exercise the
 decap path with control/reserved types, a bad version, and three truncation cases that
@@ -29,7 +29,7 @@ def _b64(pkt) -> str:
 
 def build(p) -> dict:
     # scapy is imported HERE (not at module top) so the registry can import this module to
-    # scan for TESTS without pulling the system scapy into the TRex process — that import
+    # scan for TESTS without pulling the system scapy into the TRex process, that import
     # would collide with TRex's bundled scapy-2.4.3 (conf.use_dnet). This module only ever
     # runs scapy as a subprocess (__main__), where the import is harmless.
     from scapy.contrib.gtp import GTP_U_Header, GTPPDUSessionContainer

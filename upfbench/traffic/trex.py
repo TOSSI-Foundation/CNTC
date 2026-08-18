@@ -1,7 +1,7 @@
 """Cisco TRex GTP-U generator for kernel-bypass UPFs (DPDK / AF_XDP / CNDP).
 
 Why this exists: in these modes the UPF's N3 access port is a DPDK/XDP-owned VF
-*inside* the pod — there is no host kernel socket to inject into (so ``tcpreplay``
+*inside* the pod, there is no host kernel socket to inject into (so ``tcpreplay``
 can't reach it), and the UPF forwards millions of pps (far above tcpreplay's ~0.06
 Mpps ceiling). So we drive it the way the paper testbed does: TRex on a spare SR-IOV
 VF on the *same PF* as the UPF's access VF; frames whose dst MAC = the UPF access
@@ -9,7 +9,7 @@ VF's MAC are hairpinned by the NIC's internal switch (VEB) straight into the UPF
 Validated: 20k sent on the gen VF == 20k counted at the UPF accessFast RX.
 
 We only *send* here and report what was sent (offered pps); the throughput/loss math
-is done by the test case from the UPF's own port counters (the adapter) — same black-box
+is done by the test case from the UPF's own port counters (the adapter), same black-box
 contract as the tcpreplay generator, so results are directly comparable across modes.
 
 Config knobs (campaign YAML ``upf.extra``, defaults shown)::
@@ -118,7 +118,7 @@ class Generator(TrafficGenerator):
         _st = c.get_stats()
         sent = sum(int(_st[_p]["opackets"]) for _p in self.tx_ports)
         # Rate basis is the TRAFFIC on-time (TRex ran for exactly duration_s), NOT wall
-        # clock — wall clock includes start/stop/sync overhead and would understate rates.
+        # clock: wall clock includes start/stop/sync overhead and would understate rates.
         secs = float(duration_s)
         offered = (sent / secs / 1e6) if secs > 0 else 0.0
         gbps = offered * wire * 8 / 1e3
@@ -229,7 +229,7 @@ class Generator(TrafficGenerator):
     def _build_dl_pkt(self, frame_size: int, ue_ip: str, outer_src: str = None):
         """A DOWNLINK frame: plain IP from the 'internet' to a UE-IP, dst MAC = the UPF core
         VF (so the VEB hairpins it into N6). The UPF matches the DL PDR and GTP-encaps it out
-        N3. No GTP header here — the UPF adds it."""
+        N3. No GTP header here, the UPF adds it."""
         from scapy.layers.l2 import Ether
         from scapy.layers.inet import IP, UDP
         src = outer_src or self.dl_inner_src

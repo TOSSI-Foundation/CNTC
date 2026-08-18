@@ -1,8 +1,8 @@
-"""XDP-02 — XDP attach mode (native/driver vs the generic/SKB fallback). Informational, normal.
+"""XDP-02: XDP attach mode (native/driver vs the generic/SKB fallback). Informational, normal.
 
 Generic (SKB) XDP works but runs the program after the skb is built, so it is far slower than
 native/driver XDP; it is often forced by the VM/NIC (here a Xen 'vif' NIC + a Calico veth, which
-have no native-XDP support). So this records the mode and warns rather than failing — it does not
+have no native-XDP support). So this records the mode and warns rather than failing, it does not
 gate the certificate."""
 from upfbench.suites.base import TestCase, RunContext
 from upfbench.results import TestResult

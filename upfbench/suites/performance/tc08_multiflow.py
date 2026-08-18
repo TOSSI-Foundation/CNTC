@@ -1,7 +1,7 @@
-"""TC-08 Multi-flow (RSS) — Suite 1 (performance).
+"""TC-08 Multi-flow (RSS), Suite 1 (performance).
 
 Saturating blast with N distinct flows (one GTP-U TEID + UE source IP per flow) to see
-whether flow diversity changes the sustained rate. For af_packet it should not — the path
+whether flow diversity changes the sustained rate. For af_packet it should not, the path
 is a single kernel/socket funnel (pps-bound), so multi-flow ~= single-flow (the reference
 saw the same). For a NIC with RSS this is where multiple queues would help.
 """

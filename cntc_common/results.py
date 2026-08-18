@@ -1,4 +1,4 @@
-"""Campaign result store — the schema every CNTC engine emits, shared across stages.
+"""Campaign result store, the schema every CNTC engine emits, shared across stages.
 
 Layout (one directory per campaign under ``campaigns/``)::
 
@@ -9,7 +9,7 @@ Layout (one directory per campaign under ``campaigns/``)::
 
 The runner appends a :class:`SuiteResult` per suite executed; the report consumes
 ``results.json`` and the CNTC verdict layer grades its ``suites`` list. This module is
-**stage-agnostic** — the ``suite`` label is a free string, ``sut`` is an open dict — so the
+**stage-agnostic**: the ``suite`` label is a free string, ``sut`` is an open dict, so the
 UPF engine (``upfbench``) and the control-plane engine (``cpbench``) both use it unchanged.
 """
 from __future__ import annotations
@@ -58,7 +58,7 @@ class Store:
         self._suites.append(result)
 
     def suite_dicts(self) -> list[dict[str, Any]]:
-        """The serialized suites (as they appear in results.json) — used by the CNTC
+        """The serialized suites (as they appear in results.json), used by the CNTC
         verdict layer to grade results without reaching into private state."""
         return [dataclasses.asdict(s) for s in self._suites]
 
@@ -87,7 +87,7 @@ class Store:
         merged_sut = {**sut, **{k: _flatten(v) for k, v in self._sut_live.items()}}
         payload = {
             **self._meta,
-            "status": status,               # "running" (incremental) | "complete" — for the live dashboard
+            "status": status,               # "running" (incremental) | "complete", for the live dashboard
             "running_suite": running_suite,  # the suite currently executing, if any
             "sut": merged_sut,
             "kpis": self._kpis,        # headline numbers; populated as suites compute them

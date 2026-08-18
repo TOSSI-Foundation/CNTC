@@ -1,11 +1,11 @@
 """free5GC core adapter (docker-compose deployment).
 
-First target core — the free5GC + UERANSIM end-to-end is already validated on this VM
+First target core, the free5GC + UERANSIM end-to-end is already validated on this VM
 (UE registered, PDU session up, ping through gtp5g; see docs/free5gc-ueransim-e2e-guide.md).
 
 Phase 2.0: connect-only. ``describe`` reports which NF containers are Up and their images;
 ``nf_endpoint`` resolves each NF's SBI address from the config (or docker inspect). Subscriber
-provisioning drives the free5GC webui/Mongo (free5GC does NOT auto-add a subscriber — the
+provisioning drives the free5GC webui/Mongo (free5GC does NOT auto-add a subscriber, the
 classic gotcha), left as a Phase-2.1 hook.
 """
 from __future__ import annotations
@@ -74,7 +74,7 @@ class Adapter(CoreAdapter):
                          "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}", cont)
         ip = r.stdout.strip() if r.returncode == 0 else ""
         # docker prints the literal "invalid IP" (rc=0) for a missing container on some
-        # versions, so validate before trusting it — a bogus endpoint must not look resolved.
+        # versions, so validate before trusting it, a bogus endpoint must not look resolved.
         return f"{ip}:8000" if _valid_ip(ip) else ""
 
     def provision_subscribers(self, subscribers: list[dict[str, Any]]) -> dict[str, Any]:

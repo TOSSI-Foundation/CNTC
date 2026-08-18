@@ -1,4 +1,4 @@
-"""UPFAdapter — the contract every UPF plugin implements.
+"""UPFAdapter: the contract every UPF plugin implements.
 
 This is the swappable per-UPF layer. The first implementation is ``sdcore_bess``;
 OAI / Open5GS / free5GC / eUPF are added by dropping in new modules here. The suites
@@ -32,7 +32,7 @@ class UPFAdapter(abc.ABC):
         long run (e.g. BESS ``bessd`` can crash under saturation; OAI's session table
         wedges after the performance suite), so a back-to-back ``--suite all`` run can
         see one suite poison the next. When ``reset_between_suites`` is set, the runner
-        calls this before each suite so every suite starts from a fresh UPF — matching
+        calls this before each suite so every suite starts from a fresh UPF, matching
         the "start from a clean UPF for trustworthy numbers" guidance.
 
         Default: no-op (connect-only UPFs that need no reset). Adapters override with
@@ -52,7 +52,7 @@ class UPFAdapter(abc.ABC):
 
         Returns ``{port_name: {rx_pkts, rx_bytes, rx_drops, tx_pkts, tx_bytes,
         tx_drops}}``. A UPF has at least an N3 (access) and N6 (core) port, so
-        counters are keyed by port — the throughput suite picks the N3 ingress
+        counters are keyed by port, the throughput suite picks the N3 ingress
         and N6 egress ports to compute absorbed/forwarded/loss. ``rx`` = packets
         the UPF received on that port (from the wire); ``tx`` = packets it sent
         out that port.
@@ -78,8 +78,8 @@ class UPFAdapter(abc.ABC):
         return (self.cfg.mode or "").lower()
 
     def bpf_introspect(self) -> dict[str, Any] | None:
-        """Live white-box view of an eBPF/XDP datapath — XDP attach state, BPF map pinning/
-        entries, stats, and the TEIDs currently installed as dataplane rules — or ``None`` on a
+        """Live white-box view of an eBPF/XDP datapath, XDP attach state, BPF map pinning/
+        entries, stats, and the TEIDs currently installed as dataplane rules, or ``None`` on a
         non-eBPF UPF, so the XDP tests grade 'na' rather than a false pass."""
         return None
 

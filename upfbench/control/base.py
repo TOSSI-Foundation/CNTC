@@ -1,8 +1,8 @@
-"""ControlPlane — how packet-forwarding rules / PFCP sessions get installed.
+"""ControlPlane: how packet-forwarding rules / PFCP sessions get installed.
 
 Two implementations:
-  * ``pybess``  — BESS-specific white-box gRPC (the fast path we already use; Suite 1).
-  * ``pfcpsim`` — standardized PFCP/N4 via omec-project/pfcpsim (portable; Suites 2 & 3).
+  * ``pybess``, BESS-specific white-box gRPC (the fast path we already use; Suite 1).
+  * ``pfcpsim``, standardized PFCP/N4 via omec-project/pfcpsim (portable; Suites 2 & 3).
 
 A "session" here is one UE's forwarding state (PDR/FAR/QER). Suite 2 creates many;
 Suite 3 drives the lifecycle for conformance.

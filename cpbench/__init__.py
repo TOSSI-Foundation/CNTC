@@ -1,4 +1,4 @@
-"""cpbench — the CNTC control-plane test engine (Stage 2).
+"""cpbench: the CNTC control-plane test engine (Stage 2).
 
 Sibling to ``upfbench``: same plugin architecture, same ``cntc_common`` result schema, graded
 by the same ``cntc`` umbrella. Where ``upfbench`` drives a UPF over N3/N4, ``cpbench`` drives

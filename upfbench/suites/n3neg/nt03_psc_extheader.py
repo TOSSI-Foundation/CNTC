@@ -1,4 +1,4 @@
-"""NT-03 PSC (PDU Session Container, ext-header type 0x85) robustness — a valid 5G GTP-U
+"""NT-03 PSC (PDU Session Container, ext-header type 0x85) robustness, a valid 5G GTP-U
 PSC packet should be handled; a malformed PSC ext-header must be dropped without crashing
 the data plane. Pass = no crash on either PSC packet, malformed PSC not forwarded, and
 valid traffic still forwards after."""

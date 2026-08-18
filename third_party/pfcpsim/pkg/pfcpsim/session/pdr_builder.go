@@ -233,7 +233,7 @@ func (b *pdrBuilder) BuildPDR() *ie.IE {
 	// back from the UPF (e.g. /proc/gtp5g/pdr) to align the N3 traffic.
 	fteid := ie.NewFTEID(0x01, b.teid, net.ParseIP(b.n3Address), nil, 0)
 	if os.Getenv("PFCPSIM_FTEID_CHOOSE") != "" {
-		// CH+CHID (V4) — the form Open5GS's own SMF sends (flags 0x0d + a Choose ID).
+		// CH+CHID (V4), the form Open5GS's own SMF sends (flags 0x0d + a Choose ID).
 		// The UPF allocates the UL F-TEID and programs gtp5g; bare CH (0x04) is rejected.
 		fteid = ie.NewFTEID(0x0d, 0, nil, nil, uint8(b.id))
 	}

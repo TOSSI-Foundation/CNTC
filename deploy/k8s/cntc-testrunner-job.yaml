@@ -1,4 +1,4 @@
-# CNTC test-runner — run the WHOLE suite from inside the cluster as a Job.
+# CNTC test-runner: run the WHOLE suite from inside the cluster as a Job.
 #
 # Datapath tests inject af_packet GTP-U into the UPF's access macvlan and kubectl-exec into
 # the UPF pod, so the runner needs, on the UPF's node:
@@ -8,7 +8,7 @@
 #   * kube access to exec into the UPF namespace (RBAC below) + a kubeconfig
 #
 # EDIT: <IMAGE>, <UPF_NODE>, <CAMPAIGNS_HOST_DIR>, the --config path, and the exec target
-# namespace in the Role. This is the "advanced" path — the host CLI (scripts/cntc-run-all.sh)
+# namespace in the Role. This is the "advanced" path: the host CLI (scripts/cntc-run-all.sh)
 # is simpler; use this when you want runs triggered in-cluster.
 apiVersion: v1
 kind: ServiceAccount

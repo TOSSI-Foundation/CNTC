@@ -1,4 +1,4 @@
-# CNTC requirement catalog — SMF LEVEL 1 "Conformance & Observable Security"
+# CNTC requirement catalog: SMF LEVEL 1 "Conformance & Observable Security"
 #
 # LEVEL 1 = every requirement provable by driving the NF with a SPEC-COMPLIANT peer and
 # observing the result (including on-the-wire capture). No forged, replayed or malformed
@@ -6,7 +6,7 @@
 # covers those.
 #
 # Every test in this catalog is IMPLEMENTED, so an NF here is always cleanly judged
-# PASS or FAIL — never INCOMPLETE because the tester didn't build something.
+# PASS or FAIL: never INCOMPLETE because the tester didn't build something.
 # Gate: all ESSENTIAL tests must PASS -> certificate. essential FAIL -> no certificate.
 # A test that cannot be judged on a given deployment (e.g. needs a privileged identity) is
 # kept NORMAL class so it informs the scorecard without gating.

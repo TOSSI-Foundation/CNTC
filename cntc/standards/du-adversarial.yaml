@@ -1,0 +1,40 @@
+# CNTC requirement catalog: O-DU LEVEL 2 "Adversarial Robustness & Privileged Interop"
+#
+# LEVEL 2 = requirements that need a NON-COMPLIANT or PRIVILEGED peer: a rogue O-CU on F1, and
+# a misbehaving UE on the air interface (RACH flooding, RRC fuzzing).
+#
+# STATUS: ROADMAP. Not implemented: these grade 'na', so a Level 2 run is INCOMPLETE by design.
+# Never read a Level 2 'na' as a pass.
+version: 0.1.0-roadmap
+profile: du-adversarial
+title: "O-DU (gNB-DU), CNTC Level 2 (Adversarial Robustness & Privileged Interop)"
+standards:
+- 3GPP TS 38.473 (F1AP / F1-C)
+- 3GPP TS 38.321 (NR MAC, random access)
+- "3GPP TS 33.523 (SCAS, split gNB)"
+- O-RAN WG11 Security Test Specifications
+defaults:
+  class: normal
+gate:
+  essential: all
+tests:
+- id: DU-NEG-02
+  name: "Rogue O-CU, F1 Setup from an unauthenticated CU is rejected"
+  category: robustness
+  class: essential
+  verdict: status_pass
+- id: DU-NEG-03
+  name: "RACH flooding, the cell keeps serving legitimate UEs (38.321)"
+  category: robustness
+  class: normal
+  verdict: status_pass
+- id: DU-NEG-04
+  name: "RRC fuzzing from a misbehaving UE -> no O-DU crash"
+  category: robustness
+  class: essential
+  verdict: status_pass
+- id: DU-SEC-03
+  name: "F1-C / F1-U replay protection (33.523 §7.2.2.1.1 / §7.2.2.1.3)"
+  category: security
+  class: normal
+  verdict: status_pass

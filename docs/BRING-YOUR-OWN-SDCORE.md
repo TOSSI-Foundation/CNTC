@@ -1,13 +1,13 @@
-# Test *your* SD‑Core UPF with CNTC — end‑to‑end guide
+# Test *your* SD‑Core UPF with CNTC: end‑to‑end guide
 
 This is the "someone has their own VM with SD‑Core running and wants a CNTC verdict + certificate"
 walkthrough. It is written from a real bring‑up (af_packet SD‑Core BESS‑UPF on a single‑NIC VM)
-and folds in the fixes that make it work e2e. It builds on the framework's own docs — see
+and folds in the fixes that make it work e2e. It builds on the framework's own docs, see
 `docs/fresh-vm-setup.md`, `docs/config-reference.md`, `docs/benchmarking-guide.md`.
 
 > **Assumption:** CNTC/upfbench runs **on the same machine** where the UPF is reachable (the
 > node with `kubectl` access to the UPF pod, and a host interface that reaches the UPF's N3).
-> That's how the `sdcore_bess` adapter works — it `kubectl exec`s into the UPF pod for counters
+> That's how the `sdcore_bess` adapter works, it `kubectl exec`s into the UPF pod for counters
 > and injects host traffic into the UPF's access interface.
 
 ---
@@ -24,7 +24,7 @@ and folds in the fixes that make it work e2e. It builds on the framework's own d
 | (optional) `dash`+`plotly`, LaTeX | dashboard, PDF reports | reporting |
 
 **DPDK/AF_XDP/CNDP mode** additionally needs **TRex + SR‑IOV VFs + 1GiB hugepages** (bare‑metal
-only) — see `docs/dpdk-testing-guide.md`. On a **VM you almost always run af_packet**, which is
+only), see `docs/dpdk-testing-guide.md`. On a **VM you almost always run af_packet**, which is
 what this guide covers.
 
 ---
@@ -40,7 +40,7 @@ sudo ./scripts/bootstrap_fresh_vm.sh          # apt deps + pip install + builds 
 # make the CLIs available
 export PATH=$PATH:$HOME/.local/bin
 
-# preflight — tells you exactly what's missing
+# preflight: tells you exactly what's missing
 python3 -m upfbench.cli doctor
 ```
 
@@ -78,7 +78,7 @@ cp configs/sdcore-bess.yaml configs/my-upf.yaml
 | `n3_remote_ip` | UPF's N3/access IP (outer dst) | your deployment's access subnet |
 | `ue_ip` / UE pool | must fall in your pfcpsim UE pool | matches `pfcpsim` `--ue-pool` (default `10.250.0.0/24`) |
 
-Also set the informational `sut:` block (cpu/nic/kernel) — it just goes on the report + rig.
+Also set the informational `sut:` block (cpu/nic/kernel), it just goes on the report + rig.
 
 ### 2.2 Fields you should LEAVE BLANK (learned the hard way)
 
@@ -91,7 +91,7 @@ upf:
 
 > This was the single biggest gotcha: a stale hardcoded N3 MAC → 0 packets delivered → NDR 0.0
 > and n3neg "valid forwarded 0". CNTC now resolves it live (both the tcpreplay generator and the
-> n3neg suite). **Keep it blank** unless your UPF has a fixed MAC (e.g. a Docker bridge — then set
+> n3neg suite). **Keep it blank** unless your UPF has a fixed MAC (e.g. a Docker bridge, then set
 > `n3_mac_via: arp`).
 
 ### 2.3 af_packet tuning (so numbers are real, not 0)
@@ -134,11 +134,11 @@ export PATH=$PATH:/var/lib/rancher/rke2/bin:/usr/local/bin:$HOME/.local/bin
 # 1) performance + load + PFCP (13 tests)
 cntc run --config configs/my-upf.yaml --suite all --campaign MY-UPF-001
 
-# 2) N3 robustness (3 tests) — deliberately sends malformed GTP-U; the UPF may crash + recover
+# 2) N3 robustness (3 tests): deliberately sends malformed GTP-U; the UPF may crash + recover
 cntc run --config configs/my-upf.yaml --suite n3neg --campaign MY-UPF-001-N3
 ```
 
-> `cntc run` delegates to the engine and auto‑grades. You can also use `upfbench run …` — same
+> `cntc run` delegates to the engine and auto‑grades. You can also use `upfbench run …`, same
 > engine; `cntc run` just adds the verdict at the end. Suites can also be run individually
 > (`--suite performance|load|pfcp|n3neg`) or as `--suite conformance` (= pfcp+n3neg, the cert set).
 
@@ -184,17 +184,17 @@ The campaign page shows the scorecard, the **verdict badge**, the **certificate 
 - **16 test cases** total: Performance (5) + Load (3) = *measured* (numbers, don't gate);
   **PFCP CF‑01..05 (5) + N3 NT‑01..03 (3) = essential** (gate certification).
 - Certificate issues only if **every essential test passes** (conformance profile).
-- Tune the gate in `cntc/standards/conformance.yaml` (bump its `version` when you do — see
+- Tune the gate in `cntc/standards/conformance.yaml` (bump its `version` when you do, see
   `docs/CNTC-GOVERNANCE.md`).
 
 ---
 
-## 5. Troubleshooting — the real gotchas
+## 5. Troubleshooting: the real gotchas
 
 | Symptom | Cause | Fix |
 |---|---|---|
 | UPF pod `0/5 Unknown` / not ready | stuck StatefulSet after a node/containerd hiccup | `kubectl -n <ns> delete pod <upf-pod>` → StatefulSet recreates it |
-| **NDR 0.0 / "valid forwarded 0"** | stale hardcoded N3 MAC (macvlan MAC changed on restart) | set `n3_remote_mac: ""` (live resolve) — this is the #1 issue |
+| **NDR 0.0 / "valid forwarded 0"** | stale hardcoded N3 MAC (macvlan MAC changed on restart) | set `n3_remote_mac: ""` (live resolve), this is the #1 issue |
 | Still 0 delivered | src MAC = a local macvlan MAC (self‑origin loopback filtered) | leave `trex_src_mac` unset, or use a fake `02:..` MAC |
 | Packets delivered but 0 forwarded to N6 | forward rules not installed / wrong suite path | `--suite performance` uses pybess forward‑all; verify `bessctl show module pdrLookup` shows 1+ rules during a run |
 | NDR still 0 though forwarding works | search floor above af_packet's ceiling | lower `max_rate_mpps` (0.02) + `search_resolution_mpps` (0.0005) |

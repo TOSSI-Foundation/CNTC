@@ -1,10 +1,10 @@
-"""Open5GS UPF adapter (third UPF — further proves the framework is UPF-agnostic).
+"""Open5GS UPF adapter (third UPF, further proves the framework is UPF-agnostic).
 
 Open5GS's 5G UPF runs as a Docker container (default ``upf``) and forwards via the
-``gtp5g`` kernel module + an ``ogstun`` TUN for N6 — so, like the OAI adapter, this one
+``gtp5g`` kernel module + an ``ogstun`` TUN for N6, so, like the OAI adapter, this one
 shells into the container with ``docker exec`` and reads facts + per-interface netdev
 counters (``/proc/net/dev``). It is driven over N4 by the pfcpsim control and over N3 by
-tcpreplay, exactly like the other adapters — the suites are unchanged.
+tcpreplay, exactly like the other adapters, the suites are unchanged.
 
 Config knobs (campaign YAML ``upf.extra``, defaults shown)::
 
@@ -95,7 +95,7 @@ class Adapter(UPFAdapter):
 
     def fwd_field(self) -> str:
         # ogstun is a TUN: the decapsulated uplink packet is delivered into the kernel and
-        # counts as rx_pkts on ogstun (tx stays flat) — same pattern as OAI's tun0.
+        # counts as rx_pkts on ogstun (tx stays flat), same pattern as OAI's tun0.
         return self._fwd
 
 

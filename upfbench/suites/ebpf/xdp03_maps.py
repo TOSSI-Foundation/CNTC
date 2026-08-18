@@ -1,8 +1,8 @@
-"""XDP-03 — the forwarding-state BPF maps (PDR / FAR / QER / session) are present and pinned.
+"""XDP-03: the forwarding-state BPF maps (PDR / FAR / QER / session) are present and pinned.
 
 An eBPF UPF keeps its per-session forwarding rules in BPF maps; this checks they exist (non-zero
 capacity) and are pinned (backed by the pinned program pipeline, so they survive an eUPF restart).
-Normal — the binding tests (XDP-04/05) prove the maps are actually used."""
+Normal, the binding tests (XDP-04/05) prove the maps are actually used."""
 from upfbench.suites.base import TestCase, RunContext
 from upfbench.results import TestResult
 from upfbench.suites.ebpf._common import not_ebpf, intro, na

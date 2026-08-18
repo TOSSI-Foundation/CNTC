@@ -1,4 +1,4 @@
-# SD-Core BESS-UPF — example campaign.
+# SD-Core BESS-UPF: example campaign.
 # Phase 0/1 assumes the UPF pod is already deployed (aether-onramp / charmed sd-core);
 # the framework connects to it. `upfbench run --config configs/sdcore-bess.yaml`
 campaign: UPF-BM-SDCORE-AFPKT
@@ -32,7 +32,7 @@ performance:
   generator: tcpreplay           # host-side GTP-U injector (no spare NIC for testpmd)
   frame_sizes: [128, 512, 1024, 1518]   # GTP-U min frame ~78B, so 64 is omitted
   trial_duration_s: 5            # per-trial steady-state seconds (raise for final runs)
-  max_rate_mpps: 0.12            # search ceiling — af_packet RX tops out ~20-40 kpps
+  max_rate_mpps: 0.12            # search ceiling, af_packet RX tops out ~20-40 kpps
   pdr_tolerance: 0.001           # PDR @ 0.1% loss
   search_resolution_mpps: 0.005  # 5 kpps precision on the no-drop rate
   search_max_iters: 7            # cap trials per search (keep first sweeps quick)

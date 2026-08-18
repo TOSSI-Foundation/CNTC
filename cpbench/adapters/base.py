@@ -1,4 +1,4 @@
-"""CoreAdapter — the contract every 5G-core distribution plugin implements.
+"""CoreAdapter: the contract every 5G-core distribution plugin implements.
 
 This is the swappable per-core layer (free5gc / open5gs / oai). The suites and the rest of the
 engine only ever talk to this interface, never to a specific core. Unlike the UPF adapter

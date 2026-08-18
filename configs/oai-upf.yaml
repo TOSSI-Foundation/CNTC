@@ -1,4 +1,4 @@
-# OAI-UPF campaign — second UPF, proving the framework is UPF-agnostic.
+# OAI-UPF campaign: second UPF, proving the framework is UPF-agnostic.
 # OAI-UPF runs as a Docker container on the demo-oai bridge; pfcpsim drives N4
 # (PFCPSIM_NO_URR, since OAI rejects URRs) and tcpreplay drives N3.
 # For UPF-isolated testing, stop oai-smf first so pfcpsim is the sole SMF:
@@ -43,7 +43,7 @@ pfcp:
   procedures: [association, establish, modify, delete, error_handling]
 
 # Suite 1/2 on OAI use pfcpsim control (no pybess backdoor) + tcpreplay. Note: their
-# traffic TEIDs must match the pfcpsim session TEIDs (baseID+10k) — wired like Suite 2.
+# traffic TEIDs must match the pfcpsim session TEIDs (baseID+10k), wired like Suite 2.
 performance:
   control: pfcpsim
   generator: tcpreplay
@@ -56,7 +56,7 @@ performance:
 load:
   control: pfcpsim
   generator: tcpreplay
-  # OAI DNN is 12.1.1.0/24 (254 usable UE IPs), so cap UE counts inside the pool —
+  # OAI DNN is 12.1.1.0/24 (254 usable UE IPs), so cap UE counts inside the pool, 
   # beyond it pfcpsim assigns IPs OAI's PDR won't match and the batch fails.
   ue_counts: [10, 50, 100, 200, 250]   # LT-01 capacity ramp
   lt02_ue_count: 100                    # LT-02 aggregate + per-UE

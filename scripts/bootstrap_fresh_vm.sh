@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# bootstrap_fresh_vm.sh — install the upfbench *tester* on a fresh Ubuntu 22.04 box.
+# bootstrap_fresh_vm.sh: install the upfbench *tester* on a fresh Ubuntu 22.04 box.
 #
 # Sets up everything EXCEPT the UPF under test (that's a separate deployment; see
 # scripts/deploy_*.sh and docs/*-deployment.md). Steps mirror docs/fresh-vm-setup.md:

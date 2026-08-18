@@ -4,7 +4,7 @@ The helm free5GC ships its own ``ueransim-gnb`` + ``ueransim-ue`` pods, already 
 modes:
 
 * **observe-only** (default): read the running UE/gNB pod logs for the NGAP/NAS milestones and
-  ``kubectl exec`` a ping through the UE TUN — non-disruptive. Procedures it can't see this way
+  ``kubectl exec`` a ping through the UE TUN, non-disruptive. Procedures it can't see this way
   (release/deregister, wire-captured NAS/PFCP) grade 'na', never a fake pass.
 * **drive** (``drivers.k8s_drive: true``): capture N2/N4 on the node, force a fresh UE attach
   (restart the UE pod) so the 5G-AKA + NAS-security handshake + N4 PFCP happen inside the
@@ -94,7 +94,7 @@ class Driver(BaseDriver):
         {denied, auth_failure, registered}. Cached process-wide.
 
         We copy the pod's own UE config, overwrite only the key with an all-zero key, and run
-        ``nr-ue`` for a short window inside the UE pod — non-disruptive to the running good UE."""
+        ``nr-ue`` for a short window inside the UE pod, non-disruptive to the running good UE."""
         if _BADAUTH_CACHE.get(self.namespace) is not None:
             return _BADAUTH_CACHE[self.namespace]
         ue = self._pod(self.ue_match)
@@ -104,7 +104,7 @@ class Driver(BaseDriver):
             return out
         ue_bin = self.cli.rsplit("/", 1)[0] + "/nr-ue"
         # copy the pod's UE config, overwrite only the key, run nr-ue and capture the FULL NAS log
-        # (the wrong-key UE never registers, so it retries for the whole window — the MAC failure
+        # (the wrong-key UE never registers, so it retries for the whole window, the MAC failure
         # lands on the first attempt once the radio link is up).
         script = (
             "CFG=$(ls /ueransim/config/ue-config.yaml /ueransim/config/*ue*.yaml 2>/dev/null "

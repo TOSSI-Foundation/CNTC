@@ -1,4 +1,4 @@
-"""UERANSIM driver — drives N1/N2 (NAS + NGAP) through the AMF.
+"""UERANSIM driver, drives N1/N2 (NAS + NGAP) through the AMF.
 
 Wraps a native UERANSIM build (``nr-gnb`` + ``nr-ue``) to run a real registration +
 PDU-session against the live core, then parses the gNB/UE logs into a structured observation
@@ -80,7 +80,7 @@ class Driver(BaseDriver):
             self._run("pkill", "-x", b, timeout=10)
 
     def _cli(self, node: str, cmd: str):
-        """Drive a nr-cli command against a running UE/gNB node (needs sudo — the node's
+        """Drive a nr-cli command against a running UE/gNB node (needs sudo, the node's
         control socket is root-owned). Used for UE-initiated release/deregistration."""
         self.store.record_command(f"{' '.join(self.sudo)} {self.cli_bin} {node} --exec '{cmd}'")
         return self._run(str(self.cli_bin), node, "--exec", cmd, timeout=10)
@@ -284,7 +284,7 @@ class Driver(BaseDriver):
     def _decode_suci(self, pcap: Path) -> dict[str, Any]:
         """Is the SUPI concealed on N2? Decode the Registration Request's 5GS mobile identity:
         a real SUCI protection scheme (Profile A/B) means the SUPI is concealed; the NULL
-        scheme leaves the MSIN in cleartext (SUPI confidentiality NOT provided — AMF-SEC-06)."""
+        scheme leaves the MSIN in cleartext (SUPI confidentiality NOT provided, AMF-SEC-06)."""
         import re
         if not shutil.which("tshark") or not pcap.exists():
             return {}

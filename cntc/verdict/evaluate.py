@@ -1,4 +1,4 @@
-"""Pure grading engine — the heart of CNTC's verdict layer.
+"""Pure grading engine, the heart of CNTC's verdict layer.
 
 ``evaluate()`` takes the *serialized* results (the ``suites`` list from a ``results.json``)
 plus a requirement catalog and returns a verdict block. It imports nothing from the engine,
@@ -6,7 +6,7 @@ so it is trivially unit-testable and can re-grade any past ``results.json``.
 
 Outcome of a single test against its requirement is one of:
     "pass" | "fail" | "na"
-where "na" means "could not be judged" — the test did not run, errored, was skipped, or the
+where "na" means "could not be judged", the test did not run, errored, was skipped, or the
 metric it needs is absent. **"na" is never silently promoted to "pass".**
 
 Verdict rules supported (the ``verdict:`` field of a catalog entry):
@@ -48,7 +48,7 @@ def grade_one(res: dict | None, req: dict, baseline_by_id: dict | None = None) -
 
     rule = req.get("verdict", "status_pass")
 
-    # status_pass — expressed as the bare string or {kind: status_pass}
+    # status_pass: expressed as the bare string or {kind: status_pass}
     if rule == "status_pass" or (isinstance(rule, dict) and rule.get("kind") == "status_pass"):
         return ("pass", "status == pass") if status == "pass" else ("fail", f"status == {status}")
 
@@ -130,16 +130,16 @@ def evaluate(suites: list[dict], catalog: dict,
 
 
 def _requirement_warnings(catalog: dict, baseline: dict | None, rig: dict) -> list[str]:
-    """Loud, honest warnings when a profile's preconditions aren't met — so a verdict is
+    """Loud, honest warnings when a profile's preconditions aren't met, so a verdict is
     never mistaken for something it isn't (esp. the hardware-dependent performance profile)."""
     w: list[str] = []
     req = catalog.get("requires", {}) or {}
     if req.get("baseline") and not baseline:
-        w.append("this profile grades RELATIVE to a baseline, but none was supplied — "
+        w.append("this profile grades RELATIVE to a baseline, but none was supplied, "
                  "baseline_rel tests were graded 'na'. Pass a baseline results.json from the "
                  "same rig class (e.g. `--baseline campaigns/<ref>/results.json`).")
     if req.get("rig_class") and not rig.get("rig_class"):
-        w.append("no rig_class recorded — a performance verdict is only comparable within the "
+        w.append("no rig_class recorded, a performance verdict is only comparable within the "
                  "same rig class. Set `sut.rig_class` in the campaign config.")
     return w
 

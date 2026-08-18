@@ -1,4 +1,4 @@
-"""NAS/NGAP wire observer — capture + decode the N1/N2 signaling to assert security
+"""NAS/NGAP wire observer, capture + decode the N1/N2 signaling to assert security
 properties (NAS ciphered/integrity-protected after SMC, replay rejected, SUCI vs SUPI).
 
 Phase 2.0: interface only. Phase 2.1 backs this with tshark/pyshark on the N2 SCTP link.

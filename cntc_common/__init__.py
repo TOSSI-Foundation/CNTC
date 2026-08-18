@@ -1,4 +1,4 @@
-"""cntc_common — primitives shared by every CNTC measurement engine.
+"""cntc_common: primitives shared by every CNTC measurement engine.
 
 Both ``upfbench`` (Stage 1, user plane) and ``cpbench`` (Stage 2, control plane) emit the
 **same** ``results.json`` schema so the one CNTC verdict/certification/dashboard stack grades

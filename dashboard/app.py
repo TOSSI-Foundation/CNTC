@@ -1,4 +1,4 @@
-"""upfbench dashboard — a live, view-only Plotly Dash app over the campaigns/ results.
+"""upfbench dashboard, a live, view-only Plotly Dash app over the campaigns/ results.
 
 Run it:
     python3 -m dashboard.app                 # http://0.0.0.0:8050
@@ -23,10 +23,11 @@ app = Dash(__name__, use_pages=True, pages_folder=str(PAGES),
            suppress_callback_exceptions=True)
 server = app.server
 
-# Whole-core IA: nav grouped into Results + Reference. Both planes get a coverage page —
-# Control plane (AMF/SMF/NRF/AUSF/UDM) and UPFs (user plane).
+# Whole-stack IA: nav grouped into Results + Reference. Every domain gets a coverage page, 
+# Control plane (AMF/SMF/NRF/AUSF/UDM), RAN (O-CU-CP/O-CU-UP/O-DU) and UPFs (user plane).
 _NAV = [
-    ("Results", [("/", "Overview"), ("/control-plane", "Control plane"), ("/upfs", "UPFs"),
+    ("Results", [("/", "Overview"), ("/control-plane", "Control plane"), ("/ran", "RAN"),
+                 ("/upfs", "UPFs"),
                  ("/campaigns", "Runs"), ("/compare", "Compare"), ("/findings", "Findings")]),
     ("Reference", [("/catalog", "Test catalog"), ("/methodology", "Methodology")]),
 ]

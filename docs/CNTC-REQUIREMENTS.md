@@ -1,25 +1,25 @@
-# CNTC Requirements — the rulebook behind the catalogs
+# CNTC Requirements: the rulebook behind the catalogs
 
 This is the human-readable standard that the machine-checkable catalogs in
 [`cntc/standards/`](../cntc/standards/) encode. For each requirement: **what** it checks,
 **why** it matters, and **how to remediate** a failure.
 
 A UPF is graded against a **profile**. The verdict per test is `pass` / `fail` / `na`
-(*not judged* — did not run, errored, or a needed metric was absent; **never** silently a
+(*not judged*, did not run, errored, or a needed metric was absent; **never** silently a
 pass). A profile's **essential** tests form its certification gate.
 
-- **Result `PASS`** — every essential test passed.
-- **Result `FAIL`** — an essential test failed.
-- **Result `INCOMPLETE`** — an essential test did not run (run the missing suite).
+- **Result `PASS`**: every essential test passed.
+- **Result `FAIL`**: an essential test failed.
+- **Result `INCOMPLETE`**: an essential test did not run (run the missing suite).
 
 ---
 
 ## Profile: `conformance` (hardware-independent)
 
-Certifiable on any rig — these outcomes don't depend on packets-per-second capacity. Run
+Certifiable on any rig, these outcomes don't depend on packets-per-second capacity. Run
 with `--suite conformance` (= `pfcp` + `n3neg`) for a complete verdict.
 
-### PFCP / N4 conformance — 3GPP TS 29.244
+### PFCP / N4 conformance: 3GPP TS 29.244
 
 | ID | Requirement | Essential |
 |----|-------------|:---------:|
@@ -32,7 +32,7 @@ with `--suite conformance` (= `pfcp` + `n3neg`) for a complete verdict.
 **Overview.** The N4 interface is how the SMF programs the UPF. The suite (via the vendored
 `pfcpsim`) drives each PFCP procedure and asserts the UPF answers correctly.
 **Rationale.** A UPF that mishandles association or session lifecycle can't be driven by a
-standards-compliant core — it may leak sessions, drop rules, or crash the control plane.
+standards-compliant core, it may leak sessions, drop rules, or crash the control plane.
 **Remediation.** Compare the UPF's PFCP responses against TS 29.244 §7; check cause codes on
 error paths; confirm the agent accepts modification (CF-03) and cleans up on deletion (CF-04).
 Verdict rule: `status_pass` (the test's own pass/fail).
@@ -42,11 +42,11 @@ Verdict rule: `status_pass` (the test's own pass/fail).
 | ID | Requirement | Essential |
 |----|-------------|:---------:|
 | NT-01 | Unknown-TEID robustness (packet for a TEID with no rule) | ✔ |
-| NT-02 | Malformed GTP-U robustness — no crash | ✔ |
+| NT-02 | Malformed GTP-U robustness, no crash | ✔ |
 | NT-03 | PDU-Session-Container (0x85) extension-header robustness | ✔ |
 
 **Overview.** Adversarial/garbage packets are injected on N3; the UPF must drop them cleanly
-and keep forwarding valid traffic — no crash, no restart.
+and keep forwarding valid traffic, no crash, no restart.
 **Rationale.** A single malformed N3 packet that segfaults the user plane is a **remote DoS**.
 This suite already found a real SIGSEGV in SD-Core BESS-UPF (`GtpuDecap::ProcessBatch`).
 **Remediation.** Fix bounds-checking in the GTP-U parse path; treat unknown TEIDs and
@@ -83,7 +83,7 @@ against the baseline before blaming the UPF (see the engine's `doctor` + config 
 
 ## Adding or changing a requirement
 
-The bar is **data**, not code: edit the YAML in [`cntc/standards/`](../cntc/standards/) — no
+The bar is **data**, not code: edit the YAML in [`cntc/standards/`](../cntc/standards/), no
 engine changes. Add a profile by dropping a new `<name>.yaml`. Every catalog is validated by
 `cntc lint`. See [CNTC-GOVERNANCE.md](CNTC-GOVERNANCE.md) for who may change a threshold and
 how versioning works.

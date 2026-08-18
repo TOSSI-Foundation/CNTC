@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# bootstrap_cpbench.sh — install the cpbench control-plane *tester* on a fresh Ubuntu 22.04 box.
+# bootstrap_cpbench.sh: install the cpbench control-plane *tester* on a fresh Ubuntu 22.04 box.
 #
-# Installs everything the cpbench engine needs to DRIVE tests — but NOT the 5G core under test
+# Installs everything the cpbench engine needs to DRIVE tests: but NOT the 5G core under test
 # (that is bring-your-own; deploy free5GC/open5GS/OAI separately, then point the config at it).
 #
 # Steps:
@@ -11,7 +11,7 @@
 #   4. verify               (cpbench list + binaries present)
 #
 # LICENSING NOTE: UERANSIM is AGPL-3.0. This script FETCHES and builds it from its upstream
-# repo INTO YOUR environment — it is NOT distributed as part of cpbench (which is Apache-2.0).
+# repo INTO YOUR environment: it is NOT distributed as part of cpbench (which is Apache-2.0).
 # cpbench invokes nr-gnb/nr-ue as external processes (arm's-length), so no license mixing.
 #
 # Run from the repo root:  ./scripts/bootstrap_cpbench.sh
@@ -31,7 +31,7 @@ UERANSIM_REPO="${UERANSIM_REPO:-https://github.com/aligungr/UERANSIM.git}"
 CMAKE_MIN="3.17"   # UERANSIM CMakeLists.txt requires >= 3.17
 
 # Ensure a cmake >= CMAKE_MIN is on PATH. Ubuntu 22.04 apt ships 3.22 (ok), but 18.04/20.04
-# ship 3.10/3.16 (too old — the UERANSIM README warns about this). If apt's is too old or
+# ship 3.10/3.16 (too old: the UERANSIM README warns about this). If apt's is too old or
 # missing, install a modern cmake via pip (portable: no snap dependency) and put it first on PATH.
 ensure_cmake() {
   local ver
@@ -40,14 +40,14 @@ ensure_cmake() {
     echo "    cmake $ver (>= $CMAKE_MIN) OK"
     return 0
   fi
-  echo "    cmake ${ver:-not found} < $CMAKE_MIN — UERANSIM needs >= $CMAKE_MIN; installing a modern cmake via pip"
+  echo "    cmake ${ver:-not found} < $CMAKE_MIN, UERANSIM needs >= $CMAKE_MIN; installing a modern cmake via pip"
   python3 -m pip install --user "cmake>=$CMAKE_MIN"
   export PATH="$HOME/.local/bin:$PATH"
   hash -r 2>/dev/null || true
   ver="$(cmake --version 2>/dev/null | head -1 | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?' | head -1)"
   [ -n "$ver" ] && echo "    cmake now: $ver" || { echo "!! still no usable cmake"; return 1; }
 }
-echo ">>> cpbench bootstrap — repo root: $REPO_ROOT"
+echo ">>> cpbench bootstrap, repo root: $REPO_ROOT"
 echo ">>> UERANSIM target dir: $UERANSIM_DIR"
 
 # ---------------------------------------------------------------------------
@@ -66,11 +66,11 @@ else
       python3 python3-pip python3-venv \
       iproute2 iputils-ping psmisc curl ca-certificates \
       tcpdump tshark \
-    || { echo "!! apt install failed — install the packages above manually"; exit 1; }
+    || { echo "!! apt install failed, install the packages above manually"; exit 1; }
   # docker CLI is used by the free5gc adapter to read NF liveness/IPs. Best-effort: many
   # environments already have it (or use k8s), so warn rather than fail if it can't install.
   if ! command -v docker >/dev/null 2>&1; then
-    sudo apt-get install -y docker.io || echo "!! could not install docker.io — install docker yourself if your core is docker-based"
+    sudo apt-get install -y docker.io || echo "!! could not install docker.io, install docker yourself if your core is docker-based"
   fi
 fi
 
@@ -82,7 +82,7 @@ python3 -m pip install -e . \
        python3 -m pip install 'httpx[http2]>=0.27' PyYAML Jinja2 scapy; }
 
 # `cpbench run` needs root (tcpdump on N2, pfcpsim, docker), so the framework + its deps must
-# ALSO be importable under sudo — the user site-packages above are invisible to root. Install
+# ALSO be importable under sudo: the user site-packages above are invisible to root. Install
 # once into the system interpreter too (idempotent; skipped if root can already import httpx).
 if ! sudo python3 -c "import httpx, yaml, scapy" >/dev/null 2>&1; then
   echo "    making the framework importable under sudo (for the root-run 'cpbench run')"
@@ -91,7 +91,7 @@ if ! sudo python3 -c "import httpx, yaml, scapy" >/dev/null 2>&1; then
 fi
 
 # ---------------------------------------------------------------------------
-echo ">>> [3/4] UERANSIM (AGPL-3.0 — fetched + built into your environment, not bundled)"
+echo ">>> [3/4] UERANSIM (AGPL-3.0, fetched + built into your environment, not bundled)"
 if [ "${SKIP_UERANSIM:-0}" = "1" ]; then
   echo "    SKIP_UERANSIM=1 -> skipping"
 elif [ -x "$UERANSIM_DIR/build/nr-gnb" ] && [ -x "$UERANSIM_DIR/build/nr-ue" ] && [ "${FORCE_UERANSIM:-0}" != "1" ]; then
@@ -126,7 +126,7 @@ cat <<DONE
 
 >>> cpbench tester ready.  (UERANSIM is AGPL-3.0, fetched separately; cpbench is Apache-2.0.)
 
-Next (separate from this script — bring your own 5G core):
+Next (separate from this script, bring your own 5G core):
   1. Deploy a core:   e.g. free5GC via docker-compose (~/free5gc-compose)
   2. Edit the config addresses to match it:   configs/free5gc-cp.yaml
        - core.endpoints / drivers.amf_n2_addr / drivers.gnb_link_ip   (read them live!)
@@ -137,4 +137,4 @@ Next (separate from this script — bring your own 5G core):
 
 See docs/PLAN-CONTROL-PLANE.md for the test model.
 DONE
-[ "$ok" = "1" ] || { echo "!! some checks failed — see above"; exit 1; }
+[ "$ok" = "1" ] || { echo "!! some checks failed, see above"; exit 1; }

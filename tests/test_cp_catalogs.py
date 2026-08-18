@@ -1,7 +1,7 @@
 """Stage-2 control-plane catalogs + grading semantics.
 
 Proves the per-NF certification gate is real (not just that stubs grade 'na'): a synthetic
-all-pass run PASSES, a stub run is INCOMPLETE, and a single essential FAIL is FAIL — the same
+all-pass run PASSES, a stub run is INCOMPLETE, and a single essential FAIL is FAIL, the same
 `status_pass` discipline the UPF conformance profile uses, now per NF.
 """
 from __future__ import annotations
@@ -78,7 +78,7 @@ def test_essential_counts_match_design():
 
 def test_level1_is_fully_implemented():
     """The core promise of Level 1: every test in an L1 catalog has a real implementation,
-    so an L1 verdict is always a clean PASS/FAIL about the deployment — never INCOMPLETE
+    so an L1 verdict is always a clean PASS/FAIL about the deployment, never INCOMPLETE
     because the tester didn't build something."""
     from cpbench import config as cfgmod
     from cpbench.suites.registry import build_suite

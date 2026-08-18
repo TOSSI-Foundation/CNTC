@@ -1,4 +1,4 @@
-% Multi-UE Load Report — Suite 2 (UPF-isolated)
+% Multi-UE Load Report, Suite 2 (UPF-isolated)
 \documentclass[11pt,a4paper]{article}
 \usepackage[margin=1in]{geometry}
 \usepackage{booktabs,longtable,xcolor,hyperref,listings}
@@ -41,7 +41,7 @@ Aggregate throughput      & (((  c.kpis.load_aggregate_mpps | default("--")  )))
 
 \section{Results}
 ((* for t in suite.tests *))
-\subsection{(((  t.id | tex  ))) — (((  t.name | tex  )))}
+\subsection{(((  t.id | tex  ))), (((  t.name | tex  )))}
 ((* if t.status == "error" *))
 \textit{\fillin{(((  t.notes | tex  )))}}
 ((* else *))

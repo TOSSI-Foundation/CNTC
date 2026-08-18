@@ -28,7 +28,7 @@ def sbi_scheme(ctx: RunContext, host: str, port: int) -> str:
     free5GC on docker serves SBI as cleartext HTTP; the SD-Core/Aether k8s chart serves it
     over HTTPS. Hardcoding a scheme makes every request to the *other* kind of deployment fail
     (cleartext to a TLS port -> HTTP 400 / reset), which used to be misread as a security
-    finding. Probing the port makes the SBI checks work — and judge honestly — on both.
+    finding. Probing the port makes the SBI checks work, and judge honestly, on both.
     """
     key = (host, port)
     if key not in _SCHEME_CACHE:
@@ -61,16 +61,16 @@ def reject_unauth(ctx: RunContext, tid: str, name: str, path: str,
     #   401/403        -> authorization enforced (PASS)
     #   2xx            -> protected data served WITHOUT a token = a real auth bypass (FAIL)
     #   anything else  -> 400/404/5xx: the request was NOT served, but not on auth grounds
-    #                     (often wrong endpoint shape) — we cannot conclude either way (na).
+    #                     (often wrong endpoint shape), we cannot conclude either way (na).
     if st in (401, 403):
         return TestResult(tid, name, "pass", metrics={"status": st},
                           notes=f"unauthenticated {method} {path} -> HTTP {st} (rejected)")
     if 200 <= st < 300:
         return TestResult(tid, name, "fail", metrics={"status": st},
                           notes=f"unauthenticated {method} {path} -> HTTP {st} "
-                                f"(served without a token — authz bypass)")
+                                f"(served without a token, authz bypass)")
     return TestResult(tid, name, "na", metrics={"status": st},
-                      notes=f"unauthenticated {method} {path} -> HTTP {st} — not an auth "
+                      notes=f"unauthenticated {method} {path} -> HTTP {st}, not an auth "
                             f"decision (request not served, but not 401/403); cannot judge authz")
 
 
@@ -84,7 +84,7 @@ def requires_tls(ctx: RunContext, tid: str, name: str) -> TestResult:
         return TestResult(tid, name, "pass", metrics={"tls": True},
                           notes=f"TLS handshake ok (HTTPS {tls.get('status')})")
     return TestResult(tid, name, "fail", metrics={"tls": False},
-                      notes=f"no TLS listener on {host}:{port} ({tls.get('error')}) — "
+                      notes=f"no TLS listener on {host}:{port} ({tls.get('error')}), "
                             f"SBI served cleartext (not TLS-protected)")
 
 

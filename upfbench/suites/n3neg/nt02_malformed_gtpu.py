@@ -1,9 +1,9 @@
-"""NT-02 Malformed GTP-U robustness — the UPF must not CRASH on malformed N3 input and
+"""NT-02 Malformed GTP-U robustness, the UPF must not CRASH on malformed N3 input and
 must keep serving valid traffic. Each variant (control/reserved message type, wrong
 version, three truncation cases) is sent as its own burst with per-variant crash
 detection: if the BESS data plane segfaults (k8s restarts bessd), we record which packet
 did it, wait for recovery, re-establish the session, and continue. A crash on any variant
-is a robustness FAIL — a single malformed packet that drops the user plane is a remote DoS.
+is a robustness FAIL, a single malformed packet that drops the user plane is a remote DoS.
 """
 from upfbench.suites.base import TestCase, RunContext
 from upfbench.results import TestResult

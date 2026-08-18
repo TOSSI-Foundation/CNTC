@@ -1,12 +1,12 @@
-# CNTC — Complete Technical Reference
+# CNTC: Complete Technical Reference
 
-**Cloud-Native Telecom Certification (CNTC)** — a reproducible framework that turns 3GPP
+**Cloud-Native Telecom Certification (CNTC)**: a reproducible framework that turns 3GPP
 specifications into an automated **pass/fail certificate** for a 5G core, covering both the
 **user plane** (the UPF) and the **control plane** (AMF/SMF/NRF/AUSF/UDM).
 
 > **Purpose of this document.** A single, self-contained technical description of the whole
-> project — architecture, every component, the data flows, the full test catalog, the
-> certification logic, deployment modes, and verified results — detailed enough to (a) design
+> project, architecture, every component, the data flows, the full test catalog, the
+> certification logic, deployment modes, and verified results, detailed enough to (a) design
 > accurate architecture/flow diagrams for the blog and release video, and (b) independently
 > verify what the framework does and claims.
 
@@ -22,7 +22,7 @@ specifications into an automated **pass/fail certificate** for a 5G core, coveri
 | **Umbrella** | `cntc` | Grade any `results.json` against a per-target **requirement catalog**, then issue a certificate | scorecard + certificate |
 
 The umbrella is **pure and data-driven**: it grades whatever test IDs appear in a `results.json`
-against a YAML catalog. It has no idea whether the run came from `upfbench` or `cpbench` — both
+against a YAML catalog. It has no idea whether the run came from `upfbench` or `cpbench`, both
 emit the *same* results schema (`cntc_common`). One grading core certifies the whole core.
 
 ```
@@ -40,7 +40,7 @@ emit the *same* results schema (`cntc_common`). One grading core certifies the w
 
 ```
 control_cntc/
-├── cpbench/            CONTROL-PLANE engine — drives AMF/SMF/NRF/AUSF/UDM, records results
+├── cpbench/            CONTROL-PLANE engine, drives AMF/SMF/NRF/AUSF/UDM, records results
 │   ├── cli.py            `cpbench run|doctor` entrypoint
 │   ├── config.py         campaign config model + sudo-aware path expansion
 │   ├── doctor.py         preflight: deps, CLIs, UERANSIM build, core up, addressing, subscriber
@@ -63,9 +63,9 @@ control_cntc/
 │       ├── nrf/checks.py     8 NRF cases   ausf/checks.py  4 AUSF cases
 │       └── udm/checks.py     7 UDM cases
 │
-├── cntc/               THE UMBRELLA — grades results, issues certificates (engine-agnostic)
+├── cntc/               THE UMBRELLA, grades results, issues certificates (engine-agnostic)
 │   ├── cli.py            `cntc profiles|lint|verdict|certify|run`
-│   ├── standards/        the requirement CATALOGS (YAML) — the source of truth for grading
+│   ├── standards/        the requirement CATALOGS (YAML), the source of truth for grading
 │   │   ├── <nf>-conformance.yaml   Level 1 per-NF catalogs (amf/smf/nrf/ausf/udm)
 │   │   ├── <nf>-adversarial.yaml   Level 2 roadmap catalogs (amf/smf/nrf/ausf)
 │   │   ├── conformance.yaml         universal UPF conformance profile
@@ -76,7 +76,7 @@ control_cntc/
 │       ├── scorecard.py       render verdict → console / Markdown / HTML
 │       └── certificate.py     issue a certificate iff the essential gate is all-PASS
 │
-├── cntc_common/        THE SHARED SCHEMA — Store / SuiteResult / TestResult / results.json
+├── cntc_common/        THE SHARED SCHEMA, Store / SuiteResult / TestResult / results.json
 │   └── results.py
 │
 ├── upfbench/           USER-PLANE engine (sibling; same results schema)
@@ -128,7 +128,7 @@ A single `cpbench run --config <cfg> --nf <sel> --campaign <id>` executes this p
 ```
 
 **Key design points for the diagram:**
-- **Addresses are resolved at runtime**, never hardcoded — redeploying the core needs zero
+- **Addresses are resolved at runtime**, never hardcoded, redeploying the core needs zero
   config edits. The config only carries what can't be derived (N2 endpoint, capture interface,
   subscriber credentials).
 - **One real registration is cached** process-wide: a `--nf all` run attaches the UE *once*;
@@ -155,7 +155,7 @@ A single `cpbench run --config <cfg> --nf <sel> --campaign <id>` executes this p
 
 ## 4. Adapters and drivers (the pluggable edges)
 
-**Adapters** answer "how do I find and inspect this core?" — they are the *only* code that knows
+**Adapters** answer "how do I find and inspect this core?", they are the *only* code that knows
 about docker vs Kubernetes.
 
 | Adapter | Core | NF discovery | Liveness | SBI scheme |
@@ -178,19 +178,19 @@ test suite runs correctly against a cleartext-SBI docker core and a TLS-SBI Kube
 
 ## 5. The full test catalog
 
-### 5.1 Control plane — Level 1 "Conformance & Observable Security" (44 tests, 26 essential)
+### 5.1 Control plane: Level 1 "Conformance & Observable Security" (44 tests, 26 essential)
 
 Every test is anchored to a clause of that NF's own 3GPP spec (protocol + SCAS security).
 `●` = **essential** (must PASS to certify); `○` = supporting (informs the scorecard, does not gate).
 
-**AMF — 14 tests, 9 essential** · TS 24.501 (NAS) · TS 38.413 (NGAP) · TS 33.501 (5G-AKA) · TS 33.512 (SCAS)
+**AMF, 14 tests, 9 essential** · TS 24.501 (NAS) · TS 38.413 (NGAP) · TS 33.501 (5G-AKA) · TS 33.512 (SCAS)
 | ID | ● | Test |
 |---|---|---|
 | AMF-REG-01 | ● | Initial registration |
 | AMF-AUTH-01 | ● | 5G-AKA authentication |
 | AMF-AUTH-02 | ● | Security-mode command / complete |
 | AMF-DEREG-01 | ● | UE-initiated deregistration |
-| AMF-NGAP-01 | ● | NG Setup — gNB↔AMF association |
+| AMF-NGAP-01 | ● | NG Setup, gNB↔AMF association |
 | AMF-NGAP-02 | ○ | Initial UE message / NAS transport |
 | AMF-NGAP-03 | ○ | Initial context setup |
 | AMF-NGAP-04 | ○ | UE context release |
@@ -201,7 +201,7 @@ Every test is anchored to a clause of that NF's own 3GPP spec (protocol + SCAS s
 | AMF-SEC-07 | ○ | SBI (Namf) requires TLS + valid OAuth2 token |
 | AMF-NEG-01 | ● | Malformed NGAP PDU → reject, no AMF crash |
 
-**SMF — 11 tests, 7 essential** · TS 29.502 (Nsmf) · TS 24.501 §6 (NAS-SM) · TS 29.244 (PFCP/N4) · TS 33.515 (SCAS)
+**SMF, 11 tests, 7 essential** · TS 29.502 (Nsmf) · TS 24.501 §6 (NAS-SM) · TS 29.244 (PFCP/N4) · TS 33.515 (SCAS)
 | ID | ● | Test |
 |---|---|---|
 | SMF-SESS-01 | ● | PDU session establishment |
@@ -210,16 +210,16 @@ Every test is anchored to a clause of that NF's own 3GPP spec (protocol + SCAS s
 | SMF-SESS-05 | ○ | UE IP address allocation |
 | SMF-N4-01 | ● | SMF programs UPF over N4 (PFCP Session Establishment) |
 | SMF-N4-03 | ○ | N4 session deletion on PDU release |
-| SMF-DP-01 | ● | Data-path verify — traffic forwards through the programmed UPF |
+| SMF-DP-01 | ● | Data-path verify, traffic forwards through the programmed UPF |
 | SMF-SEC-01 | ● | SBI (Nsmf) requires TLS + valid OAuth2 token |
 | SMF-SEC-02 | ● | Reject PDU-session create with missing/invalid mandatory IE |
 | SMF-SEC-03 | ○ | Session-event logging present |
 | SMF-NEG-01 | ● | Invalid session request → reject, no crash |
 
-**NRF — 8 tests, 3 essential** · TS 29.510 (Nnrf) · TS 33.501 §13 (SBI authz) · TS 33.518 (SCAS)
+**NRF, 8 tests, 3 essential** · TS 29.510 (Nnrf) · TS 33.501 §13 (SBI authz) · TS 33.518 (SCAS)
 | ID | ● | Test |
 |---|---|---|
-| NRF-REG-01 | ○ | NFRegister — a peer NF registers its profile |
+| NRF-REG-01 | ○ | NFRegister : a peer NF registers its profile |
 | NRF-DISC-01 | ○ | NFDiscover by NF type returns correct profiles |
 | NRF-DISC-02 | ○ | NFDiscover by service name |
 | NRF-SEC-01 | ○ | OAuth2 access-token grant (Nnrf_AccessToken) |
@@ -228,15 +228,15 @@ Every test is anchored to a clause of that NF's own 3GPP spec (protocol + SCAS s
 | NRF-NEG-01 | ● | Malformed NFRegister → 400 ProblemDetails, no crash |
 | NRF-NEG-02 | ○ | Discover unknown NF type → empty result / 404 |
 
-**AUSF — 4 tests, 3 essential** · TS 29.509 (Nausf) · TS 33.501 (5G-AKA/EAP-AKA') · TS 33.516 (SCAS)
+**AUSF, 4 tests, 3 essential** · TS 29.509 (Nausf) · TS 33.501 (5G-AKA/EAP-AKA') · TS 33.516 (SCAS)
 | ID | ● | Test |
 |---|---|---|
 | AUSF-AUTH-01 | ● | UEAuthentication_Authenticate initiate (5G-AKA) |
-| AUSF-AUTH-02 | ○ | Confirm RES* — successful authentication |
+| AUSF-AUTH-02 | ○ | Confirm RES*, successful authentication |
 | AUSF-SEC-02 | ● | SBI (Nausf) requires TLS + valid OAuth2 token |
 | AUSF-NEG-01 | ● | Malformed auth request → reject, no crash |
 
-**UDM — 7 tests, 4 essential** · TS 29.503 (Nudm) · TS 33.501 (SUCI/SIDF) · TS 33.514 (SCAS)
+**UDM, 7 tests, 4 essential** · TS 29.503 (Nudm) · TS 33.501 (SUCI/SIDF) · TS 33.514 (SCAS)
 | ID | ● | Test |
 |---|---|---|
 | UDM-SDM-01 | ● | Subscription data retrieval (Nudm_SDM_Get) |
@@ -247,14 +247,14 @@ Every test is anchored to a clause of that NF's own 3GPP spec (protocol + SCAS s
 | UDM-SEC-02 | ● | SBI (Nudm) requires TLS + valid OAuth2 token |
 | UDM-NEG-01 | ● | Unknown SUPI → 404 ProblemDetails, no crash |
 
-### 5.2 Control plane — Level 2 "Adversarial Robustness & Privileged Interop" (20 tests, roadmap)
+### 5.2 Control plane: Level 2 "Adversarial Robustness & Privileged Interop" (20 tests, roadmap)
 
 Everything that needs a **non-compliant or privileged peer** (forged/replayed/malformed protocol
-state, a registered-NF PKI identity). Split by NF: AMF 10, SMF 4, NRF 3, AUSF 3. **Not shipped** —
+state, a registered-NF PKI identity). Split by NF: AMF 10, SMF 4, NRF 3, AUSF 3. **Not shipped**: 
 catalogs exist at `cntc/standards/<nf>-adversarial.yaml` (version `0.1.0-roadmap`) so the roadmap
 is data, not prose. No engine change is needed to ship them later; only the driver stimulus.
 
-### 5.3 User plane (UPF) — 16 conformance + performance tests (sibling engine)
+### 5.3 User plane (UPF): 16 conformance + performance tests (sibling engine)
 
 | Suite | IDs | What |
 |---|---|---|
@@ -263,12 +263,12 @@ is data, not prose. No engine change is needed to ship them later; only the driv
 | PFCP Conformance | CF-01…05 | N4 association/establish/modify/delete/error (TS 29.244) |
 | N3 Robustness | NT-01/02/03 | unknown TEID, malformed GTP-U, PSC ext-header (must not crash) |
 
-### 5.4 Optional eBPF/XDP dataplane assurance (8 tests) — `upf-ebpf.yaml`
+### 5.4 Optional eBPF/XDP dataplane assurance (8 tests): `upf-ebpf.yaml`
 
 For eBPF/XDP UPFs (e.g. free5GC + **eUPF**). A **second, optional** certificate on top of the
 universal conformance one. Proves the XDP program is attached, the N4 rules bind to BPF maps, and
 the fast path forwards. IDs XDP-01…08 (4 essential). Deliberately **outside** the universal
-conformance gate — an eBPF UPF still earns the normal conformance cert first.
+conformance gate, an eBPF UPF still earns the normal conformance cert first.
 
 ---
 
@@ -293,9 +293,9 @@ version + timestamp. A single-NF run writes that NF's own verdict, so the dashbo
 
 ---
 
-## 7. Deployment modes — docker vs Kubernetes (a key diagram)
+## 7. Deployment modes: docker vs Kubernetes (a key diagram)
 
-The **same tests, same NFs, different result** — because the difference is the deployment's
+The **same tests, same NFs, different result**: because the difference is the deployment's
 hardening, not the tests.
 
 ```
@@ -313,8 +313,8 @@ hardening, not the tests.
 | **AMF** | **PASS** (9/9 essential) → `CNTC-AMF-…` | INCOMPLETE | k8s has no in-cluster UE → registration tests `na` |
 | **AUSF** | **PASS** | INCOMPLETE | AUSF auth is transitive on registration (no UE on k8s) |
 | **UDM** | **PASS** | INCOMPLETE | UDM SDM/auth-vector are transitive on registration |
-| **SMF** | FAIL — no TLS on SBI | INCOMPLETE | docker SBI cleartext; k8s SMF SBI OK but sessions need a UE |
-| **NRF** | FAIL — no TLS on SBI | **FAIL** — unauth discovery returns **HTTP 200** (real auth bypass) | genuine SBI-authorization gap on the k8s NRF |
+| **SMF** | FAIL : no TLS on SBI | INCOMPLETE | docker SBI cleartext; k8s SMF SBI OK but sessions need a UE |
+| **NRF** | FAIL : no TLS on SBI | **FAIL**: unauth discovery returns **HTTP 200** (real auth bypass) | genuine SBI-authorization gap on the k8s NRF |
 
 **Docker: 3/5 certifiable. Kubernetes: NRF fails on a real, verified auth-bypass; the other four
 are INCOMPLETE for lack of an in-cluster UE.** The framework **reports the gap; it never
@@ -323,7 +323,7 @@ rubber-stamps** and never fakes a pass. (The k8s NRF finding is verified: unauth
 
 ---
 
-## 8. Data schema (`cntc_common/results.py`) — what a diagram of the artifact should show
+## 8. Data schema (`cntc_common/results.py`): what a diagram of the artifact should show
 
 ```
 results.json
@@ -349,7 +349,7 @@ certificate.{md,html,json}   issued only when result == PASS
 
 | Tool | Role | License / how obtained |
 |---|---|---|
-| **UERANSIM** | gNB + UE simulator (N1/N2) | **AGPL-3.0** — fetched & built by the bootstrap, **not bundled**; invoked as a separate process so licenses never mix |
+| **UERANSIM** | gNB + UE simulator (N1/N2) | **AGPL-3.0**: fetched & built by the bootstrap, **not bundled**; invoked as a separate process so licenses never mix |
 | **SBI client** | our own HTTP/2 + TLS + OAuth2 client (Nnrf/Nausf/Nudm/Namf/Nsmf) | part of CNTC (Apache-2.0), built on `httpx[http2]` |
 | **tcpdump + tshark** | capture & decode N2 (NAS) and N4 (PFCP) on the wire | system packages |
 | **pfcpsim** | N4/PFCP driving (user-plane engine) | external process |
@@ -364,28 +364,28 @@ Apache-2.0 codebase.
 
 ## 10. Diagrams to produce (suggested set)
 
-For the blog + release video, the highest-value diagrams — all fully specified above:
+For the blog + release video, the highest-value diagrams, all fully specified above:
 
-1. **Two-layer architecture** (§1) — engines *measure* → `results.json` → umbrella *judges* →
+1. **Two-layer architecture** (§1), engines *measure* → `results.json` → umbrella *judges* →
    scorecard + certificate. *This is the hero diagram.*
-2. **Control-plane run pipeline** (§3) — the 8-step flow from config to certificate.
-3. **Stimulus/observe topology** (§3a) — UERANSIM (N1/N2) + SBI client vs the five NFs, with the
+2. **Control-plane run pipeline** (§3), the 8-step flow from config to certificate.
+3. **Stimulus/observe topology** (§3a), UERANSIM (N1/N2) + SBI client vs the five NFs, with the
    N2/N4 wire captures.
-4. **Adapter/driver plug-in model** (§4) — the pluggable edges (docker vs k8s adapters; UERANSIM
+4. **Adapter/driver plug-in model** (§4), the pluggable edges (docker vs k8s adapters; UERANSIM
    vs SBI drivers) around a fixed suite/verdict core.
-5. **Certification gate** (§6) — essential-all → PASS/FAIL/INCOMPLETE decision.
-6. **Docker vs Kubernetes** (§7) — same tests, two deployments, the verified results table.
-7. **Two certification levels** (§5.1–5.2) — L1 shipped (44/26) vs L2 roadmap (20).
-8. **Results artifact** (§8) — the `results.json` → `verdict` → `certificate` object model.
+5. **Certification gate** (§6), essential-all → PASS/FAIL/INCOMPLETE decision.
+6. **Docker vs Kubernetes** (§7), same tests, two deployments, the verified results table.
+7. **Two certification levels** (§5.1–5.2), L1 shipped (44/26) vs L2 roadmap (20).
+8. **Results artifact** (§8), the `results.json` → `verdict` → `certificate` object model.
 
 ### Brand / style notes for the diagrammer
 - Light theme, teal accent `#0d9488`, secondary magenta `#b13a77`, pass-green `#1a7f37`,
   fail-red `#cf222e`, ink `#1f2328`, muted `#656d76` (matches the dashboard/theme).
-- Keep the **measure vs judge** split visually explicit in every architecture diagram — it is the
+- Keep the **measure vs judge** split visually explicit in every architecture diagram, it is the
   project's central idea.
 - Existing reference PNGs live in `docs/diagrams/` (`cntc-architecture.*`, `cntc-docker-vs-k8s.*`)
-  — align new work with those.
+, align new work with those.
 
 ---
 
-*TOSSI Foundation · CNTC — certifying the cloud-native telecom stack, one standard at a time.*
+*TOSSI Foundation · CNTC, certifying the cloud-native telecom stack, one standard at a time.*

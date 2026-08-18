@@ -1,8 +1,8 @@
-"""TC-04 Burst / back-to-back (+ drain) — Suite 1 (performance).
+"""TC-04 Burst / back-to-back (+ drain), Suite 1 (performance).
 
 Saturating short blast: offer well above capacity for a few seconds and measure the
 sustained absorbed/forwarded rate, the pipeline drop count (absorbed - forwarded,
-expected ~0 for af_packet — it forwards everything it manages to absorb), and the
+expected ~0 for af_packet, it forwards everything it manages to absorb), and the
 drain tail (packets still leaving the core port in the second AFTER the blast stops;
 ~0 means no queue build-up). Mirrors the reference TC-04.
 """
