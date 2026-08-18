@@ -17,13 +17,13 @@ We are building it **outward from the data plane**, one layer at a time:
 |-------|-------|--------|
 | 1 | **UPF**: 5G user plane over N3/N4 (performance, load, PFCP conformance, N3 robustness) | ✅ **available today** |
 | 2 | **5G Core control plane**: AMF · SMF · NRF · AUSF · UDM (NAS/NGAP · N4/PFCP · SBI) | ✅ **available today** |
-| 3 | **RAN**: gNB · O-CU / O-DU / O-RU | 🗺️ roadmap |
+| 3 | **RAN**: split gNB, O-CU-CP / O-CU-UP / O-DU (N2 · F1 · E1 · RRC) | ✅ **available today** |
 | 4 | **SMO**: Service Management & Orchestration | 🗺️ roadmap |
 | 5 | **RIC**: Near-RT / Non-RT RIC · xApps / rApps (E2 · A1 · O1) | 🗺️ roadmap |
 | 6 | **Full O-RAN ecosystem**: end-to-end certification across the stack | 🎯 vision |
 
-**Stages 1 and 2 are in production today**: the **user plane** (`upfbench`) and the **control
-plane** (`cpbench`). The engines that measure and the umbrella that judges (`cntc`) are
+**Stages 1, 2 and 3 are in production today**: the **user plane** (`upfbench`), the **control
+plane** (`cpbench`) and the **RAN** (`ranbench`). The engines that measure and the umbrella that judges (`cntc`) are
 deliberately decoupled, so each stage adds a new engine + a requirement catalog **without touching
 the grading core**, which is exactly how the control plane was added.
 
@@ -33,9 +33,10 @@ CNTC has two kinds of layer, **engines that measure**, and **one umbrella that j
 |-------|-----------|-------|
 | **Engine** (`upfbench`) | The **user-plane** engine, drives any open-source 5G UPF over N3/N4 (performance, load, PFCP conformance, N3 robustness). | [`upfbench/`](upfbench/) |
 | **Engine** (`cpbench`) | The **control-plane** engine, drives the 5G core NFs (AMF/SMF/NRF/AUSF/UDM) over N1/N2 (NAS/NGAP), N4 (PFCP) and the SBI, and captures the signalling on the wire. | [`cpbench/`](cpbench/) |
-| **Verdict** (`cntc`) | The umbrella: a **requirement catalog** per profile (`cntc/standards/*.yaml`) + a pure **verdict engine** that grades *either* engine's results and emits a **scorecard** + certificate. | [`cntc/`](cntc/) |
+| **Engine** (`ranbench`) | The **RAN** engine. Drives a split gNB (O-CU-CP, O-CU-UP, O-DU) over N2 (NGAP), F1-C (F1AP), E1 (E1AP), F1-U and N3 (GTP-U), with RRC read out of the F1AP containers. | [`ranbench/`](ranbench/) |
+| **Verdict** (`cntc`) | The umbrella: a **requirement catalog** per profile (`cntc/standards/*.yaml`) + a pure **verdict engine** that grades *any* engine's results and emits a **scorecard** + certificate. | [`cntc/`](cntc/) |
 
-The engines measure; the umbrella judges. They're decoupled, `cntc.verdict` grades the
+The engines measure; the umbrella judges. They are decoupled, so `cntc.verdict` grades the
 serialized `results.json`, so it can also **re-grade any past campaign** without re-running it.
 
 ---
@@ -63,6 +64,7 @@ make dashboard                                      # live web UI over campaigns
 | `make verdict` | (re)grade a campaign → scorecard (`--write-back`) |
 | `make certify` | issue a certificate **iff** the verdict is `PASS` |
 | `make cp-configure` · `make cp-doctor` · `make cp-run` | **control plane**: wizard · preflight · run AMF/SMF/NRF/AUSF/UDM (docker **or** Kubernetes) |
+| `make ran-prereqs` · `ran-configure` · `ran-doctor` · `ran-run` · `ran-certify` | **RAN**: install the tester · wizard · preflight · run O-CU-CP/O-CU-UP/O-DU · certify |
 | `make eupf-run` · `make eupf-certify` | free5GC + eUPF (eBPF/XDP): run · **dual** certificate (conformance + `upf-ebpf`) |
 | `make dashboard` · `dashboard-bg` · `dashboard-stop` | live Plotly dashboard: foreground · tmux · stop |
 | `make profiles` · `make lint` · `make test` | list profiles · validate catalogs · run verdict unit tests |
@@ -222,7 +224,51 @@ The full design, the test catalog, and the deployment runbooks are in
 
 ---
 
+## The RAN engine (`ranbench`): per product class, standard-anchored
+
+`ranbench` certifies a **split gNB**. It does not treat the gNB as one thing: 3GPP TS 33.523
+defines separate security product classes for a disaggregated base station, so CNTC certifies
+each one separately, with its own catalog and its own certificate, plus a composite gNB verdict
+that passes only when all three do.
+
+| Product class | Interfaces | Specs | Level-1 tests |
+|----|----------|------|-----------|
+| **O-CU-CP** | N2 (NGAP) · F1-C (F1AP) · E1 (E1AP) · RRC | TS 38.413 · 38.473 · 38.463 · 38.331 · 33.511 · 33.523 | 30 (16 essential) |
+| **O-CU-UP** | E1 (E1AP) · F1-U · N3 (GTP-U) | TS 38.463 · 38.425 · 38.415 · 29.281 · 33.523 | 14 (7 essential) |
+| **O-DU** | F1-C (F1AP) · F1-U · the cell | TS 38.473 · 38.425 · 38.331 · 38.321 · 33.523 | 14 (7 essential) |
+
+**Why the CU/DU split matters for testing.** In a split gNB every RRC message crosses F1 wrapped
+in an F1AP container (TS 38.473 clause 8.4), so RRC conformance and AS-security activation are
+observable on an ordinary IP link. No radio, no PHY decoding, no key material. In a monolithic
+gNB the same evidence exists only over the air and is ciphered after security activation.
+
+**How a run works.** One UE attach produces the evidence for all 58 tests. `ranbench` starts the
+three products in order, runs the attach (cell search, RACH, RRC setup, registration, PDU
+session, user traffic), stops everything so the captures flush, then decodes the per-interface
+pcaps the RAN wrote itself and grades every requirement against it.
+
+**Bring your own RAN and core.** The RAN is the subject of the certificate and the 5G core is a
+peer, so neither is installed by CNTC. Supporting a different RAN means one new adapter under
+`ranbench/adapters/` plus a campaign config. The catalogs, the test cases and the grading are
+unchanged.
+
+```bash
+./scripts/bootstrap_ranbench.sh                   # deps + the OAI UE simulator (external)
+make ran-configure                                # wizard: derives the UE radio params from the O-DU
+make ran-doctor CONFIG=configs/ocudu-ran.yaml     # preflight, must say READY
+make ran-run    CONFIG=configs/ocudu-ran.yaml TARGET=all CAMPAIGN=MY-RAN-001
+make ran-certify CAMPAIGN=MY-RAN-001 TARGET=cuup  # certificate only if every essential passed
+```
+
+**Verified against OCUDU** (the Linux Foundation CU/DU project, srsRAN lineage) running as a
+three-process split against free5GC on Kubernetes, with an OAI nr-UE over a ZeroMQ virtual
+radio. 58 of 58 tests execute. The rig, and the parameters that must agree between the O-DU and
+the UE, are documented in [docs/RANBENCH-RIG.md](docs/RANBENCH-RIG.md).
+
+---
+
 ## Docs
+- [docs/RANBENCH-RIG.md](docs/RANBENCH-RIG.md), the RAN rig: building the stack and the UE, and the parameters that must agree.
 - [docs/config-reference.md](docs/config-reference.md), which config fields to change per UPF/mode.
 - [docs/benchmarking-guide.md](docs/benchmarking-guide.md), **start here**: run, pick suites, reproduce baselines.
 - [docs/dpdk-testing-guide.md](docs/dpdk-testing-guide.md), kernel-bypass (DPDK/AF_XDP/CNDP) testing with TRex.
@@ -243,10 +289,18 @@ The full design, the test catalog, and the deployment runbooks are in
     loud warnings when `baseline`/`rig_class` are missing (never a faked performance PASS).
   - **M4** governance, `cntc lint` catalog linter, [requirements rulebook](docs/CNTC-REQUIREMENTS.md)
     + [governance note](docs/CNTC-GOVERNANCE.md). **14/14 unit tests pass** (`tests/test_verdict.py`).
+- **RAN (`ranbench`), Stage 3, shipped:** 58 Level-1 tests across O-CU-CP, O-CU-UP and O-DU,
+  verified against a live **OCUDU** split gNB with free5GC and an OAI UE. A full run grades every
+  test from one attach. It found real defects rather than rubber-stamping: the O-DU does not
+  re-establish F1 after the CU is lost, the O-CU-CP does not re-establish NG after the AMF path
+  is interrupted, and the CU-CP signals confidentiality as *required* while selecting the null
+  ciphering algorithm NEA0, so the user plane runs unciphered. F1-C, F1-U, E1 and N2 all run
+  without IPsec, which the transport-protection cases report.
 - **Control plane (`cpbench`), Stage 2, shipped:** 44 Level-1 tests across AMF/SMF/NRF/AUSF/UDM,
   verified against a live **free5GC** on both **docker-compose** and **Kubernetes**. On docker,
   AMF/AUSF/UDM certify; on Kubernetes, AMF certifies (full in-cluster registration + 5G-AKA + NAS
   security + negative attach) and the SBI checks surface real findings (no-TLS / token-less
   discovery), the framework reports the gap, it never rubber-stamps.
-- **Next:** metric-key drift check in `cntc lint`; **Stage 3 (RAN)** under the same umbrella
-  (see the [Objective](#objective) roadmap and [docs/PLAN.md](docs/PLAN.md)).
+- **Next:** metric-key drift check in `cntc lint`; RAN Level 2 (adversarial catalogs already
+  ship as data at `cntc/standards/*-adversarial.yaml`); **Stage 4 (SMO)** and **Stage 5 (RIC)**
+  under the same umbrella (see the [Objective](#objective) roadmap).

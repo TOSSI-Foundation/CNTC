@@ -101,43 +101,40 @@ class CuupSec01(RanTestCase):
     def run(self, ctx: RunContext):
         """The user plane must be ciphered when the signalled policy requires it.
 
-        Judged first on the E1 Bearer Context Setup, which states both the required protection
-        and the algorithm actually selected, that pair is unambiguous. The F1-U capture then
-        corroborates it: PDCP ciphering makes the inner packet opaque, so a readable inner IP
-        header is direct evidence that the user plane is in the clear.
+        Judged on the E1 Bearer Context Setup, which states both the protection the policy
+        requires and the algorithm actually selected. That pair is unambiguous.
+
+        Do NOT try to infer this from whether the payload looks opaque on the wire. F1-U carries
+        PDCP PDUs (TS 38.425), so no inner IP header is ever visible there regardless of
+        ciphering, and N3 carries the UE's plain IP by design once PDCP has been terminated.
+        An earlier version of this case read "no readable IP on F1-U" as "ciphering applied" and
+        issued a PASS for a user plane that was running with the null algorithm.
         """
         o = rc.observation(ctx)
         if o.get("error"):
             return TestResult(self.id, self.name, "na", notes=f"attach unavailable: {o['error']}")
         s = o.get("security_info")
-        visible = o.get("payload_visible.cuup.f1u")
         if not s or not s.get("seen"):
             return TestResult(self.id, self.name, "na",
                               notes="no security IEs captured on E1, so the user-plane "
                                     "ciphering policy cannot be judged")
         required = s["confidentiality_indication"] in ("required", "preferred")
-        metrics = {**s, "inner_ip_readable": visible}
+        metrics = dict(s)
         if s["ciphering_null"] and required:
             return TestResult(self.id, self.name, "fail", metrics=metrics,
                               notes=f"confidentiality is signalled as "
                                     f"{s['confidentiality_indication']} but the CU-UP was given "
-                                    f"{s['ciphering']}, the user plane is not ciphered"
-                                    + (" (confirmed: the inner IP packet is readable on F1-U)"
-                                       if visible else "") + " [TS 33.523 §6.2.2.1.7]")
+                                    f"{s['ciphering']}, the user plane is not ciphered "
+                                    f"[TS 33.523 §6.2.2.1.7]")
         if s["ciphering_null"]:
             return TestResult(self.id, self.name, "na", metrics=metrics,
                               notes=f"ciphering is {s['ciphering']} and confidentiality is "
                                     f"{s['confidentiality_indication']}, so no ciphering was "
                                     f"required of the CU-UP, nothing to enforce "
                                     f"[TS 33.523 §6.2.2.1.7]")
-        if visible:
-            return TestResult(self.id, self.name, "fail", metrics=metrics,
-                              notes=f"{s['ciphering']} was configured but the inner IP packet is "
-                                    f"readable on F1-U, ciphering is not applied "
-                                    f"[TS 33.523 §6.2.2.1.7]")
         return TestResult(self.id, self.name, "pass", metrics=metrics,
-                          notes=f"user plane ciphered with {s['ciphering']} and opaque on F1-U "
-                                f"[TS 33.523 §6.2.2.1.7]")
+                          notes=f"the CU-UP was given {s['ciphering']} with confidentiality "
+                                f"{s['confidentiality_indication']} [TS 33.523 §6.2.2.1.7]")
 
 
 class CuupSec02(RanTestCase):
