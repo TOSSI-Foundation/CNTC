@@ -1,0 +1,47 @@
+# CNTC rig: OCUDU O-DU under test, with the ZeroMQ virtual radio (no SDR hardware).
+#
+# The O-DU is an SCTP *client* on F1-C (it dials the CU-CP) and owns the F1-U GTP-U socket and
+# the cell. The ZMQ RU replaces the RF frontend: the UE connects over TCP sockets instead of
+# the air, which is what makes the whole split gNB testable on one host.
+#
+#   sudo ~/ocudu/build/apps/du/odu -c configs/ocudu/du_zmq.yml
+#
+# The cell parameters must match the core's PLMN/TAC (they are broadcast in SIB1 and reported
+# in F1 Setup: DU-CELL-01 checks exactly that consistency).
+f1ap:
+  addrs: 127.0.10.1               # the CU-CP's F1-C listener
+  bind_addrs: 127.0.10.2
+
+f1u:
+  socket:
+    - bind_addr: 127.0.10.2       # F1-U toward the O-CU-UP
+
+ru_sdr:
+  device_driver: zmq
+  device_args: tx_port=tcp://127.0.0.1:4556,rx_port=tcp://127.0.0.1:4557,base_srate=23.04e6
+  srate: 23.04
+  # The ZMQ device rejects positive channel gain ("Channel gain must be <= 0.0 dB for
+  # ZMQ-device"), there is no real RF chain to drive.
+  tx_gain: -12
+  rx_gain: 0
+
+cell_cfg:
+  dl_arfcn: 650000
+  band: 78
+  channel_bandwidth_MHz: 20
+  common_scs: 30
+  plmn: "20893"                   # free5GC mcc 208 / mnc 93
+  tac: 1
+  pci: 1
+
+log:
+  filename: /tmp/ocudu/du.log
+  all_level: info
+
+pcap:
+  f1ap_enable: true
+  f1ap_filename: /tmp/ocudu/du_f1ap.pcap
+  f1u_enable: true
+  f1u_filename: /tmp/ocudu/du_f1u.pcap
+  mac_enable: true
+  mac_filename: /tmp/ocudu/du_mac.pcap

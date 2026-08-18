@@ -1,0 +1,33 @@
+# CNTC rig: OCUDU O-CU-UP under test.
+#
+# The CU-UP is an SCTP *client* on E1 (it dials the CU-CP), and owns two GTP-U sockets:
+# F1-U toward the O-DU and NG-U (N3) toward the UPF.
+#
+#   sudo ~/ocudu/build/apps/cu_up/ocuup -c configs/ocudu/cu_up.yml
+#
+# ranbench reads this file for the CU-UP's F1-U / N3 sockets and its enabled pcaps.
+cu_up:
+  plmn_list:
+    - 20893
+  e1ap:
+    gateways:
+      - bind_addrs: 127.0.20.2
+        addrs: 127.0.20.1         # the CU-CP's E1 listener
+  ngu:
+    socket:
+      - bind_addr: 192.168.6.90   # N3 toward the UPF (routable host address)
+  f1u:
+    socket:
+      - bind_addr: 127.0.10.1     # F1-U toward the O-DU
+
+log:
+  filename: /tmp/ocudu/cu_up.log
+  all_level: info
+
+pcap:
+  e1ap_enable: true
+  e1ap_filename: /tmp/ocudu/cu_up_e1ap.pcap
+  f1u_enable: true
+  f1u_filename: /tmp/ocudu/cu_up_f1u.pcap
+  n3_enable: true
+  n3_filename: /tmp/ocudu/cu_up_n3.pcap

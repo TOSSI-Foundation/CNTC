@@ -19,9 +19,9 @@ ran:
   # The configuration each product class runs with, the adapter parses these for the live
   # F1-C / E1 / F1-U / N3 addresses and for which per-interface pcaps are enabled.
   configs:
-    cucp: ~/ocudu/configs/cu_cp.yml
-    cuup: ~/ocudu/configs/cu_up.yml
-    du:   ~/ocudu/configs/du_zmq.yml     # ZMQ radio DU config, written in phase P1
+    cucp: configs/ocudu/cu_cp.yml
+    cuup: configs/ocudu/cu_up.yml
+    du:   configs/ocudu/du_zmq.yml
 
 # The 5G core the RAN peers with (N2 to the AMF, N3 to the UPF). Bring-your-own: it is a peer,
 # not the subject of the certificate.

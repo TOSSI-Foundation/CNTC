@@ -15,6 +15,11 @@ Everything this adapter reports is resolved **live**:
 Reading the running configuration rather than hard-coding addresses means redeploying the RAN
 needs no campaign-config edits, and the report always describes what actually ran.
 
+**Lifecycle constraint, verified on the live stack:** OCUDU buffers its logs and only closes its
+pcap files at shutdown ("Closing PCAP files..." on SIGINT). Evidence is therefore incomplete
+while the stack is running, so any suite that decodes a pcap must stop (or restart) the product
+first. ``teardown`` is what makes the evidence readable, not merely a cleanup step.
+
 Endpoint semantics (``node_endpoint``) are per product class, because only the CU-CP listens:
 ``cucp`` -> its F1-C SCTP listener; ``cuup``/``du`` -> their GTP-U (F1-U) socket.
 """
