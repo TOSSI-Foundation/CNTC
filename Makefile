@@ -19,7 +19,7 @@ export PATH := $(PATH):/var/lib/rancher/rke2/bin:$(HOME)/.local/bin
 
 .DEFAULT_GOAL := help
 .PHONY: help prereqs doctor configure cp-configure cp-doctor cp-run cp-certify \
-        ran-prereqs ran-list ran-doctor ran-run ran-certify run run-conformance run-perf run-n3neg \
+        ran-prereqs ran-configure ran-list ran-doctor ran-run ran-certify run run-conformance run-perf run-n3neg \
         eupf-run eupf-certify verdict certify \
         dashboard dashboard-bg dashboard-stop profiles lint test k8s-deploy k8s-run k8s-clean clean
 
@@ -56,6 +56,9 @@ cp-certify:  ## issue a control-plane certificate  (CAMPAIGN= NF=amf|smf|nrf|aus
 # --- RAN (ranbench) ------------------------------------------------------------
 ran-prereqs:  ## install the RAN tester: deps + the OAI UE simulator (needs sudo)
 > ./scripts/bootstrap_ranbench.sh
+
+ran-configure:  ## wizard -> RAN campaign config (derives the UE radio params from the O-DU)
+> ./scripts/ranbench-configure.py
 
 ran-list:  ## list the split-gNB product classes + their catalogs
 > python3 -m ranbench.cli list
