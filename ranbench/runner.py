@@ -13,6 +13,8 @@ Until the per-class suites land (P2-P4) every case is a StubCase -> 'not_impleme
 """
 from __future__ import annotations
 
+import contextlib
+import signal
 from pathlib import Path
 
 from cntc_common.results import Store, SuiteResult, TestResult
@@ -21,6 +23,51 @@ from ranbench.adapters.base import load_adapter
 from ranbench.drivers.base import load_driver
 from ranbench.suites.base import RunContext
 from ranbench.suites.registry import build_suite, TARGET_REQUIRES
+
+
+@contextlib.contextmanager
+def _one_shot_interrupt():
+    """Let the first Ctrl-C stop the run, and ignore every one after it.
+
+    An operator pressing Ctrl-C repeatedly is the normal case, and each extra signal used to
+    land in the middle of teardown, leaving the RAN processes alive and the results unsaved.
+    The first interrupt raises as usual; the handler then disarms itself so shutdown always
+    completes.
+    """
+    def handler(signum, frame):
+        with contextlib.suppress(ValueError, OSError):
+            signal.signal(signal.SIGINT, signal.SIG_IGN)   # disarm before unwinding
+        raise KeyboardInterrupt
+    try:
+        previous = signal.signal(signal.SIGINT, handler)
+    except (ValueError, OSError):        # not on the main thread
+        yield
+        return
+    try:
+        yield
+    finally:
+        with contextlib.suppress(ValueError, OSError):
+            signal.signal(signal.SIGINT, previous)
+
+
+@contextlib.contextmanager
+def _uninterruptible():
+    """Ignore Ctrl-C for the duration of a block.
+
+    Teardown must finish even when the operator is impatient. A second Ctrl-C landing in the
+    middle of cleanup is what leaves the RAN processes running and the captures truncated, so
+    the interrupt is held off until the products are down.
+    """
+    try:
+        previous = signal.signal(signal.SIGINT, signal.SIG_IGN)
+    except (ValueError, OSError):        # not on the main thread; nothing to do
+        yield
+        return
+    try:
+        yield
+    finally:
+        with contextlib.suppress(ValueError, OSError):
+            signal.signal(signal.SIGINT, previous)
 
 
 def run(config_path: str, campaigns_root: str = "campaigns", target: str | None = None,
@@ -53,54 +100,89 @@ def run(config_path: str, campaigns_root: str = "campaigns", target: str | None 
             print(f"[ranbench] warning: subscriber provisioning failed: {e}")
 
     store.save(sut=cfg.sut, status="running")   # LIVE: appear on the dashboard immediately
+    interrupted = False
     try:
-        for tgt in cfg.targets:
-            print(f"[ranbench] testing target: {tgt}")
-            store.save(sut=cfg.sut, status="running", running_suite=tgt)
-            req = TARGET_REQUIRES.get(tgt, {})
-            ue = _maybe_driver(cfg.drivers.get("ue"), cfg, store) if req.get("ue") else None
-            observer = _maybe_observer(cfg, store) if req.get("observer") else None
-            endpoint = ""
-            try:
-                endpoint = ran.node_endpoint(tgt)
-            except Exception as e:  # noqa: BLE001
-                print(f"[ranbench] warning: could not resolve {tgt} endpoint: {e}")
+      with _one_shot_interrupt():
+          for tgt in cfg.targets:
+              print(f"[ranbench] testing target: {tgt}")
+              store.save(sut=cfg.sut, status="running", running_suite=tgt)
+              req = TARGET_REQUIRES.get(tgt, {})
+              ue = _maybe_driver(cfg.drivers.get("ue"), cfg, store) if req.get("ue") else None
+              observer = _maybe_observer(cfg, store) if req.get("observer") else None
+              endpoint = ""
+              try:
+                  endpoint = ran.node_endpoint(tgt)
+              except Exception as e:  # noqa: BLE001
+                  print(f"[ranbench] warning: could not resolve {tgt} endpoint: {e}")
 
-            if ue is not None:
-                try:
-                    ue.setup()
-                except Exception as e:  # noqa: BLE001
-                    print(f"[ranbench] warning: driver {ue.name} setup failed: {e}")
+              if ue is not None:
+                  try:
+                      ue.setup()
+                  except Exception as e:  # noqa: BLE001
+                      print(f"[ranbench] warning: driver {ue.name} setup failed: {e}")
 
-            ctx = RunContext(cfg=cfg, ran=ran, core=core, ue=ue, observer=observer,
-                             store=store, target=tgt, endpoint=endpoint,
-                             knobs=cfg.knobs.get(tgt, {}))
-            sres = SuiteResult(suite=tgt)
-            try:
-                for case in build_suite(tgt):
-                    print(f"  - {case.id} {case.name}")
-                    try:
-                        sres.tests.append(case.run(ctx))
-                    except Exception as e:  # noqa: BLE001, one bad test must not kill the suite
-                        msg = f"{type(e).__name__}: {e}"
-                        print(f"    ! {case.id} errored: {msg}")
-                        sres.tests.append(TestResult(case.id, case.name, "error", notes=msg))
-            finally:
-                if ue is not None:
-                    try:
-                        ue.teardown()
-                    except Exception:  # noqa: BLE001
-                        pass
-            store.add_suite(sres)
-            store.save(sut=cfg.sut, status="running")
+              ctx = RunContext(cfg=cfg, ran=ran, core=core, ue=ue, observer=observer,
+                               store=store, target=tgt, endpoint=endpoint,
+                               knobs=cfg.knobs.get(tgt, {}))
+              sres = SuiteResult(suite=tgt)
+              try:
+                  for case in build_suite(tgt):
+                      print(f"  - {case.id} {case.name}")
+                      try:
+                          sres.tests.append(case.run(ctx))
+                      except Exception as e:  # noqa: BLE001, one bad test must not kill the suite
+                          msg = f"{type(e).__name__}: {e}"
+                          print(f"    ! {case.id} errored: {msg}")
+                          sres.tests.append(TestResult(case.id, case.name, "error", notes=msg))
+              finally:
+                  if ue is not None:
+                      try:
+                          ue.teardown()
+                      except Exception:  # noqa: BLE001
+                          pass
+              store.add_suite(sres)
+              store.save(sut=cfg.sut, status="running")
+    except KeyboardInterrupt:
+        # Stop cleanly rather than abandoning a half-started RAN. Whatever ran already is kept
+        # and graded, clearly marked as an interrupted campaign.
+        interrupted = True
+        print("\n[ranbench] interrupted, shutting the RAN down cleanly, please wait")
     finally:
-        ran.teardown()
+        with _uninterruptible():
+            _shutdown(ran, cfg)
+            try:
+                ran.teardown()
+            except Exception:  # noqa: BLE001
+                pass
 
-    _diagnose(store, cfg, ran)
-    _apply_verdicts(store, cfg, live_facts)
-    results_path = store.save(sut=cfg.sut)
-    print(f"[ranbench] results: {results_path}")
+    with _uninterruptible():
+        _diagnose(store, cfg, ran)
+        _apply_verdicts(store, cfg, live_facts)
+        results_path = store.save(sut=cfg.sut,
+                                  status="interrupted" if interrupted else "complete")
+    if interrupted:
+        print(f"[ranbench] partial results (campaign stopped early): {results_path}")
+    else:
+        print(f"[ranbench] results: {results_path}")
     return results_path
+
+
+def _shutdown(ran, cfg) -> None:
+    """Stop the UE and every product class, whatever state the run was in."""
+    import subprocess
+    with contextlib.suppress(Exception):
+        subprocess.run(["sudo", "-n", "pkill", "-x", "nr-uesoftmodem"],
+                       capture_output=True, timeout=15)
+    for tgt in ("du", "cuup", "cucp"):
+        with contextlib.suppress(Exception):
+            ran.stop(tgt)
+    left = []
+    for tgt in ("du", "cuup", "cucp"):
+        with contextlib.suppress(Exception):
+            if ran.node_alive(tgt) is True:
+                left.append(tgt)
+    if left:
+        print(f"[ranbench] still running after shutdown: {', '.join(left)}")
 
 
 def _diagnose(store, cfg, ran) -> None:

@@ -56,6 +56,10 @@ def _cmd_run(args) -> int:
         saved = None
     try:
         runner.run(args.config, target=args.target, campaign=args.campaign)
+    except KeyboardInterrupt:
+        # the runner already tore the RAN down; report the standard SIGINT status
+        print("[ranbench] stopped by user")
+        return 130
     finally:
         if saved is not None:
             try:
