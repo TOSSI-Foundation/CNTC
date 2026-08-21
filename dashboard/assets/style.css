@@ -733,3 +733,32 @@ a.cov-cell:hover{transform:translateY(-1px)}
 .kq-cell .v{font-family:var(--mono);font-size:22px;font-weight:680;letter-spacing:-.03em;margin-top:9px;line-height:1;color:var(--ink)}
 .kq-cell .v .u{font-size:11px;color:var(--mute);margin-left:2px}
 .kq-cell .s{font-size:10.5px;color:var(--faint);margin-top:6px}
+
+
+/* --- why a test failed -------------------------------------------------------
+   A failure has to read as a failure. The observation decided the verdict; the
+   probable cause is inferred and is styled as a separate, quieter block so the
+   two are never mistaken for each other. */
+.test-reason{margin-top:11px;border-radius:8px;padding:9px 12px;font-size:12.5px;
+  line-height:1.6;border-left:3px solid transparent}
+.test-reason-label{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;
+  font-weight:700;margin-bottom:3px}
+.test-reason-body{color:var(--ink-2)}
+.test-reason--fail{background:#fdeceb;border-left-color:#cf222e}
+.test-reason--fail .test-reason-label{color:#cf222e}
+.test-reason--na{background:#fdf5e3;border-left-color:#b58105}
+.test-reason--na .test-reason-label{color:#8a6100}
+.test-reason--cause{background:#f1f4f5;border-left-color:#8a97a0;margin-top:6px}
+.test-reason--cause .test-reason-label{color:#5d6f77}
+
+/* --- problems panel ---------------------------------------------------------- */
+.problems{background:#fff;border:1px solid var(--line);border-radius:12px;
+  padding:16px 18px;margin:14px 0}
+.problems-head{font-weight:700;font-size:14px;margin-bottom:10px}
+.problem{display:flex;gap:10px;align-items:flex-start;padding:8px 0;
+  border-top:1px solid var(--line)}
+.problem:first-of-type{border-top:none}
+.problem-n{flex:0 0 auto;background:#fdeceb;color:#cf222e;font-weight:700;
+  border-radius:999px;padding:2px 10px;font-size:11.5px;white-space:nowrap}
+.problem-txt{color:var(--ink-2);font-size:13px;line-height:1.55}
+.problem-ids{color:var(--mute);font-size:11.5px;font-family:var(--mono);margin-top:2px}

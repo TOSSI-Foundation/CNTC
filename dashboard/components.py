@@ -118,8 +118,33 @@ def test_panel(test: Test) -> html.Div:
         children.append(html.Div(tname, className="table-cap"))
         children.append(table(rows, highlight_col="crashed_bessd"))
     if test.notes:
-        children.append(html.Div(test.notes, className="test-notes"))
+        children.extend(_reason(test))
     return html.Div(className="test-panel", children=children)
+
+
+def _reason(test: Test) -> list:
+    """Why this test came out the way it did.
+
+    A failing or unevaluated result is split into the two things an operator needs and they are
+    deliberately not the same thing: what was observed, which decided the verdict, and the
+    probable cause, which is inferred and tells them where to look. A passing result keeps the
+    quiet single-line note it has always had.
+    """
+    observed, _, cause = test.notes.partition("  |  Probable cause:")
+    if test.status == "pass" or not (test.status in ("fail", "na", "error")):
+        return [html.Div(test.notes, className="test-notes")]
+    kind = "fail" if test.status in ("fail", "error") else "na"
+    label = "Why it failed" if kind == "fail" else "Why it could not be judged"
+    out = [html.Div(className=f"test-reason test-reason--{kind}", children=[
+        html.Div(label, className="test-reason-label"),
+        html.Div(observed.strip(), className="test-reason-body"),
+    ])]
+    if cause.strip():
+        out.append(html.Div(className="test-reason test-reason--cause", children=[
+            html.Div("Probable cause", className="test-reason-label"),
+            html.Div(cause.strip(), className="test-reason-body"),
+        ]))
+    return out
 
 
 def suite_section(suite: Suite, idx: int = 0) -> html.Div:

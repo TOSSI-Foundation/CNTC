@@ -9,6 +9,48 @@ from dash import dcc, html
 from dashboard.components import pill, suite_section, sut_card
 from dashboard.data import get_campaign
 
+
+def _problems(c):
+    """What is actually wrong with this deployment, above the per-test detail.
+
+    One misconfiguration usually breaks several requirements, so failures are grouped by the
+    underlying fault rather than listed one by one. An operator opening a run should see the
+    problems to fix, not a list of symptoms to correlate by hand.
+    """
+    try:
+        from ranbench import diagnostics
+    except ImportError:
+        return None
+    rows = []
+    for s in c.suites:
+        for t in s.tests:
+            if t.status not in ("fail", "error"):
+                continue
+            cause = (t.metrics or {}).get("probable_cause")
+            if not cause and t.notes:
+                cause = t.notes.split("  |  Probable cause:")[0].split("[TS")[0].strip()
+            rows.append({"id": t.id, "outcome": "fail", "cause": cause})
+    if not rows:
+        return None
+    lines = diagnostics.summary({}, rows)
+    if not lines:
+        return None
+    items = []
+    for line in lines:
+        text, _, ids = line.partition("  (")
+        items.append(html.Div(className="problem", children=[
+            html.Span(ids.rstrip(")").split(":")[0] if ids else "", className="problem-n"),
+            html.Div(children=[
+                html.Div(text, className="problem-txt"),
+                html.Div(ids.rstrip(")").partition(":")[2].strip() if ids else "",
+                         className="problem-ids"),
+            ]),
+        ]))
+    return html.Div(className="problems", children=[
+        html.Div(f"Problems found  ({len(lines)})", className="problems-head"),
+        *items,
+    ])
+
 dash.register_page(__name__, path_template="/campaign/<key>", name="Campaign")
 
 
@@ -128,6 +170,7 @@ def layout(key: str = None, **_):
         html.Div(className="page", children=[
             dcc.Link("← runs", href="/campaigns", className="back-link"),
             _scorecard(c),
+            _problems(c) or html.Div(),
             _certificate_banner(c),
             # LIVE: reload this page every 5s while the campaign is still running
             dcc.Interval(id="_detail_live", interval=5000, disabled=not c.is_running),

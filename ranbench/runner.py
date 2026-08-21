@@ -96,10 +96,47 @@ def run(config_path: str, campaigns_root: str = "campaigns", target: str | None 
     finally:
         ran.teardown()
 
+    _diagnose(store, cfg, ran)
     _apply_verdicts(store, cfg, live_facts)
     results_path = store.save(sut=cfg.sut)
     print(f"[ranbench] results: {results_path}")
     return results_path
+
+
+def _diagnose(store, cfg, ran) -> None:
+    """Attach a probable cause to every failing or unevaluated result.
+
+    The verdict stays exactly what was observed; this only explains it. Collected once, after
+    the suites have run, so the facts describe the state the tests were judged in.
+    """
+    try:
+        from ranbench import diagnostics
+    except ImportError:
+        return
+    obs = None
+    try:
+        from ranbench.drivers.ue_oai_zmq import _OBS_CACHE
+        obs = next(iter(_OBS_CACHE.values()), None)
+    except Exception:  # noqa: BLE001
+        pass
+    try:
+        facts = diagnostics.collect(cfg, ran, obs)
+    except Exception as e:  # noqa: BLE001, diagnosis must never break a run
+        print(f"[ranbench] warning: could not collect diagnostics: {e}")
+        return
+    store.set_sut_live({"diagnostics": "collected"})
+    n = 0
+    for sres in store._suites:  # noqa: SLF001, annotating our own results in place
+        for tr in sres.tests:
+            cause = diagnostics.probable_cause(tr.id, tr.status, tr.notes or "", facts)
+            if cause:
+                tr.metrics = dict(tr.metrics or {})
+                tr.metrics["probable_cause"] = cause
+                tr.notes = f"{tr.notes}  |  Probable cause: {cause}" if tr.notes else \
+                           f"Probable cause: {cause}"
+                n += 1
+    if n:
+        print(f"[ranbench] diagnosed {n} result(s) with a probable cause")
 
 
 def _maybe_driver(name, cfg, store):
@@ -183,6 +220,37 @@ def _apply_verdicts(store, cfg, live_facts: dict) -> None:
     (store.dir / "scorecard.html").write_text(render_html(top))
     label = "RAN verdict" if len(verdicts) == 1 else "composite gNB verdict"
     print(f"[cntc] {label}: {top['result']}  (scorecards: {store.dir}/scorecard*.md)")
+    _print_problems(store, top)
+
+
+def _print_problems(store, verdict: dict) -> None:
+    """What is actually wrong with this RAN, grouped by cause rather than by test.
+
+    Ten failing tests caused by one unreachable peer is one problem, not ten, and an operator
+    needs to be told the problem."""
+    try:
+        from ranbench import diagnostics
+    except ImportError:
+        return
+    by_id = {}
+    for sres in store._suites:  # noqa: SLF001
+        for tr in sres.tests:
+            # a diagnosed cause if there is one, otherwise the test's own note, which for the
+            # self-explaining cases (no IPsec, null algorithm) is already the real reason. The
+            # verdict's "status == fail" is never useful here.
+            cause = (tr.metrics or {}).get("probable_cause")
+            if not cause and tr.notes:
+                cause = tr.notes.split("  |  Probable cause:")[0].split("[TS")[0].strip()
+            by_id[tr.id] = cause
+    rows = []
+    for r in verdict.get("tests", []):
+        rows.append({**r, "cause": by_id.get(r["id"])})
+    lines = diagnostics.summary({}, rows)
+    if not lines:
+        return
+    print("\n  PROBLEMS FOUND")
+    for line in lines:
+        print(f"    - {line}")
 
 
 def _composite(verdicts: dict[str, dict], rig: dict) -> dict:
