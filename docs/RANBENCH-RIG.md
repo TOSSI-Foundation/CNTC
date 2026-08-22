@@ -104,6 +104,31 @@ Take care editing that config as text, not by YAML round-trip: `sd: 010203` is *
 YAML 1.1**, so a parse-and-redump turns it into `4227` and the SMF rejects it with
 `Invalid sNssai.Sd`.
 
+**UDM losing its connection to the UDR.** After a long period of uptime the UDM can be left
+holding a dead HTTP/2 connection to the UDR, with neither pod having restarted. The SMF's
+`Get SessionManagementSubscriptionData` then returns 500 and every PDU Session Establishment is
+refused. It is an expensive failure to diagnose from the RAN side, because registration still
+succeeds and only the data path is missing:
+
+```
+[ERRO][UDM][Proc] QuerySmData Error: Get "http://...udr-service:8080/nudr-dr/v2/..."
+                  : http2: client conn could not be established
+kubectl -n free5gc rollout restart deploy/<udr> deploy/<udm>
+```
+
+`ranbench doctor` now makes the same request the SMF will make and reports it as
+`subscriber data`, so this is caught in a second rather than after a full campaign.
+
+**Stale UE context in the AMF.** free5GC's AMF keeps registration state in memory. When a
+campaign ends abruptly, the UE can be left in `DeregistrationInitiated`, and the AMF then
+rejects the next Registration Request. The attach never completes, every requirement judged on
+that attach records `na`, and the run looks like a failing RAN when in fact nothing was
+measured. This was the largest single source of run-to-run variance.
+
+`ranbench` therefore restarts the AMF before each campaign and waits for N2 to accept again, so
+every run starts from a defined registration state. It costs about a minute. Disable it with
+`core.reset_amf: false` in the campaign config if you manage core state yourself.
+
 ## 5. Verified result
 
 A full attach with a working data path, observed end to end:

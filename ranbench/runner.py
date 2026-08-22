@@ -93,12 +93,35 @@ def run(config_path: str, campaigns_root: str = "campaigns", target: str | None 
         store.set_sut_live({"ran_probe_error": str(e)})
 
     core = _maybe_core(cfg, store)
+    # Before anything is started: give the core a defined view of this UE. A context left over
+    # from a previous campaign makes the AMF reject the next registration, which breaks the
+    # attach and empties the run of evidence for reasons that have nothing to do with the RAN.
+    if core is not None and "reset_ue_contexts" in core.capabilities():
+        try:
+            print("[ranbench] resetting core registration state (about a minute)")
+            print(f"[ranbench] core state: {core.reset_ue_contexts()}")
+        except Exception as e:  # noqa: BLE001, a core that won't reset must not abort the run
+            print(f"[ranbench] warning: could not reset core state: {e}")
     if core is not None and cfg.subscribers:
         try:
             prov = core.provision_subscribers(cfg.subscribers)
             print(f"[ranbench] subscribers: {prov}")
         except Exception as e:  # noqa: BLE001
             print(f"[ranbench] warning: subscriber provisioning failed: {e}")
+
+    # The SMF will ask the UDM for this SIM's session data during PDU Session Establishment.
+    # Asking now costs a second and turns a silent twelve-minute loss into an actionable line.
+    if core is not None and cfg.subscribers and "subscriber_data_ready" in core.capabilities():
+        try:
+            ready, detail = core.subscriber_data_ready(cfg.subscribers[0])
+            if ready is False:
+                print(f"[ranbench] CORE NOT READY: {detail}")
+                print("[ranbench] The RAN will still be measured, but no PDU session can be "
+                      "established, so the data-path requirements will record 'na'.")
+            elif ready is None:
+                print(f"[ranbench] note: {detail}")
+        except Exception as e:  # noqa: BLE001
+            print(f"[ranbench] warning: could not check the core subscriber path: {e}")
 
     store.save(sut=cfg.sut, status="running")   # LIVE: appear on the dashboard immediately
     interrupted = False

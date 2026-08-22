@@ -61,6 +61,36 @@ def attach_incomplete(o: dict) -> str | None:
     return None
 
 
+def release_procedure(ctx: RunContext, tid: str, name: str, slot: str,
+                      expected: list[str], spec: str) -> TestResult:
+    """Judge a UE Context Release, but only once something has actually asked for one.
+
+    The release is not something the gNB does on its own. The AMF initiates it over NGAP
+    (TS 23.502 §4.2.6), and only then does the CU-CP release the UE on F1. So if no
+    NGAP UEContextReleaseCommand was ever received, the product under test was never asked to
+    release anything, and its silence is not a defect.
+
+    This matters on the reference rig. free5GC's AMF accepts a UE-initiated Deregistration and
+    then does not send a release command at all; the captures show an NG Reset at teardown
+    instead. Judged naively, that records a failure against three requirements on the CU-CP and
+    the DU for something the core did not do. 'Never asked' is 'na', exactly as an attach that
+    stopped short is.
+    """
+    o = observation(ctx)
+    why = attach_incomplete(o)
+    if why:
+        return _na(tid, name, f"{why}, so no UE context existed to release")
+    ngap = o.get("procs.cucp.ngap")
+    if ngap is None:
+        return _na(tid, name, "no cucp.ngap capture, so it cannot be told whether a release "
+                              "was ever requested")
+    if "UEContextReleaseCommand" not in ngap:
+        return _na(tid, name, "the core never sent an NGAP UE Context Release Command, so the "
+                              "gNB was never asked to release the UE context (core behaviour, "
+                              f"not a RAN result) [{spec}]")
+    return procedures(ctx, tid, name, slot, expected, spec)
+
+
 def procedures(ctx: RunContext, tid: str, name: str, slot: str, expected: list[str],
                spec: str, optional: bool = False) -> TestResult:
     """PASS iff every expected protocol message appears in ``slot`` (e.g. 'cucp.ngap').
@@ -240,11 +270,12 @@ def no_crash(ctx: RunContext, tid: str, name: str, target: str, kind: str,
             if ctx.ran.node_alive(target) is True:
                 break
             time.sleep(1)
+        _await_peer(ctx, target)
     if ctx.ran.node_alive(target) is not True:
         return _na(tid, name, f"{target} could not be started for probing, so its robustness "
                               f"cannot be judged (this says nothing about the product)")
-    if not _port_listening(host, port, kind):
-        return _na(tid, name, f"{target} is running but not accepting on {host}:{port}, so the "
+    if not _await_listening(host, port, kind):
+        return _na(tid, name, f"{target} is running but never accepted on {host}:{port}, so the "
                               f"probe could not be delivered")
 
     # Up is not the same as stable. A product on its way down for its own reasons (its E1 peer
@@ -280,8 +311,45 @@ def no_crash(ctx: RunContext, tid: str, name: str, target: str, kind: str,
                             f"confirmed against a no-probe control run) [{spec}]")
 
 
+# A product that has no peer on the interface it exists to serve will not stay up, so probing it
+# would measure our own bring-up rather than its robustness. The O-CU-UP is the case that bites:
+# without an E1 association to the CU-CP it exits on its own within seconds.
+_PEER_PORT = {"cuup": 38462,           # TS 38.462 (E1), to the CU-CP
+              "du": 38472}             # TS 38.472 (F1-C), to the CU-CP
+
+
+def _await_peer(ctx: RunContext, target: str) -> None:
+    """Give the product the peer association it needs before it is judged on staying up.
+
+    Waited for on the socket, not in the log: OCUDU buffers its logs, so an association that
+    succeeded can still be invisible in the file, and polling the log reports failure for
+    something that worked.
+    """
+    port = _PEER_PORT.get(target)
+    if port is None or not hasattr(ctx.ran, "wait_for_association"):
+        return
+    if ctx.ran.wait_for_association(port, 30):
+        return
+    # It can lose the race to the CU-CP's listener and does not retry by itself.
+    ctx.ran.stop(target)
+    time.sleep(3)
+    ctx.ran.start(target)
+    ctx.ran.wait_for_association(port, 30)
+
+
 # How long a product must stay up, untouched, before its disappearance can be blamed on a probe.
 _SETTLE_S = 5.0
+
+
+def _await_listening(host: str, port: int, kind: str, timeout: float = 25.0) -> bool:
+    """Poll until the product accepts on its socket. A process that exists is not yet a process
+    that has bound its listener, and judging it in that gap blamed the product for our timing."""
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        if _port_listening(host, port, kind):
+            return True
+        time.sleep(1)
+    return False
 
 
 def _settled(ctx: RunContext, target: str, host: str, port: int, kind: str) -> bool:

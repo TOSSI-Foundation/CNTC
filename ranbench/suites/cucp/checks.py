@@ -60,7 +60,7 @@ class CucpNgap05(RanTestCase):
 class CucpNgap06(RanTestCase):
     id, name, target = "CUCP-NGAP-06", "UE Context Release", "cucp"
     def run(self, ctx):
-        return rc.procedures(ctx, self.id, self.name, NGAP,
+        return rc.release_procedure(ctx, self.id, self.name, NGAP,
                              ["UEContextReleaseCommand", "UEContextReleaseComplete"],
                              "TS 38.413 §8.3.3")
 
@@ -172,7 +172,7 @@ class CucpF104(RanTestCase):
 class CucpF105(RanTestCase):
     id, name, target = "CUCP-F1-05", "UE Context Release (CU-initiated)", "cucp"
     def run(self, ctx):
-        return rc.procedures(ctx, self.id, self.name, F1AP,
+        return rc.release_procedure(ctx, self.id, self.name, F1AP,
                              ["UEContextReleaseCommand", "UEContextReleaseComplete"],
                              "TS 38.473 §8.3.3")
 

@@ -13,6 +13,7 @@ Returns non-zero if any HARD check fails, so it is CI-friendly. Nothing here mut
 from __future__ import annotations
 
 import shutil
+import tempfile
 from pathlib import Path
 
 from cntc_common.results import Store
@@ -91,6 +92,33 @@ def run(config_path: str) -> int:
 
     n = len(cfg.subscribers)
     rows.append(("subscribers", n > 0, f"{n} in config" if n else "none, 5G-AKA will fail"))
+
+    # Contact the core rather than trusting the config. Both of these break the run in ways that
+    # look like RAN faults: an unreachable AMF stops the attach at NG Setup, and a UDM that
+    # cannot serve subscription data lets registration succeed and then refuses the PDU session.
+    if core_ok:
+        core = None
+        try:
+            from ranbench.drivers.base import load_driver
+            core = load_driver(f"core_{cfg.core.adapter}", cfg,
+                               Store(Path(tempfile.mkdtemp()), "doctor"))
+        except Exception as e:  # noqa: BLE001
+            rows.append(("core driver", False, f"could not load: {e}"))
+        if core is not None:
+            try:
+                reach = core.amf_reachable()
+                rows.append(("amf n2", reach is True,
+                             f"{core.amf_n2_endpoint()} accepting SCTP" if reach is True else
+                             f"{core.amf_n2_endpoint() or 'AMF'} not accepting, NG Setup "
+                             f"will fail and no test can be judged"))
+            except Exception as e:  # noqa: BLE001
+                rows.append(("amf n2", False, f"probe failed: {e}"))
+            if cfg.subscribers and "subscriber_data_ready" in core.capabilities():
+                try:
+                    ready, detail = core.subscriber_data_ready(cfg.subscribers[0])
+                    rows.append(("subscriber data", ready is True, detail))
+                except Exception as e:  # noqa: BLE001
+                    rows.append(("subscriber data", False, f"probe failed: {e}"))
 
     hard_fail = 0
     for name, ok, detail in rows:

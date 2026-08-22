@@ -50,7 +50,7 @@ class DuF104(RanTestCase):
 class DuF105(RanTestCase):
     id, name, target = "DU-F1-05", "UE Context Release Complete", "du"
     def run(self, ctx):
-        return rc.procedures(ctx, self.id, self.name, F1AP,
+        return rc.release_procedure(ctx, self.id, self.name, F1AP,
                              ["UEContextReleaseComplete"], "TS 38.473 §8.3.3")
 
 

@@ -29,6 +29,9 @@ core:
   adapter: free5gc_k8s
   namespace: free5gc
   webui: http://localhost:30500
+  # Restart the AMF before each campaign so every run starts from a defined registration
+  # state. Set false if you manage core state yourself. See docs/RANBENCH-RIG.md.
+  reset_amf: true
 
 # The UE that stimulates the RAN. It is an external process (built by the tester); ranbench
 # owns only its invocation. Every parameter here must agree with the DU's cell config, see
