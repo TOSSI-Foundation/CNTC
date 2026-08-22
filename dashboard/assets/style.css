@@ -438,8 +438,11 @@ h3{font-size:15px;font-weight:650;margin:0;letter-spacing:-.01em;color:var(--ink
 .metric{background:var(--panel2);border:1px solid var(--border);border-radius:8px;
   padding:9px 13px;min-width:104px;flex:1 1 104px;transition:border-color .14s}
 .metric:hover{border-color:var(--border-strong)}
+/* A metric can carry a long unbroken token (a filesystem path, a log line). Without an
+   explicit break rule it runs straight out of the card and over the neighbouring column. */
+.metric{min-width:0;overflow-wrap:anywhere}
 .metric-val{font-weight:680;font-size:17px;font-family:var(--mono);letter-spacing:-.02em;
-  font-variant-numeric:tabular-nums;color:var(--ink)}
+  font-variant-numeric:tabular-nums;color:var(--ink);overflow-wrap:anywhere;word-break:break-word}
 .metric-val.is-good{color:var(--good-fg)} .metric-val.is-bad{color:var(--bad-fg)}
 .metric-key{font-size:10.5px;color:var(--mute);margin-top:3px;text-transform:uppercase;
   letter-spacing:.03em;font-weight:560}
@@ -743,7 +746,7 @@ a.cov-cell:hover{transform:translateY(-1px)}
   line-height:1.6;border-left:3px solid transparent}
 .test-reason-label{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;
   font-weight:700;margin-bottom:3px}
-.test-reason-body{color:var(--ink-2)}
+.test-reason-body{color:var(--ink-2);overflow-wrap:anywhere}
 .test-reason--fail{background:#fdeceb;border-left-color:#cf222e}
 .test-reason--fail .test-reason-label{color:#cf222e}
 .test-reason--na{background:#fdf5e3;border-left-color:#b58105}

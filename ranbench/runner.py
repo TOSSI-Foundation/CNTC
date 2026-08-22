@@ -173,6 +173,13 @@ def run(config_path: str, campaigns_root: str = "campaigns", target: str | None 
         print("\n[ranbench] interrupted, shutting the RAN down cleanly, please wait")
     finally:
         with _uninterruptible():
+            # Read liveness BEFORE tearing the RAN down. Diagnosis runs afterwards, when every
+            # product is stopped by design, so a reading taken then would report each one as
+            # dead and offer that as the explanation for every failure.
+            alive_at_end = {}
+            for _t in cfg.targets:
+                with contextlib.suppress(Exception):
+                    alive_at_end[_t] = ran.node_alive(_t)
             _shutdown(ran, cfg)
             try:
                 ran.teardown()
@@ -180,7 +187,7 @@ def run(config_path: str, campaigns_root: str = "campaigns", target: str | None 
                 pass
 
     with _uninterruptible():
-        _diagnose(store, cfg, ran)
+        _diagnose(store, cfg, ran, alive_at_end)
         _stimulus_validity(store)
         _apply_verdicts(store, cfg, live_facts)
         results_path = store.save(sut=cfg.sut,
@@ -230,11 +237,12 @@ def _alive(ran, target: str) -> bool:
         return False
 
 
-def _diagnose(store, cfg, ran) -> None:
-    """Attach a probable cause to every failing or unevaluated result.
+def _diagnose(store, cfg, ran, alive_at_end: dict | None = None) -> None:
+    """Attach a probable cause to every failing result.
 
-    The verdict stays exactly what was observed; this only explains it. Collected once, after
-    the suites have run, so the facts describe the state the tests were judged in.
+    The verdict stays exactly what was observed; this only explains it. An 'na' already carries
+    the reason it could not be judged, so it is left alone. Liveness is passed in from before
+    the shutdown, because by the time this runs every product is stopped by design.
     """
     try:
         from ranbench import diagnostics
@@ -247,7 +255,7 @@ def _diagnose(store, cfg, ran) -> None:
     except Exception:  # noqa: BLE001
         pass
     try:
-        facts = diagnostics.collect(cfg, ran, obs)
+        facts = diagnostics.collect(cfg, ran, obs, alive_at_end)
     except Exception as e:  # noqa: BLE001, diagnosis must never break a run
         print(f"[ranbench] warning: could not collect diagnostics: {e}")
         return
@@ -255,7 +263,8 @@ def _diagnose(store, cfg, ran) -> None:
     n = 0
     for sres in store._suites:  # noqa: SLF001, annotating our own results in place
         for tr in sres.tests:
-            cause = diagnostics.probable_cause(tr.id, tr.status, tr.notes or "", facts)
+            cause = diagnostics.probable_cause(tr.id, tr.status, tr.notes or "", facts,
+                                               tr.metrics)
             if cause:
                 tr.metrics = dict(tr.metrics or {})
                 tr.metrics["probable_cause"] = cause

@@ -32,6 +32,11 @@ _PEER_ERRORS = {
     "du":   ["failed to connect", "f1 setup failure", "connection refused"],
 }
 _FATAL = ["error", "fatal", "abort", "could not", "failed to start", "invalid"]
+# OCUDU stamps a severity on every line: [E]rror, [F]atal, [W]arning, [I]nfo, [D]ebug. Keyword
+# matching alone promoted startup noise into evidence: "[W] Could not check DRM KMS polling"
+# contains both "could not" and "error=", and was reported to the user as the product's last
+# error. Anything that is explicitly a warning or below is not a failure.
+_NOT_FATAL = ("[w]", "[i]", "[d]")
 
 
 def _run(*args: str, timeout: int = 10) -> str:
@@ -85,12 +90,14 @@ def _log_errors(ran, target: str, limit: int = 3) -> list[str]:
         return []
     out = _run("tail", "-n", "400", str(path), timeout=15)
     hits = [l.strip() for l in out.splitlines()
-            if any(w in l.lower() for w in _FATAL)]
+            if any(w in l.lower() for w in _FATAL)
+            and not any(sev in l.lower() for sev in _NOT_FATAL)]
     # keep the last few, trimmed, and drop the timestamp prefix for readability
     return [re.sub(r"^\S+\s+", "", h)[:160] for h in hits[-limit:]]
 
 
-def collect(cfg, ran, obs: dict | None = None) -> dict[str, Any]:
+def collect(cfg, ran, obs: dict | None = None,
+            alive_at_end: dict | None = None) -> dict[str, Any]:
     """Environmental facts gathered around a run, used to explain failures."""
     facts: dict[str, Any] = {"ports": {}, "logs": {}, "products": {}}
 
@@ -113,7 +120,11 @@ def collect(cfg, ran, obs: dict | None = None) -> dict[str, Any]:
             facts["ports"][name] = holder
 
     for tgt in cfg.targets:
-        facts["products"][tgt] = {"alive": ran.node_alive(tgt)}
+        # Prefer liveness as it was while the suites ran; reading it now, after teardown,
+        # would report every product as dead.
+        alive = (alive_at_end or {}).get(tgt)
+        facts["products"][tgt] = {"alive": alive if tgt in (alive_at_end or {})
+                                  else ran.node_alive(tgt)}
         errs = _log_errors(ran, tgt)
         if errs:
             facts["logs"][tgt] = errs
@@ -141,15 +152,33 @@ _DEPENDS = {
 }
 
 
-def probable_cause(test_id: str, status: str, notes: str, facts: dict) -> str | None:
-    """A likely explanation for a failing or unevaluated result, or None.
+def _test_saw_alive(product: str, metrics: dict | None, notes: str) -> bool:
+    """Did the test itself record the product as running at the moment it judged?
+
+    Diagnosis happens after the campaign, once the RAN has been shut down, so a liveness reading
+    taken then says nothing about the state any individual test ran in. Where a test recorded
+    that state, it is the authority: a later snapshot must never be used to tell the reader the
+    product was down when the result in front of them says it was up.
+    """
+    if metrics and metrics.get(f"{product}_alive") is True:
+        return True
+    return f"{product}_alive=true" in (notes or "").lower()
+
+
+def probable_cause(test_id: str, status: str, notes: str, facts: dict,
+                   metrics: dict | None = None) -> str | None:
+    """A likely explanation for a failing result, or None.
 
     Ordered from the most specific and most actionable to the most general, so the operator is
     told about a port conflict rather than a generic "the peer was unreachable".
     """
-    if status not in ("fail", "na", "error"):
+    # Only failures are diagnosed. An 'na' is produced with the reason it could not be judged
+    # already attached ("no cucp.ngap capture", "the core never sent a release command"), so
+    # inferring a second explanation on top can only add noise, and did add contradictions:
+    # a late liveness reading was appended to results that had already said why they were 'na'.
+    if status not in ("fail", "error"):
         return None
-    # results that already state their own cause need no help
+    # failures that already state their own cause need no help
     if any(k in notes.lower() for k in ("ipsec", "nea0", "nia0", "not implemented",
                                         "not exercised", "cannot observe")):
         return None
@@ -158,7 +187,8 @@ def probable_cause(test_id: str, status: str, notes: str, facts: dict) -> str | 
     product, peer = _DEPENDS.get(family, (None, None))
 
     # 1. the product died or never started: everything about it is unexplained until that is
-    if product and (facts.get("products", {}).get(product, {}).get("alive") is False):
+    if (product and not _test_saw_alive(product, metrics, notes)
+            and facts.get("products", {}).get(product, {}).get("alive") is False):
         errs = facts.get("logs", {}).get(product)
         detail = f" Last error: {errs[-1]}" if errs else ""
         return f"the {product} was not running when this was judged.{detail}"
