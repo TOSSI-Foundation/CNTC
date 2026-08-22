@@ -26,6 +26,7 @@ from pathlib import Path
 from typing import Any
 
 from ranbench.config import expand_user_path
+from ranbench.adapters.ocudu import E1_SCTP_PORT
 from ranbench.drivers.base import Driver as BaseDriver
 
 _PROCEDURES = {"attach", "register", "pdu_session", "data_path"}
@@ -190,8 +191,29 @@ class Driver(BaseDriver):
 
         ran.start("cucp")
         obs["ng_setup"] = ran.wait_for_log("cucp", "Connected to AMF", 45)
+
+        # E1 must actually establish, not merely be attempted. The CU-CP refuses to admit a UE
+        # when it has no user-plane node: the RRC Setup Request arrives and it answers with a UE
+        # Context Release instead of an RRC Setup, and the run then spends its whole attach
+        # budget on a UE that can never be admitted.
+        #
+        # Judged on the socket, not on a log line. OCUDU buffers its logs, so an E1 association
+        # that succeeded can still be invisible in the file when the poll gives up. The CU-UP is
+        # given one restart because it can lose the race to the CU-CP's listener and does not
+        # retry by itself. If E1 still does not come up the attach is attempted anyway and the
+        # fact is recorded, because the NGAP and F1AP evidence is worth collecting either way.
         ran.start("cuup")
-        obs["e1_setup"] = ran.wait_for_log("cucp", "CU-UP", 30) or ran.node_alive("cuup") is True
+        obs["e1_setup"] = ran.wait_for_association(E1_SCTP_PORT, 45)
+        if not obs["e1_setup"]:
+            print("[ranbench] E1 has not come up; restarting the O-CU-UP once")
+            ran.stop("cuup")
+            time.sleep(4)
+            ran.start("cuup")
+            obs["e1_setup"] = ran.wait_for_association(E1_SCTP_PORT, 45)
+        if not obs["e1_setup"]:
+            print("[ranbench] warning: no E1 association. The CU-CP has no user-plane node and "
+                  "will refuse to admit the UE; the attach is attempted anyway.")
+
         ran.start("du")
         obs["cell_active"] = ran.wait_for_log("du", "Cell was activated", 60)
 

@@ -210,6 +210,22 @@ class Adapter(RanAdapter):
             time.sleep(0.5)
         return False
 
+    def wait_for_association(self, port: int, timeout: float = 60.0) -> bool:
+        """Block until an SCTP association is ESTABLISHED on a port, or the timeout expires.
+
+        Preferred over waiting for a log line. OCUDU buffers its logs, so a procedure can have
+        completed well before the line that announces it reaches the file, and polling the log
+        then reports failure for something that actually worked. The socket state cannot lie.
+        """
+        deadline = time.time() + timeout
+        while time.time() < deadline:
+            r = self._run("ss", "-an", "--sctp", timeout=10)
+            for line in (r.stdout or "").splitlines():
+                if "ESTAB" in line and f":{port}" in line:
+                    return True
+            time.sleep(1)
+        return False
+
     def pcap_paths(self, target: str) -> dict[str, str]:
         """The per-interface pcaps this product writes, from its own ``pcap:`` config block.
 
