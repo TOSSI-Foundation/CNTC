@@ -36,7 +36,9 @@ class Driver(BaseDriver):
         self.namespace = e.get("namespace", "free5gc")
         self.webui = e.get("webui", "http://localhost:30500")
         self.amf_svc = e.get("amf_n2_service", "")
-        self.reset_amf = bool(e.get("reset_amf", True))
+        # Opt-in by design. ranbench does not own the core, and restarting one is disruptive:
+        # it may be shared with other testers, or serving traffic that is not ours.
+        self.reset_amf = bool(e.get("reset_amf", False))
 
     def capabilities(self) -> set[str]:
         return {"provision_subscribers", "amf_reachable", "reset_ue_contexts",

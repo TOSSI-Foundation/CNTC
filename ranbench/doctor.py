@@ -105,13 +105,23 @@ def run(config_path: str) -> int:
         except Exception as e:  # noqa: BLE001
             rows.append(("core driver", False, f"could not load: {e}"))
         if core is not None:
+            caps = set()
             try:
+                caps = core.capabilities()
+            except Exception:  # noqa: BLE001
+                pass
+            if "amf_reachable" not in caps:
+                rows.append(("core probe", True,
+                             f"{cfg.core.adapter} exposes no live probes; core readiness is "
+                             f"the tester's to confirm"))
+            else:
+              try:
                 reach = core.amf_reachable()
                 rows.append(("amf n2", reach is True,
                              f"{core.amf_n2_endpoint()} accepting SCTP" if reach is True else
                              f"{core.amf_n2_endpoint() or 'AMF'} not accepting, NG Setup "
                              f"will fail and no test can be judged"))
-            except Exception as e:  # noqa: BLE001
+              except Exception as e:  # noqa: BLE001
                 rows.append(("amf n2", False, f"probe failed: {e}"))
             if cfg.subscribers and "subscriber_data_ready" in core.capabilities():
                 try:

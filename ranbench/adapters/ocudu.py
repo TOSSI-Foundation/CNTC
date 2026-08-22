@@ -226,6 +226,24 @@ class Adapter(RanAdapter):
             time.sleep(1)
         return False
 
+    def wait_for_listen(self, port: int, timeout: float = 45.0) -> bool:
+        """Block until something is LISTENing on an SCTP port, or the timeout expires.
+
+        The CU-CP is the only listener in the split, and the O-DU and O-CU-UP are its clients.
+        Starting a client before that listener is bound gets it "Connection refused" and the
+        product exits, so the whole run then measures a stack that never assembled. Judged on
+        the socket for the same reason as ``wait_for_association``: OCUDU buffers its logs, and
+        its own start-up lines can reach the file minutes later, at shutdown.
+        """
+        deadline = time.time() + timeout
+        while time.time() < deadline:
+            r = self._run("ss", "-anl", "--sctp", timeout=10)
+            for line in (r.stdout or "").splitlines():
+                if "LISTEN" in line and f":{port}" in line:
+                    return True
+            time.sleep(1)
+        return False
+
     def pcap_paths(self, target: str) -> dict[str, str]:
         """The per-interface pcaps this product writes, from its own ``pcap:`` config block.
 

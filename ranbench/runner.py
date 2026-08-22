@@ -98,11 +98,11 @@ def run(config_path: str, campaigns_root: str = "campaigns", target: str | None 
     # attach and empties the run of evidence for reasons that have nothing to do with the RAN.
     if core is not None and "reset_ue_contexts" in core.capabilities():
         try:
-            print("[ranbench] resetting core registration state (about a minute)")
             print(f"[ranbench] core state: {core.reset_ue_contexts()}")
         except Exception as e:  # noqa: BLE001, a core that won't reset must not abort the run
             print(f"[ranbench] warning: could not reset core state: {e}")
-    if core is not None and cfg.subscribers:
+    if (core is not None and cfg.subscribers
+            and "provision_subscribers" in core.capabilities()):
         try:
             prov = core.provision_subscribers(cfg.subscribers)
             print(f"[ranbench] subscribers: {prov}")

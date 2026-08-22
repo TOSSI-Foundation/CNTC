@@ -26,7 +26,7 @@ from pathlib import Path
 from typing import Any
 
 from ranbench.config import expand_user_path
-from ranbench.adapters.ocudu import E1_SCTP_PORT
+from ranbench.adapters.ocudu import E1_SCTP_PORT, F1C_SCTP_PORT
 from ranbench.drivers.base import Driver as BaseDriver
 
 _PROCEDURES = {"attach", "register", "pdu_session", "data_path"}
@@ -190,7 +190,14 @@ class Driver(BaseDriver):
         time.sleep(5)
 
         ran.start("cucp")
-        obs["ng_setup"] = ran.wait_for_log("cucp", "Connected to AMF", 45)
+        # Wait for the F1-C listener to be BOUND before starting anything that dials it. The
+        # O-DU and O-CU-UP are SCTP clients and neither retries: one "Connection refused" and
+        # the product is gone, leaving a run that measures a stack which never assembled.
+        obs["cucp_listening"] = ran.wait_for_listen(F1C_SCTP_PORT, 45)
+        if not obs["cucp_listening"]:
+            print("[ranbench] warning: the CU-CP is not listening on F1-C; the O-DU and O-CU-UP "
+                  "will be refused. Check the CU-CP config and that nothing else holds the port.")
+        obs["ng_setup"] = ran.wait_for_log("cucp", "Connected to AMF", 20)
 
         # E1 must actually establish, not merely be attempted. The CU-CP refuses to admit a UE
         # when it has no user-plane node: the RRC Setup Request arrives and it answers with a UE
