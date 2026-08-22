@@ -10,6 +10,27 @@ from dashboard.components import pill, suite_section, sut_card
 from dashboard.data import get_campaign
 
 
+def _stimulus_banner(c):
+    """Say plainly when a run never stimulated the RAN.
+
+    Almost every requirement is judged on evidence from one UE attach. If that attach stopped
+    short, the untested requirements record 'na' and the pass count collapses, which looks like
+    a bad RAN but is really an unmeasured one. Without this the two are indistinguishable at a
+    glance, and the run invites a conclusion the evidence does not support.
+    """
+    stim = (c.sut or {}).get("stimulus")
+    if not stim or not str(stim).startswith("incomplete"):
+        return None
+    why = str(stim).partition(":")[2].strip() or "the UE attach did not complete"
+    return html.Div(className="stimulus-void", children=[
+        html.Div("Run does not measure this RAN", className="stimulus-head"),
+        html.Div(f"The stimulus stopped short: {why}. Requirements past that point were never "
+                 f"exercised and are recorded as not applicable, so the verdict below reflects "
+                 f"the test rig, not the product. Fix the rig and re-run.",
+                 className="stimulus-txt"),
+    ])
+
+
 def _problems(c):
     """What is actually wrong with this deployment, above the per-test detail.
 
@@ -170,6 +191,7 @@ def layout(key: str = None, **_):
         html.Div(className="page", children=[
             dcc.Link("← runs", href="/campaigns", className="back-link"),
             _scorecard(c),
+            _stimulus_banner(c) or html.Div(),
             _problems(c) or html.Div(),
             _certificate_banner(c),
             # LIVE: reload this page every 5s while the campaign is still running

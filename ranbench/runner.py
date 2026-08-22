@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import contextlib
 import signal
+import time
 from pathlib import Path
 
 from cntc_common.results import Store, SuiteResult, TestResult
@@ -157,6 +158,7 @@ def run(config_path: str, campaigns_root: str = "campaigns", target: str | None 
 
     with _uninterruptible():
         _diagnose(store, cfg, ran)
+        _stimulus_validity(store)
         _apply_verdicts(store, cfg, live_facts)
         results_path = store.save(sut=cfg.sut,
                                   status="interrupted" if interrupted else "complete")
@@ -176,13 +178,33 @@ def _shutdown(ran, cfg) -> None:
     for tgt in ("du", "cuup", "cucp"):
         with contextlib.suppress(Exception):
             ran.stop(tgt)
-    left = []
-    for tgt in ("du", "cuup", "cucp"):
-        with contextlib.suppress(Exception):
-            if ran.node_alive(tgt) is True:
-                left.append(tgt)
+    # SIGINT is asked for first because it is what makes OCUDU flush its pcaps, but the exit is
+    # not instant. Waiting matters beyond tidiness: a product left running is inherited by the
+    # next campaign, which then measures a stack it did not start and cannot describe.
+    left = list(("du", "cuup", "cucp"))
+    for _ in range(20):
+        left = [t for t in left
+                if _alive(ran, t)]
+        if not left:
+            break
+        time.sleep(1)
     if left:
-        print(f"[ranbench] still running after shutdown: {', '.join(left)}")
+        print(f"[ranbench] {', '.join(left)} did not exit on SIGINT; forcing")
+        for tgt in left:
+            with contextlib.suppress(Exception):
+                ran.stop(tgt, graceful=False)
+        time.sleep(2)
+        left = [t for t in left if _alive(ran, t)]
+    if left:
+        print(f"[ranbench] WARNING: still running after shutdown: {', '.join(left)}, kill these "
+              f"before the next run or it will inherit them")
+
+
+def _alive(ran, target: str) -> bool:
+    try:
+        return ran.node_alive(target) is True
+    except Exception:  # noqa: BLE001
+        return False
 
 
 def _diagnose(store, cfg, ran) -> None:
@@ -219,6 +241,33 @@ def _diagnose(store, cfg, ran) -> None:
                 n += 1
     if n:
         print(f"[ranbench] diagnosed {n} result(s) with a probable cause")
+
+
+def _stimulus_validity(store) -> None:
+    """Record, and say out loud, how far the attach actually got.
+
+    Most of the catalog is judged on evidence from one UE attach. If that attach stopped short,
+    everything past the break records 'na', correct, but it makes two very different runs look
+    superficially alike: a RAN that was measured and has problems, and a rig that never
+    stimulated the RAN at all. The verdict alone cannot tell them apart, so the run states it.
+    """
+    try:
+        from ranbench.drivers.ue_oai_zmq import _OBS_CACHE
+        from ranbench.suites.ran_common import attach_incomplete
+    except ImportError:
+        return
+    obs = next(iter(_OBS_CACHE.values()), None)
+    if obs is None:
+        return                                  # no UE in this run: nothing to qualify
+    why = attach_incomplete(obs)
+    store.set_sut_live({"stimulus": "complete (registration + PDU session)" if not why
+                        else f"incomplete: {why}"})
+    if not why:
+        return
+    print(f"\n[ranbench] STIMULUS INCOMPLETE: {why}.")
+    print("[ranbench] Tests past that point recorded 'na' because they were never exercised,")
+    print("[ranbench] so this run does not measure the RAN. Treat the verdict below as void,")
+    print("[ranbench] fix the rig (see the problems above), and re-run.\n")
 
 
 def _maybe_driver(name, cfg, store):

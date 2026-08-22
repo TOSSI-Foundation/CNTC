@@ -247,17 +247,64 @@ def no_crash(ctx: RunContext, tid: str, name: str, target: str, kind: str,
         return _na(tid, name, f"{target} is running but not accepting on {host}:{port}, so the "
                               f"probe could not be delivered")
 
+    # Up is not the same as stable. A product on its way down for its own reasons (its E1 peer
+    # never came up, a dependency died) would vanish during the probe and be recorded as a
+    # remote DoS. So it is held through a settling window and re-checked before anything is sent.
+    if not _settled(ctx, target, host, port, kind):
+        return _na(tid, name, f"{target} does not stay up in this rig even with nothing sent to "
+                              f"it, so a crash could not be attributed to a probe (this says "
+                              f"nothing about the product's robustness)")
+
     sent, how = (_sctp_garbage(host, port) if kind == "sctp" else _udp_garbage(host, port))
     if not sent:
         return _na(tid, name, f"could not deliver the probe to {host}:{port} ({how})")
     time.sleep(3)
     alive_after = ctx.ran.node_alive(target)
-    ok = alive_after is True
-    return TestResult(tid, name, "pass" if ok else "fail",
+    if alive_after is True:
+        return TestResult(tid, name, "pass",
+                          metrics={"sent": sent, "alive_after": True,
+                                   "probe": f"{kind} {host}:{port}"},
+                          notes=f"{how}; {target} alive after = True (no crash) [{spec}]")
+
+    # The product is gone. Accusing it of a remote DoS is a strong claim, so it has to survive a
+    # control: same rig, same wait, nothing sent. If it dies unprompted too, the probe is not the
+    # demonstrated cause and the honest answer is 'na', not 'fail'.
+    if not _survives_control(ctx, target):
+        return _na(tid, name, f"{target} went away after the probe, but it also went away in a "
+                              f"control run with nothing sent to it, so the probe is not the "
+                              f"demonstrated cause")
+    return TestResult(tid, name, "fail",
                       metrics={"sent": sent, "alive_after": alive_after,
-                               "probe": f"{kind} {host}:{port}"},
-                      notes=f"{how}; {target} alive after = {alive_after} "
-                            f"({'no crash' if ok else 'CRASHED, remote DoS'}) [{spec}]")
+                               "probe": f"{kind} {host}:{port}", "control": "survived"},
+                      notes=f"{how}; {target} alive after = {alive_after} (CRASHED, remote DoS, "
+                            f"confirmed against a no-probe control run) [{spec}]")
+
+
+# How long a product must stay up, untouched, before its disappearance can be blamed on a probe.
+_SETTLE_S = 5.0
+
+
+def _settled(ctx: RunContext, target: str, host: str, port: int, kind: str) -> bool:
+    """True iff the product is still running AND still accepting after a settling window."""
+    time.sleep(_SETTLE_S)
+    return ctx.ran.node_alive(target) is True and _port_listening(host, port, kind)
+
+
+def _survives_control(ctx: RunContext, target: str) -> bool:
+    """The control for a crash claim: restart the product and send it nothing at all.
+
+    If it stays up here but died when probed, the probe is the difference between the two runs.
+    If it dies here too, it is simply not staying up in this rig and no crash can be attributed.
+    """
+    ctx.ran.start(target)
+    for _ in range(25):
+        if ctx.ran.node_alive(target) is True:
+            break
+        time.sleep(1)
+    if ctx.ran.node_alive(target) is not True:
+        return False
+    time.sleep(_SETTLE_S + 3)
+    return ctx.ran.node_alive(target) is True
 
 
 # --- transport protection ---------------------------------------------------------
