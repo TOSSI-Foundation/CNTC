@@ -149,6 +149,11 @@ def run(config_path: str, campaigns_root: str = "campaigns", target: str | None 
                                store=store, target=tgt, endpoint=endpoint,
                                knobs=cfg.knobs.get(tgt, {}))
               sres = SuiteResult(suite=tgt)
+              # Registered before the first case runs, not after the last. The store keeps the
+              # object by reference and serialises it at save time, so saving after each case
+              # publishes results as they are decided. A RAN suite takes minutes, and a viewer
+              # watching a blank page until the end cannot tell progress from a hang.
+              store.add_suite(sres)
               try:
                   for case in build_suite(tgt):
                       print(f"  - {case.id} {case.name}")
@@ -158,13 +163,13 @@ def run(config_path: str, campaigns_root: str = "campaigns", target: str | None 
                           msg = f"{type(e).__name__}: {e}"
                           print(f"    ! {case.id} errored: {msg}")
                           sres.tests.append(TestResult(case.id, case.name, "error", notes=msg))
+                      store.save(sut=cfg.sut, status="running", running_suite=tgt)
               finally:
                   if ue is not None:
                       try:
                           ue.teardown()
                       except Exception:  # noqa: BLE001
                           pass
-              store.add_suite(sres)
               store.save(sut=cfg.sut, status="running")
     except KeyboardInterrupt:
         # Stop cleanly rather than abandoning a half-started RAN. Whatever ran already is kept

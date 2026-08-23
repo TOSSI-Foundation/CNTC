@@ -10,6 +10,7 @@ from __future__ import annotations
 import time
 
 from cntc_common.results import TestResult
+from ranbench.adapters.ocudu import NGAP_SCTP_PORT
 from ranbench.suites import ran_common as rc
 from ranbench.suites.base import RanTestCase, RunContext
 
@@ -101,25 +102,47 @@ class CucpNgap08(RanTestCase):
         ran = ctx.ran
         if ran.node_alive("cucp") is not True:
             ran.start("cucp")
-            if not ran.wait_for_log("cucp", "Connected to AMF", 45):
-                return TestResult(self.id, self.name, "na",
-                                  notes="the CU-CP never connected to the AMF, so there was no "
-                                        "association to recover")
+        # Judged on the socket throughout. The CU-CP writes nothing to its log until it exits,
+        # so asking the log whether it is connected always answers "no" and would fail a product
+        # whose association is up and healthy.
+        if not ran.wait_for_association(NGAP_SCTP_PORT, 45):
+            return TestResult(self.id, self.name, "na",
+                              notes="the CU-CP never established an NG association, so there "
+                                    "was nothing to recover")
         if fw("-I").returncode != 0:
             return TestResult(self.id, self.name, "na",
                               notes="cannot install a firewall rule to interrupt N2 "
                                     "(needs passwordless sudo for iptables)")
         try:
             time.sleep(25)                     # outlive the SCTP heartbeat/retransmit window
+            # Did the outage actually break the association? If SCTP rode it out, there is
+            # nothing to recover from and the test would credit the product for surviving an
+            # event that never reached it.
+            dropped = not ran.has_association(NGAP_SCTP_PORT)
         finally:
             fw("-D")
-        recovered = ran.wait_for_log("cucp", "Connected to AMF", 90)
+        if not dropped:
+            ran.stop("cucp")
+            # Do not dress this up as the product surviving an outage. Measured on this rig the
+            # rule matched zero packets: the AMF is reached through a Kubernetes ClusterIP,
+            # which the service proxy translates before the filter chain is consulted, so the
+            # firewall never sees the traffic it is meant to drop. Nothing was interrupted, and
+            # the only honest report is that the stimulus did not happen.
+            return TestResult(self.id, self.name, "na",
+                              metrics={"amf": amf, "association_dropped": False},
+                              notes="the N2 path could not actually be interrupted on this rig, "
+                                    "so no recovery was exercised and none could be judged. The "
+                                    "AMF is reached through an address that is translated before "
+                                    "the firewall rule applies (a Kubernetes ClusterIP), so the "
+                                    "association never broke. Certifying this requirement needs "
+                                    "an AMF on a directly routable address [TS 38.413 §8.7.1]")
+        recovered = ran.wait_for_association(NGAP_SCTP_PORT, 90)
         alive = ran.node_alive("cucp")
         ok = bool(recovered) and alive is True
         ran.stop("cucp")
         return TestResult(self.id, self.name, "pass" if ok else "fail",
                           metrics={"amf": amf, "reconnected": bool(recovered),
-                                   "cucp_alive": alive},
+                                   "association_dropped": True, "cucp_alive": alive},
                           notes=("the CU-CP re-established the NG association after the path to "
                                  "the AMF was restored " if ok else
                                  f"no NG re-establishment after the outage "

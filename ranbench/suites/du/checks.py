@@ -11,6 +11,7 @@ from __future__ import annotations
 import time
 
 from cntc_common.results import TestResult
+from ranbench.adapters.ocudu import F1C_SCTP_PORT
 from ranbench.suites import ran_common as rc
 from ranbench.suites.base import RanTestCase, RunContext
 
@@ -76,32 +77,45 @@ class DuF107(RanTestCase):
             return TestResult(self.id, self.name, "na",
                               notes="cannot observe O-DU liveness, so recovery cannot be judged")
         # a clean pair: CU-CP up, then the DU attached to it
+        # Every step is judged on the socket. The CU-CP writes nothing to its log until it
+        # exits, so any question put to that log while it runs answers "no" regardless of what
+        # the product did, and would fail a DU that recovered perfectly.
         ran.stop("du"); ran.stop("cucp"); time.sleep(4)
         ran.start("cucp")
-        if not ran.wait_for_log("cucp", "Connected to AMF", 45):
+        if not ran.wait_for_listen(F1C_SCTP_PORT, 45):
             return TestResult(self.id, self.name, "na",
-                              notes="the CU-CP did not reach the AMF, so the DU had nothing to "
-                                    "re-associate with")
+                              notes="the CU-CP never accepted on F1-C, so the DU had nothing to "
+                                    "associate with")
         ran.start("du")
-        if not ran.wait_for_log("du", "Cell was activated", 60):
+        if not ran.wait_for_association(F1C_SCTP_PORT, 60):
             return TestResult(self.id, self.name, "na",
-                              notes="the O-DU did not activate its cell before the restart")
+                              notes="the O-DU never established F1 before the restart, so there "
+                                    "was nothing to recover")
         # Take the CU away abruptly. A graceful stop would send F1 Removal, which tells the DU
         # to stand down, that is orderly teardown, not recovery.
         ran.stop("cucp", graceful=False); time.sleep(5)
+        survived = ran.node_alive("du")
         ran.start("cucp")
-        ran.wait_for_log("cucp", "Connected to AMF", 45)
-        recovered = ran.wait_for_log("cucp", "F1 Setup", 60)
+        ran.wait_for_listen(F1C_SCTP_PORT, 45)
+        recovered = ran.wait_for_association(F1C_SCTP_PORT, 60)
         alive = ran.node_alive("du")
         ok = bool(recovered) and alive is True
         # leave the rig as we found it, this case started products of its own
         ran.stop("du"); ran.stop("cucp")
+        # Report what was actually observed. "No F1 Setup" is a consequence; the O-DU exiting
+        # the moment its peer disappeared is the finding, and the two are not the same claim.
+        if ok:
+            why = "the O-DU re-established F1 after the CU restarted "
+        elif survived is not True:
+            why = ("the O-DU process exited when the CU-CP was taken away, so it could not "
+                   "re-establish F1 when the CU came back ")
+        else:
+            why = (f"the O-DU stayed up but never re-established the F1 association after the "
+                   f"CU restarted (du_alive={alive}) ")
         return TestResult(self.id, self.name, "pass" if ok else "fail",
-                          metrics={"f1_setup_after_restart": bool(recovered), "du_alive": alive},
-                          notes=("the O-DU re-established F1 after the CU restarted "
-                                 if ok else
-                                 f"no F1 Setup seen after the CU restarted (du_alive={alive}) ")
-                                + "[TS 38.473 §8.2.3 / TS 38.472]")
+                          metrics={"f1_reassociated": bool(recovered),
+                                   "du_survived_outage": survived, "du_alive": alive},
+                          notes=why + "[TS 38.473 §8.2.3 / TS 38.472]")
 
 
 class DuCell01(RanTestCase):

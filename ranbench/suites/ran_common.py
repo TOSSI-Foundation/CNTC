@@ -260,23 +260,35 @@ def no_crash(ctx: RunContext, tid: str, name: str, target: str, kind: str,
 
     # bring up whatever this product needs before it can serve (the CU-UP has no E1 peer
     # without the CU-CP, the O-DU no F1 peer, and neither stays up alone)
-    for dep in needs:
-        if ctx.ran.node_alive(dep) is not True:
-            ctx.ran.start(dep)
-            ctx.ran.wait_for_log(dep, "Connected to AMF", 45)
-    if ctx.ran.node_alive(target) is not True:
-        ctx.ran.start(target)
-        for _ in range(25):
-            if ctx.ran.node_alive(target) is True:
-                break
-            time.sleep(1)
-        _await_peer(ctx, target)
+    # Retried as a unit. The O-DU makes exactly one F1-C association attempt at startup and
+    # exits if it fails ("attempt 1/1" in its own log), so any moment where the CU-CP is not
+    # accepting costs the whole test. Re-establishing the peer and trying again is the
+    # compensation for that, and it is our job rather than the product's.
+    for _ in range(3):
+        for dep in needs:
+            _ensure_running(ctx, dep)
+            # Wait for the listener, not the log. The CU-CP's log is empty until it exits, so
+            # this wait always ran its full timeout and then continued regardless.
+            if dep == "cucp" and hasattr(ctx.ran, "wait_for_listen"):
+                ctx.ran.wait_for_listen(_F1C_PORT, 45)
+        if _ensure_running(ctx, target):
+            break
+        time.sleep(3)
+    _await_peer(ctx, target)
     if ctx.ran.node_alive(target) is not True:
         return _na(tid, name, f"{target} could not be started for probing, so its robustness "
                               f"cannot be judged (this says nothing about the product)")
     if not _await_listening(host, port, kind):
-        return _na(tid, name, f"{target} is running but never accepted on {host}:{port}, so the "
-                              f"probe could not be delivered")
+        # A process that exists but never accepts is usually one caught mid-shutdown, handed
+        # over by the previous test. pgrep cannot tell that apart from a healthy one, so rather
+        # than give up, take it down properly and bring up a fresh instance once.
+        ctx.ran.stop(target, graceful=False)
+        time.sleep(3)
+        _ensure_running(ctx, target)
+        _await_peer(ctx, target)
+        if not _await_listening(host, port, kind):
+            return _na(tid, name, f"{target} never accepted on {host}:{port}, even after a "
+                                  f"restart, so the probe could not be delivered")
 
     # Up is not the same as stable. A product on its way down for its own reasons (its E1 peer
     # never came up, a dependency died) would vanish during the probe and be recorded as a
@@ -314,6 +326,53 @@ def no_crash(ctx: RunContext, tid: str, name: str, target: str, kind: str,
 # A product that has no peer on the interface it exists to serve will not stay up, so probing it
 # would measure our own bring-up rather than its robustness. The O-CU-UP is the case that bites:
 # without an E1 association to the CU-CP it exits on its own within seconds.
+def _ensure_running(ctx: RunContext, target: str) -> bool:
+    """Get a product into a freshly running state, even if the previous one is still dying.
+
+    ``start`` declines when the process still exists, which is right for "it is already up" and
+    wrong for "it is on its way down". A test that stops a product and hands over to the next
+    one leaves exactly that: the old instance is alive for a moment longer, the start is
+    declined, and the survivor then stops listening as it finishes exiting. The next test sees a
+    process that is running and never accepts, and reports that it could not probe it.
+    """
+    if ctx.ran.node_alive(target) is True and _serving(ctx, target):
+        return True
+    # Alive but not serving means mid-shutdown. Take it down for certain before starting a new
+    # one, or ``start`` declines and the survivor finishes exiting under the next test's feet.
+    ctx.ran.stop(target, graceful=False)
+    for _ in range(15):
+        if ctx.ran.node_alive(target) is not True:
+            break
+        time.sleep(1)
+    ctx.ran.start(target)
+    for _ in range(25):
+        if ctx.ran.node_alive(target) is True:
+            return _serving(ctx, target)
+        time.sleep(1)
+    return False
+
+
+def _serving(ctx: RunContext, target: str) -> bool:
+    """Is the product actually serving, not merely present?
+
+    Only the CU-CP can be asked this cheaply, and it is the one that matters: it is the sole
+    listener in the split, and the O-DU makes exactly one F1-C association attempt at startup
+    ("attempt 1/1" in its own log) before giving up and exiting. Handing the DU a CU-CP that is
+    still shutting down therefore kills the DU, and the run then reports that the DU could not
+    be started, which reads as a fault in the DU.
+    """
+    if target != "cucp" or not hasattr(ctx.ran, "wait_for_listen"):
+        return True
+    # Checked twice with a gap. A CU-CP that is shutting down still shows a LISTEN socket for a
+    # moment, and a single look cannot tell that apart from a healthy listener. The DU gets one
+    # attempt, so handing it a socket that is about to close costs the whole test.
+    if not ctx.ran.wait_for_listen(_F1C_PORT, 3):
+        return False
+    time.sleep(2)
+    return ctx.ran.wait_for_listen(_F1C_PORT, 2)
+
+
+_F1C_PORT = 38472                     # TS 38.472, the CU-CP's F1-C listener
 _PEER_PORT = {"cuup": 38462,           # TS 38.462 (E1), to the CU-CP
               "du": 38472}             # TS 38.472 (F1-C), to the CU-CP
 
@@ -376,8 +435,8 @@ def _survives_control(ctx: RunContext, target: str) -> bool:
 
 
 # --- transport protection ---------------------------------------------------------
-def _ipsec_sa_count() -> int | None:
-    """Number of IPsec security associations on the host. None when it cannot be read."""
+def _ipsec_sas() -> list[tuple[str, str]] | None:
+    """Every IPsec SA on the host as (src, dst). None when the state cannot be read."""
     try:
         r = subprocess.run(["sudo", "-n", "ip", "xfrm", "state"], capture_output=True,
                            text=True, stdin=subprocess.DEVNULL, timeout=10)
@@ -385,25 +444,62 @@ def _ipsec_sa_count() -> int | None:
         return None
     if r.returncode != 0:
         return None
-    return sum(1 for line in r.stdout.splitlines() if line.startswith("src "))
+    out = []
+    for line in r.stdout.splitlines():
+        parts = line.split()
+        if len(parts) >= 4 and parts[0] == "src" and parts[2] == "dst":
+            out.append((parts[1], parts[3]))
+    return out
 
 
 def transport_protected(ctx: RunContext, tid: str, name: str, iface: str,
                         spec: str) -> TestResult:
-    """PASS iff the interface's transport is protected (IPsec).
+    """PASS iff this interface's traffic is actually covered by an IPsec SA.
 
-    TS 33.523 points at the TS 33.117 §4.2.3.2.4 test: the interface must offer confidentiality,
-    integrity and replay protection. On these interfaces that means IPsec (or DTLS for SCTP).
-    We judge it by whether the host holds any IPsec SA at all, no SA means the traffic is in
-    the clear, which is a real finding, not a measurement gap.
+    TS 33.523 points at the TS 33.117 4.2.3.2.4 test: the interface must offer confidentiality,
+    integrity and replay protection. Two things have to be true before that can be judged, and
+    getting either wrong produces a confident but worthless result.
+
+    First, the interface has to be exposed, and whether it is depends on how the operator
+    deployed the products rather than on the products themselves. A rig that co-locates the CU
+    and the DU runs F1 between loopback addresses, where the traffic never reaches a network and
+    nobody who is not already root on the host can see it. Reporting that as "carried in the
+    clear" reads as a product defect and is not one: the requirement cannot be certified from
+    that deployment, and the tester needs to be told what would let them certify it.
+
+    Second, an SA has to cover *this* interface. Counting SAs on the host and calling every
+    interface protected would pass F1 because someone had configured IPsec for N2.
     """
-    n = _ipsec_sa_count()
-    if n is None:
+    addrs = []
+    if hasattr(ctx.ran, "interface_addrs"):
+        try:
+            addrs = ctx.ran.interface_addrs(iface)
+        except Exception:  # noqa: BLE001
+            addrs = []
+    exposed = [a for a in addrs if not a.startswith("127.")]
+    if addrs and not exposed:
+        return _na(tid, name,
+                   f"{iface} runs only between loopback addresses ({', '.join(addrs)}), so this "
+                   f"deployment co-locates the endpoints and the traffic never leaves the host. "
+                   f"Its transport protection is neither exercised nor observable here. Deploy "
+                   f"the products on separate hosts to certify this requirement [{spec}]")
+
+    sas = _ipsec_sas()
+    if sas is None:
         return _na(tid, name, "cannot read the host's IPsec state (`ip xfrm state`), so "
                               f"{iface} protection cannot be judged")
-    if n > 0:
-        return TestResult(tid, name, "pass", metrics={"ipsec_sas": n},
-                          notes=f"{n} IPsec SA(s) present covering {iface} [{spec}]")
-    return TestResult(tid, name, "fail", metrics={"ipsec_sas": 0},
-                      notes=f"no IPsec SA on the host, {iface} is carried in the clear "
-                            f"(no confidentiality / integrity / replay protection) [{spec}]")
+    covering = [f"{a}->{b}" for a, b in sas
+                if (not exposed) or a in exposed or b in exposed]
+    if covering:
+        return TestResult(tid, name, "pass",
+                          metrics={"ipsec_sas": len(covering), "endpoints": exposed or addrs},
+                          notes=f"{iface} is covered by {len(covering)} IPsec SA(s) "
+                                f"({', '.join(covering[:3])}) [{spec}]")
+    where = ", ".join(exposed) if exposed else "this interface"
+    detail = f" (host holds {len(sas)} SA(s), none covering {where})" if sas else ""
+    return TestResult(tid, name, "fail",
+                      metrics={"ipsec_sas": 0, "endpoints": exposed or addrs,
+                               "host_sas": len(sas)},
+                      notes=f"{iface} leaves the host on {where} with no IPsec SA covering it, "
+                            f"so it is carried in the clear (no confidentiality / integrity / "
+                            f"replay protection){detail} [{spec}]")

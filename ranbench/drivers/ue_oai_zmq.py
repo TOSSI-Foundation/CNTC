@@ -26,7 +26,7 @@ from pathlib import Path
 from typing import Any
 
 from ranbench.config import expand_user_path
-from ranbench.adapters.ocudu import E1_SCTP_PORT, F1C_SCTP_PORT
+from ranbench.adapters.ocudu import E1_SCTP_PORT, F1C_SCTP_PORT, NGAP_SCTP_PORT
 from ranbench.drivers.base import Driver as BaseDriver
 
 _PROCEDURES = {"attach", "register", "pdu_session", "data_path"}
@@ -172,8 +172,11 @@ class Driver(BaseDriver):
         # are themselves part of the catalog. Wait for the CU-CP to actually log the release
         # rather than hoping a fixed sleep covers it, a flat delay made these cases flaky,
         # passing in one run and failing in the next.
-        if not ran.wait_for_log("cucp", "UE Context Release", 30):
-            time.sleep(5)
+        # The release cannot be watched for here: it is a CU-CP event, and that log stays
+        # empty until the process exits. So allow a fixed settling window for the procedure to
+        # complete on the wire, then stop the products, which is what flushes the pcaps the
+        # release cases are actually judged from.
+        time.sleep(8)
         for tgt in ("du", "cuup", "cucp"):
             try:
                 ran.stop(tgt)
@@ -197,7 +200,9 @@ class Driver(BaseDriver):
         if not obs["cucp_listening"]:
             print("[ranbench] warning: the CU-CP is not listening on F1-C; the O-DU and O-CU-UP "
                   "will be refused. Check the CU-CP config and that nothing else holds the port.")
-        obs["ng_setup"] = ran.wait_for_log("cucp", "Connected to AMF", 20)
+        # On the socket, not the log. The CU-CP writes nothing until it exits, so the log
+        # answered "not connected" on every run no matter what N2 was doing.
+        obs["ng_setup"] = ran.wait_for_association(NGAP_SCTP_PORT, 30)
 
         # E1 must actually establish, not merely be attempted. The CU-CP refuses to admit a UE
         # when it has no user-plane node: the RRC Setup Request arrives and it answers with a UE
@@ -222,6 +227,9 @@ class Driver(BaseDriver):
                   "will refuse to admit the UE; the attach is attempted anyway.")
 
         ran.start("du")
+        # The one log wait that is sound. Unlike the CU-CP, the O-DU is chatty enough to push
+        # past its buffer, so its file tracks reality while it runs (verified: 12 KB written and
+        # the marker present after 20 s). Cell activation also has no socket to observe.
         obs["cell_active"] = ran.wait_for_log("du", "Cell was activated", 60)
 
     def _attach(self, ue_log: Path, obs: dict) -> None:

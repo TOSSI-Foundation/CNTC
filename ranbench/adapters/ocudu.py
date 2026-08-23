@@ -44,6 +44,7 @@ NODES = {
 F1C_SCTP_PORT = 38472       # TS 38.472
 E1_SCTP_PORT = 38462        # TS 38.462
 GTPU_UDP_PORT = 2152        # TS 29.281
+NGAP_SCTP_PORT = 38412      # TS 38.412 (N2)
 
 
 class Adapter(RanAdapter):
@@ -195,7 +196,16 @@ class Adapter(RanAdapter):
         self._run("pkill", "-INT" if graceful else "-KILL", "-x", proc, timeout=10)
 
     def wait_for_log(self, target: str, needle: str, timeout: float = 40.0) -> bool:
-        """Block until ``needle`` appears in the product's log file, or the timeout expires."""
+        """Block until ``needle`` appears in the product's log file, or the timeout expires.
+
+        **Do not judge a product on this.** OCUDU block-buffers its log, and how much is visible
+        while it runs depends only on how chatty the product is. Measured on this rig: the O-DU
+        exceeds the buffer quickly and its log tracks reality, while the O-CU-CP had written
+        zero bytes after 25 seconds of running with its N2 association established, and only
+        flushed at SIGINT. Anything asked of a CU-CP log while it runs therefore answers "no",
+        whatever the product actually did. Use ``has_association`` / ``wait_for_association`` /
+        ``wait_for_listen`` for anything that decides a verdict.
+        """
         path = _dig(self._cfg_yaml(target), "log", "filename")
         if not path:
             return False
@@ -209,6 +219,18 @@ class Adapter(RanAdapter):
                 pass
             time.sleep(0.5)
         return False
+
+    def has_association(self, port: int) -> bool:
+        """Is an SCTP association ESTABLISHED on this port right now?
+
+        A point observation, for deciding whether something that was up has gone away. Reading
+        the socket is the only reliable way to ask OCUDU anything about its state while it runs:
+        the O-CU-CP block-buffers its log and writes nothing at all until it exits, so a marker
+        line for an event that has genuinely happened is simply not in the file yet.
+        """
+        r = self._run("ss", "-an", "--sctp", timeout=10)
+        return any("ESTAB" in line and f":{port}" in line
+                   for line in (r.stdout or "").splitlines())
 
     def wait_for_association(self, port: int, timeout: float = 60.0) -> bool:
         """Block until an SCTP association is ESTABLISHED on a port, or the timeout expires.
@@ -243,6 +265,34 @@ class Adapter(RanAdapter):
                     return True
             time.sleep(1)
         return False
+
+    def interface_addrs(self, iface: str) -> list[str]:
+        """The addresses a named RAN interface actually runs between, from the running configs.
+
+        Needed to judge transport protection honestly. Whether an interface is exposed at all is
+        a property of how the operator deployed the products, not of the products: this rig runs
+        F1 and E1 between loopback addresses on one host, while N2 crosses a real network. An
+        interface that never leaves the host cannot be observed by anyone who is not already
+        root on it, and its protection is neither exercised nor measurable.
+        """
+        key = iface.upper()
+        out: list[str] = []
+        cu_cp = self._cfg_yaml("cucp").get("cu_cp") or {}
+        if "N2" in key:
+            amf = cu_cp.get("amf") or {}
+            out += [_first(amf.get("bind_addrs")), _first(amf.get("addrs"))]
+        if "F1-C" in key:
+            out += [_first((cu_cp.get("f1ap") or {}).get("bind_addrs")),
+                    _first(_dig(self._cfg_yaml("du"), "f1ap", "bind_addrs"))]
+        if "E1" in key:
+            out += [_first((cu_cp.get("e1ap") or {}).get("bind_addrs")),
+                    _first(_dig(self._cfg_yaml("cuup"), "cu_up", "e1ap", "addrs"))]
+        if "F1-U" in key:
+            out += [_socket_bind(_dig(self._cfg_yaml("du"), "f1u", "socket")),
+                    _socket_bind(_dig(self._cfg_yaml("cuup"), "cu_up", "f1u", "socket"))]
+        if "N3" in key:
+            out += [_socket_bind(_dig(self._cfg_yaml("cuup"), "cu_up", "ngu", "socket"))]
+        return [a for a in out if a]
 
     def pcap_paths(self, target: str) -> dict[str, str]:
         """The per-interface pcaps this product writes, from its own ``pcap:`` config block.
