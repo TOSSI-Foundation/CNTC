@@ -22,13 +22,22 @@ def _stimulus_banner(c):
     if not stim or not str(stim).startswith("incomplete"):
         return None
     why = str(stim).partition(":")[2].strip() or "the UE attach did not complete"
-    return html.Div(className="stimulus-void", children=[
+    kids = [
         html.Div("Run does not measure this RAN", className="stimulus-head"),
         html.Div(f"The stimulus stopped short: {why}. Requirements past that point were never "
                  f"exercised and are recorded as not applicable, so the verdict below reflects "
                  f"the test rig, not the product. Fix the rig and re-run.",
                  className="stimulus-txt"),
-    ])
+    ]
+    # The one fault underneath, quoted from the product that reported it. Every requirement
+    # carries its own local reason for being unjudgeable; none of them names the actual cause.
+    fault = (c.sut or {}).get("stimulus_fault")
+    if fault:
+        kids.append(html.Div(className="stimulus-fault", children=[
+            html.Div("Root fault", className="stimulus-fault-label"),
+            html.Div(str(fault), className="stimulus-fault-txt"),
+        ]))
+    return html.Div(className="stimulus-void", children=kids)
 
 
 def _problems(c):

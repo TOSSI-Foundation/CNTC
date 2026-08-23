@@ -192,8 +192,9 @@ def run(config_path: str, campaigns_root: str = "campaigns", target: str | None 
                 pass
 
     with _uninterruptible():
-        _diagnose(store, cfg, ran, alive_at_end)
-        _stimulus_validity(store)
+        _keep_product_logs(store, cfg, ran)
+        facts = _diagnose(store, cfg, ran, alive_at_end)
+        _stimulus_validity(store, facts)
         _apply_verdicts(store, cfg, live_facts)
         results_path = store.save(sut=cfg.sut,
                                   status="interrupted" if interrupted else "complete")
@@ -252,18 +253,20 @@ def _diagnose(store, cfg, ran, alive_at_end: dict | None = None) -> None:
     try:
         from ranbench import diagnostics
     except ImportError:
-        return
+        return None
     obs = None
     try:
         from ranbench.drivers.ue_oai_zmq import _OBS_CACHE
         obs = next(iter(_OBS_CACHE.values()), None)
     except Exception:  # noqa: BLE001
         pass
+    if True:
+        pass
     try:
         facts = diagnostics.collect(cfg, ran, obs, alive_at_end)
     except Exception as e:  # noqa: BLE001, diagnosis must never break a run
         print(f"[ranbench] warning: could not collect diagnostics: {e}")
-        return
+        return None
     store.set_sut_live({"diagnostics": "collected"})
     n = 0
     for sres in store._suites:  # noqa: SLF001, annotating our own results in place
@@ -278,9 +281,10 @@ def _diagnose(store, cfg, ran, alive_at_end: dict | None = None) -> None:
                 n += 1
     if n:
         print(f"[ranbench] diagnosed {n} result(s) with a probable cause")
+    return facts
 
 
-def _stimulus_validity(store) -> None:
+def _stimulus_validity(store, facts: dict | None = None) -> None:
     """Record, and say out loud, how far the attach actually got.
 
     Most of the catalog is judged on evidence from one UE attach. If that attach stopped short,
@@ -301,10 +305,67 @@ def _stimulus_validity(store) -> None:
                         else f"incomplete: {why}"})
     if not why:
         return
+    # When the whole deployment is broken every requirement records 'na' with its own local
+    # reason, and none of them names the one fault underneath. Per-test causes were withdrawn
+    # because a post-run snapshot contradicted what individual tests had measured, but a single
+    # deployment-level statement has no such conflict: nothing was measured, so there is nothing
+    # to contradict. This is where the product's own error line belongs.
+    root = _root_fault(facts)
+    if root:
+        store.set_sut_live({"stimulus_fault": root})
     print(f"\n[ranbench] STIMULUS INCOMPLETE: {why}.")
+    if root:
+        print(f"[ranbench] Root fault: {root}")
     print("[ranbench] Tests past that point recorded 'na' because they were never exercised,")
     print("[ranbench] so this run does not measure the RAN. Treat the verdict below as void,")
     print("[ranbench] fix the rig (see the problems above), and re-run.\n")
+
+
+def _keep_product_logs(store, cfg, ran) -> None:
+    """Copy each product's own log into the campaign before the next run overwrites it.
+
+    The diagnosis quotes these files, and OCUDU truncates them at startup, so without this the
+    evidence behind a reported fault is destroyed by the very next campaign. A finding whose
+    supporting line cannot be produced afterwards is not much of a finding.
+
+    Runs after shutdown deliberately: the O-CU-CP writes nothing until it exits, so a copy taken
+    any earlier would be empty.
+    """
+    import shutil
+    for tgt in cfg.targets:
+        try:
+            path = (ran._cfg_yaml(tgt).get("log") or {}).get("filename")  # noqa: SLF001
+        except Exception:  # noqa: BLE001
+            continue
+        if not path or not Path(path).exists():
+            continue
+        try:
+            shutil.copy2(path, store.raw / f"ocudu-{tgt}.log")
+        except OSError:
+            pass
+
+
+def _root_fault(facts: dict | None) -> str:
+    """The one thing that broke this deployment, quoted from the product that broke.
+
+    Only genuine error lines are used: OCUDU stamps a severity on every line, and quoting a
+    startup warning as the reason a run failed sends the operator chasing nothing.
+    """
+    if not facts:
+        return ""
+    for tgt, state in (facts.get("products") or {}).items():
+        if state.get("alive") is False:
+            errs = (facts.get("logs") or {}).get(tgt)
+            if errs:
+                return f"the {tgt} stopped running. Its last error: {errs[-1]}"
+            return f"the {tgt} was not running at the end of the campaign"
+    if facts.get("amf_reachable") is False:
+        return (f"the AMF at {facts.get('amf_addr')} did not accept an SCTP association on "
+                f"38412, so NG Setup could not complete")
+    for tgt, errs in (facts.get("logs") or {}).items():
+        if errs:
+            return f"the {tgt} logged: {errs[-1]}"
+    return ""
 
 
 def _maybe_driver(name, cfg, store):
