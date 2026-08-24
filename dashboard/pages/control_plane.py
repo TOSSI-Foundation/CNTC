@@ -1,4 +1,4 @@
-"""Control plane, the coverage registry for the 5G core network functions: every NF the
+"""Control plane: the coverage registry for the 5G core network functions: every NF the
 harness certifies (AMF/SMF/NRF/AUSF/UDM), the interfaces and specs each is driven against, its
 Level-1 test counts, and the latest live verdict for the ones that have campaigns.
 

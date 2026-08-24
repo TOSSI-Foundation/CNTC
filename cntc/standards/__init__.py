@@ -1,4 +1,4 @@
-"""Requirement catalogs, the machine-checkable standard a UPF is graded against.
+"""Requirement catalogs: the machine-checkable standard a UPF is graded against.
 
 Each ``<profile>.yaml`` here is a versioned requirement catalog: it lists, per test
 ID, the category, the weight class (essential / normal / bonus), and the *verdict rule* that

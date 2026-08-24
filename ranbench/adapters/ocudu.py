@@ -1,4 +1,4 @@
-"""OCUDU adapter, the Linux Foundation CU/DU stack (srsRAN lineage), run as host processes.
+"""OCUDU adapter: the Linux Foundation CU/DU stack (srsRAN lineage), run as host processes.
 
 OCUDU builds five applications; the three that matter here are the split-gNB product classes::
 

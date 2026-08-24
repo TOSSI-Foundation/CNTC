@@ -1,4 +1,4 @@
-"""UERANSIM driver, drives N1/N2 (NAS + NGAP) through the AMF.
+"""UERANSIM driver: drives N1/N2 (NAS + NGAP) through the AMF.
 
 Wraps a native UERANSIM build (``nr-gnb`` + ``nr-ue``) to run a real registration +
 PDU-session against the live core, then parses the gNB/UE logs into a structured observation

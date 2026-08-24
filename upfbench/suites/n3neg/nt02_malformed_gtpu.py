@@ -1,4 +1,4 @@
-"""NT-02 Malformed GTP-U robustness, the UPF must not CRASH on malformed N3 input and
+"""NT-02 Malformed GTP-U robustness: the UPF must not CRASH on malformed N3 input and
 must keep serving valid traffic. Each variant (control/reserved message type, wrong
 version, three truncation cases) is sent as its own burst with per-variant crash
 detection: if the BESS data plane segfaults (k8s restarts bessd), we record which packet

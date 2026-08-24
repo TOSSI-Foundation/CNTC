@@ -40,7 +40,7 @@ emit the *same* results schema (`cntc_common`). One grading core certifies the w
 
 ```
 control_cntc/
-├── cpbench/            CONTROL-PLANE engine, drives AMF/SMF/NRF/AUSF/UDM, records results
+├── cpbench/            CONTROL-PLANE engine: drives AMF/SMF/NRF/AUSF/UDM, records results
 │   ├── cli.py            `cpbench run|doctor` entrypoint
 │   ├── config.py         campaign config model + sudo-aware path expansion
 │   ├── doctor.py         preflight: deps, CLIs, UERANSIM build, core up, addressing, subscriber

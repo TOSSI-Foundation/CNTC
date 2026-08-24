@@ -1,4 +1,4 @@
-"""Shared visual language for the dashboard, colors, a Plotly template, status helpers.
+"""Shared visual language for the dashboard, colors: a Plotly template, status helpers.
 
 Keeping this in one place means every chart and card looks like it belongs to the same
 product (TOSSI Foundation / upfbench), which is the whole point of a "showcase" dashboard.

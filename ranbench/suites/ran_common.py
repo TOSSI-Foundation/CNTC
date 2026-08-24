@@ -114,8 +114,8 @@ def procedures(ctx: RunContext, tid: str, name: str, slot: str, expected: list[s
                               f"(a compliant peer need not trigger it) [{spec}]")
     stalled = attach_incomplete(o)
     if stalled:
-        return _na(tid, name, f"{', '.join(missing)} not observed, but {stalled}, the "
-                              f"stimulus never reached this procedure, so the product cannot "
+        return _na(tid, name, f"{', '.join(missing)} not observed, but {stalled}, so the "
+                              f"stimulus never reached this procedure and the product cannot "
                               f"be judged on it [{spec}]")
     return TestResult(tid, name, "fail", metrics={"missing": missing, "seen": procs[:20]},
                       notes=f"missing on {slot}: {', '.join(missing)} [{spec}]")

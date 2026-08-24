@@ -1,4 +1,4 @@
-"""Campaign detail, one run: a scorecard summary (verdict + stats), a sticky scorebar
+"""Campaign detail: one run: a scorecard summary (verdict + stats), a sticky scorebar
 (revealed on scroll by app.js), suite jump-links, the SUT card, and every suite with its
 charts/tables/notes."""
 from __future__ import annotations

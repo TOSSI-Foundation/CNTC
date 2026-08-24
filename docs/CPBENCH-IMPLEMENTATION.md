@@ -88,7 +88,7 @@ auth, and sessions flow through them), focused on **NRF, AUSF, UDM**.
 
 | Tool | Role | Used by |
 |---|---|---|
-| **UERANSIM** (`nr-gnb`, `nr-ue`, `nr-cli`) | gNB+UE simulator, drives real N2/NGAP + N1/NAS: NG Setup → 5G-AKA → Security Mode → Registration → PDU session → release → deregistration | AMF, SMF procedure tests; AUSF/UDM transitive tests |
+| **UERANSIM** (`nr-gnb`, `nr-ue`, `nr-cli`) | gNB+UE simulator: drives real N2/NGAP + N1/NAS: NG Setup → 5G-AKA → Security Mode → Registration → PDU session → release → deregistration | AMF, SMF procedure tests; AUSF/UDM transitive tests |
 | **SBI client** (`httpx`, HTTP/2 + TLS + OAuth2) | our own crafted HTTP requests to each NF's SBI endpoint | NRF/AUSF/UDM + AMF/SMF security tests |
 | **tcpdump + tshark** | capture + decode N2 (NGAP/NAS) and N4 (PFCP) on the wire | AMF-SEC-01/02 (NAS ciphering), SMF-N4-01/03 (PFCP) |
 | **raw SCTP socket** (Python) | send malformed bytes to the AMF N2 port | AMF-NEG-01 (no-crash) |

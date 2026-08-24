@@ -31,8 +31,8 @@ CNTC has two kinds of layer, **engines that measure**, and **one umbrella that j
 
 | Layer | What it is | Where |
 |-------|-----------|-------|
-| **Engine** (`upfbench`) | The **user-plane** engine, drives any open-source 5G UPF over N3/N4 (performance, load, PFCP conformance, N3 robustness). | [`upfbench/`](upfbench/) |
-| **Engine** (`cpbench`) | The **control-plane** engine, drives the 5G core NFs (AMF/SMF/NRF/AUSF/UDM) over N1/N2 (NAS/NGAP), N4 (PFCP) and the SBI, and captures the signalling on the wire. | [`cpbench/`](cpbench/) |
+| **Engine** (`upfbench`) | The **user-plane** engine that drives any open-source 5G UPF over N3/N4 (performance, load, PFCP conformance, N3 robustness). | [`upfbench/`](upfbench/) |
+| **Engine** (`cpbench`) | The **control-plane** engine that drives the 5G core NFs (AMF/SMF/NRF/AUSF/UDM) over N1/N2 (NAS/NGAP), N4 (PFCP) and the SBI, and captures the signalling on the wire. | [`cpbench/`](cpbench/) |
 | **Engine** (`ranbench`) | The **RAN** engine. Drives a split gNB (O-CU-CP, O-CU-UP, O-DU) over N2 (NGAP), F1-C (F1AP), E1 (E1AP), F1-U and N3 (GTP-U), with RRC read out of the F1AP containers. | [`ranbench/`](ranbench/) |
 | **Verdict** (`cntc`) | The umbrella: a **requirement catalog** per profile (`cntc/standards/*.yaml`) + a pure **verdict engine** that grades *any* engine's results and emits a **scorecard** + certificate. | [`cntc/`](cntc/) |
 
@@ -268,11 +268,11 @@ the UE, are documented in [docs/RANBENCH-RIG.md](docs/RANBENCH-RIG.md).
 ---
 
 ## Docs
-- [docs/RANBENCH-RIG.md](docs/RANBENCH-RIG.md), the RAN rig: building the stack and the UE, and the parameters that must agree.
-- [docs/config-reference.md](docs/config-reference.md), which config fields to change per UPF/mode.
-- [docs/benchmarking-guide.md](docs/benchmarking-guide.md), **start here**: run, pick suites, reproduce baselines.
-- [docs/dpdk-testing-guide.md](docs/dpdk-testing-guide.md), kernel-bypass (DPDK/AF_XDP/CNDP) testing with TRex.
-- [docs/fresh-vm-setup.md](docs/fresh-vm-setup.md) · [docs/RUNBOOK.md](docs/RUNBOOK.md) · [docs/PLAN.md](docs/PLAN.md).
+- [docs/RANBENCH-RIG.md](docs/RANBENCH-RIG.md): the RAN rig, building the stack and the UE, and the parameters that must agree.
+- [docs/config-reference.md](docs/config-reference.md): which config fields to change per UPF/mode.
+- [docs/benchmarking-guide.md](docs/benchmarking-guide.md): **start here**: run, pick suites, reproduce baselines.
+- [docs/dpdk-testing-guide.md](docs/dpdk-testing-guide.md): kernel-bypass (DPDK/AF_XDP/CNDP) testing with TRex.
+- [docs/fresh-vm-setup.md](docs/fresh-vm-setup.md) · [docs/RUNBOOK.md](docs/RUNBOOK.md).
 
 ## Status
 - **Engine:** all four suites validated end-to-end on SD-Core BESS-UPF (DPDK) and OAI-UPF
@@ -291,11 +291,20 @@ the UE, are documented in [docs/RANBENCH-RIG.md](docs/RANBENCH-RIG.md).
     + [governance note](docs/CNTC-GOVERNANCE.md). **14/14 unit tests pass** (`tests/test_verdict.py`).
 - **RAN (`ranbench`), Stage 3, shipped:** 58 Level-1 tests across O-CU-CP, O-CU-UP and O-DU,
   verified against a live **OCUDU** split gNB with free5GC and an OAI UE. A full run grades every
-  test from one attach. It found real defects rather than rubber-stamping: the O-DU does not
-  re-establish F1 after the CU is lost, the O-CU-CP does not re-establish NG after the AMF path
-  is interrupted, and the CU-CP signals confidentiality as *required* while selecting the null
-  ciphering algorithm NEA0, so the user plane runs unciphered. F1-C, F1-U, E1 and N2 all run
-  without IPsec, which the transport-protection cases report.
+  test from one attach. Measured over three runs, one per product class: **34 pass, 5 fail,
+  19 not applicable**, with the **O-DU certified** (7 of 7 essential) and the O-CU-CP and
+  O-CU-UP failing on security.
+  - The finding is **algorithm downgrade**: the security policy signals confidentiality as
+    *required*, and the algorithm actually selected is the null cipher **NEA0**, while integrity
+    gets a real algorithm (128-NIA2). It is read from the E1AP Bearer Context Setup on the wire,
+    not inferred, and it is confirmed independently on two product classes over two interfaces
+    (`CUCP-SEC-02`, `CUCP-SEC-03` on F1, `CUUP-SEC-01` on E1).
+  - **N2 and N3 carry no IPsec** and are reported as exposed. F1-C, F1-U and E1 run between
+    loopback addresses on this single-host rig, so their transport protection is not observable
+    here and records `na` naming the deployment change that would allow it to be certified.
+  - Requirements that cannot be judged are never promoted. A procedure the core never asked for,
+    a path the rig cannot interrupt, and an interface that never leaves the host all record `na`
+    with the reason, and a class with an unjudged essential is INCOMPLETE, never certified.
 - **Control plane (`cpbench`), Stage 2, shipped:** 44 Level-1 tests across AMF/SMF/NRF/AUSF/UDM,
   verified against a live **free5GC** on both **docker-compose** and **Kubernetes**. On docker,
   AMF/AUSF/UDM certify; on Kubernetes, AMF certifies (full in-cluster registration + 5G-AKA + NAS

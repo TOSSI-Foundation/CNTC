@@ -1,4 +1,4 @@
-"""OAI nr-UE driver, drives the RAN over a ZeroMQ virtual radio and observes the attach.
+"""OAI nr-UE driver: drives the RAN over a ZeroMQ virtual radio and observes the attach.
 
 This is the RAN's stimulus. Where ``cpbench`` pointed a UE at a core, here the RAN *is* the
 subject, so the driver has to supply the UE below it and orchestrate the whole measurement:

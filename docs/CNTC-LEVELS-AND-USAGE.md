@@ -19,7 +19,7 @@ to run everything** on a fresh server.
 | | |
 |---|---|
 | **Level 1, "Conformance & Observable Security"** | Everything provable by connecting a **well-behaved, spec-compliant peer** (a normal UE and a normal SBI client), running the standard procedures, and **observing the result, including capturing the actual packets on the wire**. |
-| **Level 2, "Adversarial Robustness & Privileged Interop"** | Everything that needs a **badly-behaved or privileged peer**: one that lies (wrong credentials), replays old messages, sends deliberately broken packets, or impersonates a registered network function using real certificates. |
+| **Level 2: "Adversarial Robustness & Privileged Interop"** | Everything that needs a **badly-behaved or privileged peer**: one that lies (wrong credentials), replays old messages, sends deliberately broken packets, or impersonates a registered network function using real certificates. |
 
 **A simple analogy:** *Level 1 is a thorough inspection. Level 2 is hiring a burglar to try to
 break in.* Both are valuable; they answer different questions.

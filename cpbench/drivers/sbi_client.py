@@ -1,4 +1,4 @@
-"""SBI client driver, drives the Service-Based Interface directly (HTTP/2 + TLS + OAuth2).
+"""SBI client driver: drives the Service-Based Interface directly (HTTP/2 + TLS + OAuth2).
 
 The one significant net-new component of Stage 2. It poses as a peer NF and calls the target
 NF's SBI services (Nnrf, Nausf, Nudm, Namf, Nsmf), parses ``ProblemDetails`` error bodies, and

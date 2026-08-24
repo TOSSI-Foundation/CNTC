@@ -1,4 +1,4 @@
-"""Pure grading engine, the heart of CNTC's verdict layer.
+"""Pure grading engine: the heart of CNTC's verdict layer.
 
 ``evaluate()`` takes the *serialized* results (the ``suites`` list from a ``results.json``)
 plus a requirement catalog and returns a verdict block. It imports nothing from the engine,

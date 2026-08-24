@@ -124,13 +124,13 @@ class CuupSec01(RanTestCase):
             return TestResult(self.id, self.name, "fail", metrics=metrics,
                               notes=f"confidentiality is signalled as "
                                     f"{s['confidentiality_indication']} but the CU-UP was given "
-                                    f"{s['ciphering']}, the user plane is not ciphered "
+                                    f"{s['ciphering']}, so the user plane is not ciphered "
                                     f"[TS 33.523 §6.2.2.1.7]")
         if s["ciphering_null"]:
             return TestResult(self.id, self.name, "na", metrics=metrics,
                               notes=f"ciphering is {s['ciphering']} and confidentiality is "
                                     f"{s['confidentiality_indication']}, so no ciphering was "
-                                    f"required of the CU-UP, nothing to enforce "
+                                    f"required of the CU-UP and there is nothing to enforce "
                                     f"[TS 33.523 §6.2.2.1.7]")
         return TestResult(self.id, self.name, "pass", metrics=metrics,
                           notes=f"the CU-UP was given {s['ciphering']} with confidentiality "
@@ -154,7 +154,7 @@ class CuupSec02(RanTestCase):
             return TestResult(self.id, self.name, "na", metrics=s,
                               notes=f"user-plane integrity is signalled as "
                                     f"{s['integrity_indication']}, so none was required of the "
-                                    f"CU-UP, nothing to enforce [TS 33.523 §6.2.2.1.6]")
+                                    f"CU-UP and there is nothing to enforce [TS 33.523 §6.2.2.1.6]")
         if s["integrity_null"]:
             return TestResult(self.id, self.name, "fail", metrics=s,
                               notes=f"integrity is {s['integrity_indication']} but the CU-UP was "

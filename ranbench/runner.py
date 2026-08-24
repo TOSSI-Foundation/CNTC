@@ -14,7 +14,9 @@ Until the per-class suites land (P2-P4) every case is a StubCase -> 'not_impleme
 from __future__ import annotations
 
 import contextlib
+import os
 import signal
+import tempfile
 import time
 from pathlib import Path
 
@@ -82,6 +84,11 @@ def run(config_path: str, campaigns_root: str = "campaigns", target: str | None 
         cfg.campaign = campaign
     store = Store(Path(campaigns_root), cfg.campaign)
 
+    with _exclusive_rig():
+        return _run_campaign(cfg, store, campaigns_root)
+
+
+def _run_campaign(cfg, store, campaigns_root: str) -> Path:
     ran = load_adapter(cfg.ran.adapter, cfg, store)
     ran.deploy()
     live_facts: dict = {}
@@ -203,6 +210,38 @@ def run(config_path: str, campaigns_root: str = "campaigns", target: str | None 
     else:
         print(f"[ranbench] results: {results_path}")
     return results_path
+
+
+@contextlib.contextmanager
+def _exclusive_rig():
+    """Only one campaign may drive the rig at a time.
+
+    A run does not merely read the RAN, it owns it: bring-up begins by killing every product
+    and the UE, and the products write their captures to fixed paths. Two campaigns at once
+    therefore tear down each other's stack mid-attach and overwrite each other's evidence, and
+    the results look like a broken RAN rather than a collision. Refusing is the only honest
+    answer, because there is no way to share a single set of host processes.
+    """
+    import fcntl
+    lock = Path(tempfile.gettempdir()) / "ranbench-rig.lock"
+    fh = open(lock, "w")
+    try:
+        try:
+            fcntl.flock(fh.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except OSError:
+            raise SystemExit(
+                "[ranbench] another campaign is already driving this rig.\n"
+                "[ranbench] Runs cannot overlap: each one stops and restarts the RAN products\n"
+                "[ranbench] and writes to the same capture files, so concurrent runs destroy\n"
+                "[ranbench] each other's evidence. Wait for the first to finish, then re-run.\n"
+                f"[ranbench] (lock: {lock})") from None
+        fh.write(str(os.getpid()))
+        fh.flush()
+        yield
+    finally:
+        with contextlib.suppress(Exception):
+            fcntl.flock(fh.fileno(), fcntl.LOCK_UN)
+            fh.close()
 
 
 def _shutdown(ran, cfg) -> None:

@@ -43,7 +43,10 @@ def _check_external() -> list[tuple[str, bool, str]]:
 
 def run(config_path: str) -> int:
     cfg = cfgmod.load(config_path)
-    store = Store(Path("campaigns"), f"_doctor-{cfg.campaign}")
+    # A scratch store in a temp directory. The adapter needs somewhere to record the commands
+    # it runs, but a preflight check is not a campaign and must not leave one behind: writing
+    # into campaigns/ put a _doctor-* entry on the dashboard's Runs page every time.
+    store = Store(Path(tempfile.mkdtemp(prefix="ranbench-doctor-")), f"_doctor-{cfg.campaign}")
     ran = load_adapter(cfg.ran.adapter, cfg, store)
 
     print(f"ranbench doctor, ran={cfg.ran.adapter}  target={cfg.target}")

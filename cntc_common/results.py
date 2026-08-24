@@ -1,4 +1,4 @@
-"""Campaign result store, the schema every CNTC engine emits, shared across stages.
+"""Campaign result store: the schema every CNTC engine emits, shared across stages.
 
 Layout (one directory per campaign under ``campaigns/``)::
 

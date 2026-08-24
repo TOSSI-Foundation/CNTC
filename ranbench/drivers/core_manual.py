@@ -1,4 +1,4 @@
-"""A core that ranbench does not manage, the default assumption for any 5G core.
+"""A core that ranbench does not manage: the default assumption for any 5G core.
 
 ``ranbench`` certifies the RAN. The core is the peer the gNB needs in order to be exercised at
 all, and it belongs to the tester: it may be shared with other work, deployed by hand, or a
