@@ -9,11 +9,11 @@
 # PKI, network-side triggers). Never read an L2 'na' as a pass.
 version: 0.1.0-roadmap
 profile: ausf-adversarial
-title: "5G AUSF \u2014 CNTC Level 2 (Adversarial Robustness & Privileged Interop)"
+title: "5G AUSF, CNTC Level 2 (Adversarial Robustness & Privileged Interop)"
 standards:
 - 3GPP TS 29.509 (Nausf)
 - 3GPP TS 33.501 (5G-AKA / EAP-AKA')
-- "3GPP TS 33.516 (SCAS \u2014 AUSF)"
+- "3GPP TS 33.516 (SCAS, AUSF)"
 defaults:
   class: normal
 gate:

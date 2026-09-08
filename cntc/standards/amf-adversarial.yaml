@@ -9,12 +9,12 @@
 # PKI, network-side triggers). Never read an L2 'na' as a pass.
 version: 0.1.0-roadmap
 profile: amf-adversarial
-title: "5G AMF \u2014 CNTC Level 2 (Adversarial Robustness & Privileged Interop)"
+title: "5G AMF, CNTC Level 2 (Adversarial Robustness & Privileged Interop)"
 standards:
 - 3GPP TS 24.501 (5GS NAS)
 - 3GPP TS 38.413 (NGAP / N2)
 - 3GPP TS 33.501 (5G security / 5G-AKA)
-- "3GPP TS 33.512 (SCAS \u2014 AMF)"
+- "3GPP TS 33.512 (SCAS, AMF)"
 defaults:
   class: normal
 gate:

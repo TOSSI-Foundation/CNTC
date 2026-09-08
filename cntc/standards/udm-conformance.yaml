@@ -12,11 +12,11 @@
 # kept NORMAL class so it informs the scorecard without gating.
 version: 1.0.0
 profile: udm-conformance
-title: "5G UDM \u2014 CNTC Level 1 (Conformance & Observable Security)"
+title: "5G UDM, CNTC Level 1 (Conformance & Observable Security)"
 standards:
 - 3GPP TS 29.503 (Nudm)
 - 3GPP TS 33.501 (SUCI / SIDF)
-- "3GPP TS 33.514 (SCAS \u2014 UDM)"
+- "3GPP TS 33.514 (SCAS, UDM)"
 defaults:
   class: normal
 gate:

@@ -12,18 +12,18 @@
 # kept NORMAL class so it informs the scorecard without gating.
 version: 1.0.0
 profile: nrf-conformance
-title: "5G NRF \u2014 CNTC Level 1 (Conformance & Observable Security)"
+title: "5G NRF, CNTC Level 1 (Conformance & Observable Security)"
 standards:
 - 3GPP TS 29.510 (Nnrf)
 - "3GPP TS 33.501 \xA713 (SBI authorization)"
-- "3GPP TS 33.518 (SCAS \u2014 NRF)"
+- "3GPP TS 33.518 (SCAS, NRF)"
 defaults:
   class: normal
 gate:
   essential: all
 tests:
 - id: NRF-REG-01
-  name: "NFRegister \u2014 a peer NF registers its profile"
+  name: "NFRegister, a peer NF registers its profile"
   category: protocol
   class: normal
   verdict: status_pass

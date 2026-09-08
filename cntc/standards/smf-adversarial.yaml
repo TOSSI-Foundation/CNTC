@@ -9,12 +9,12 @@
 # PKI, network-side triggers). Never read an L2 'na' as a pass.
 version: 0.1.0-roadmap
 profile: smf-adversarial
-title: "5G SMF \u2014 CNTC Level 2 (Adversarial Robustness & Privileged Interop)"
+title: "5G SMF, CNTC Level 2 (Adversarial Robustness & Privileged Interop)"
 standards:
 - 3GPP TS 29.502 (Nsmf)
 - "3GPP TS 24.501 \xA76 (5GSM / NAS-SM)"
 - 3GPP TS 29.244 (PFCP / N4)
-- "3GPP TS 33.515 (SCAS \u2014 SMF)"
+- "3GPP TS 33.515 (SCAS, SMF)"
 defaults:
   class: normal
 gate:

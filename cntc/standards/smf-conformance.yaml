@@ -12,12 +12,12 @@
 # kept NORMAL class so it informs the scorecard without gating.
 version: 1.0.0
 profile: smf-conformance
-title: "5G SMF \u2014 CNTC Level 1 (Conformance & Observable Security)"
+title: "5G SMF, CNTC Level 1 (Conformance & Observable Security)"
 standards:
 - 3GPP TS 29.502 (Nsmf)
 - "3GPP TS 24.501 \xA76 (5GSM / NAS-SM)"
 - 3GPP TS 29.244 (PFCP / N4)
-- "3GPP TS 33.515 (SCAS \u2014 SMF)"
+- "3GPP TS 33.515 (SCAS, SMF)"
 defaults:
   class: normal
 gate:
@@ -54,7 +54,7 @@ tests:
   class: normal
   verdict: status_pass
 - id: SMF-DP-01
-  name: "Data-path verify \u2014 traffic forwards through the UPF the SMF programmed"
+  name: "Data-path verify, traffic forwards through the UPF the SMF programmed"
   category: protocol
   class: essential
   verdict: status_pass

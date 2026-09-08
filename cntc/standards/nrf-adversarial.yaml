@@ -9,11 +9,11 @@
 # PKI, network-side triggers). Never read an L2 'na' as a pass.
 version: 0.1.0-roadmap
 profile: nrf-adversarial
-title: "5G NRF \u2014 CNTC Level 2 (Adversarial Robustness & Privileged Interop)"
+title: "5G NRF, CNTC Level 2 (Adversarial Robustness & Privileged Interop)"
 standards:
 - 3GPP TS 29.510 (Nnrf)
 - "3GPP TS 33.501 \xA713 (SBI authorization)"
-- "3GPP TS 33.518 (SCAS \u2014 NRF)"
+- "3GPP TS 33.518 (SCAS, NRF)"
 defaults:
   class: normal
 gate:

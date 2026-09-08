@@ -12,12 +12,12 @@
 # kept NORMAL class so it informs the scorecard without gating.
 version: 1.0.0
 profile: amf-conformance
-title: "5G AMF \u2014 CNTC Level 1 (Conformance & Observable Security)"
+title: "5G AMF, CNTC Level 1 (Conformance & Observable Security)"
 standards:
 - 3GPP TS 24.501 (5GS NAS)
 - 3GPP TS 38.413 (NGAP / N2)
 - 3GPP TS 33.501 (5G security / 5G-AKA)
-- "3GPP TS 33.512 (SCAS \u2014 AMF)"
+- "3GPP TS 33.512 (SCAS, AMF)"
 defaults:
   class: normal
 gate:
@@ -44,7 +44,7 @@ tests:
   class: essential
   verdict: status_pass
 - id: AMF-NGAP-01
-  name: "NG Setup \u2014 gNB\u2194AMF association (38.413 \xA78.7)"
+  name: "NG Setup, gNB\u2194AMF association (38.413 \xA78.7)"
   category: protocol
   class: essential
   verdict: status_pass

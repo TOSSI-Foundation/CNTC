@@ -102,3 +102,37 @@ def test_level2_is_disjoint_from_level1():
         except FileNotFoundError:
             continue
         assert not (l1 & l2), f"{nf}: tests in both levels: {l1 & l2}"
+
+
+def test_no_catalog_renders_smart_punctuation():
+    """No catalog may render an em dash, in any encoding.
+
+    A grep for the literal character is not enough. YAML decodes ``\\u2014`` inside a
+    double-quoted scalar back into an em dash, so a catalog can read as clean on disk and
+    still print one in the CLI, the scorecard, the certificate and the dashboard. This
+    loads every catalog and inspects the decoded strings, which is what a reader sees.
+    """
+    from pathlib import Path
+
+    from cntc import standards
+
+    banned = {"—": "em dash", "–": "en dash",
+              "‘": "left single quote", "’": "right single quote",
+              "“": "left double quote", "”": "right double quote",
+              "…": "ellipsis"}
+
+    def walk(node, where):
+        if isinstance(node, str):
+            for ch, what in banned.items():
+                assert ch not in node, f"{where}: {what} in {node!r}"
+        elif isinstance(node, dict):
+            for k, v in node.items():
+                walk(v, f"{where}.{k}")
+        elif isinstance(node, list):
+            for i, v in enumerate(node):
+                walk(v, f"{where}[{i}]")
+
+    files = sorted(Path(standards.__file__).parent.glob("*.yaml"))
+    assert files, "no catalogs found to check"
+    for f in files:
+        walk(load_catalog(f.stem), f.stem)

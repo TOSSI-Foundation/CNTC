@@ -12,11 +12,11 @@
 # kept NORMAL class so it informs the scorecard without gating.
 version: 1.0.0
 profile: ausf-conformance
-title: "5G AUSF \u2014 CNTC Level 1 (Conformance & Observable Security)"
+title: "5G AUSF, CNTC Level 1 (Conformance & Observable Security)"
 standards:
 - 3GPP TS 29.509 (Nausf)
 - 3GPP TS 33.501 (5G-AKA / EAP-AKA')
-- "3GPP TS 33.516 (SCAS \u2014 AUSF)"
+- "3GPP TS 33.516 (SCAS, AUSF)"
 defaults:
   class: normal
 gate:
@@ -28,7 +28,7 @@ tests:
   class: essential
   verdict: status_pass
 - id: AUSF-AUTH-02
-  name: "Confirm RES* \u2014 successful authentication"
+  name: "Confirm RES*, successful authentication"
   category: protocol
   class: normal
   verdict: status_pass
