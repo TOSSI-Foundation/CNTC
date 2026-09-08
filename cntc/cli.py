@@ -151,7 +151,8 @@ def main(argv=None) -> int:
     r.add_argument("--suite", choices=["performance", "load", "pfcp", "n3neg",
                                        "conformance", "all"],
                    help="user-plane (upfbench) suite selector")
-    r.add_argument("--nf", choices=["amf", "smf", "nrf", "ausf", "udm", "all"], default=None,
+    r.add_argument("--nf", choices=["amf", "smf", "nrf", "ausf", "udm", "udr", "pcf", "all"],
+                   default=None,
                    help="control-plane (cpbench) NF selector, used when config domain is control-plane")
     r.add_argument("--campaign", default=None)
     r.add_argument("--profile", default="conformance")

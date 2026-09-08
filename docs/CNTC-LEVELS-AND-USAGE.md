@@ -83,7 +83,7 @@ passes**. An essential FAIL → no certificate. An essential that cannot be judg
 
 ---
 
-## 4. Level 1: the full test list (44 tests, 26 essential)
+## 4. Level 1: the full test list (57 tests, 34 essential)
 
 `E` = essential (gates the certificate) · `n` = normal · `B` = bonus
 

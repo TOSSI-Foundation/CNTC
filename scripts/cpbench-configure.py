@@ -76,7 +76,8 @@ def docker_available() -> bool:
 
 def docker_nf_containers() -> list[str]:
     out = sh(["sudo", "-n", "docker", "ps", "--format", "{{.Names}}"])
-    return [n for n in out.splitlines() if n in ("amf", "smf", "nrf", "ausf", "udm")]
+    return [n for n in out.splitlines()
+            if n in ("amf", "smf", "nrf", "ausf", "udm", "udr", "pcf")]
 
 
 def k8s_namespaces_with_core() -> list[str]:
@@ -180,7 +181,8 @@ def main() -> int:
     kind = pick("deployment type", kinds, kinds[0])
 
     campaign = ask("campaign id", f"FREE5GC-{kind.upper()}-001")
-    target_nf = pick("which NF(s) to test", ["all", "amf", "smf", "nrf", "ausf", "udm"], "all")
+    target_nf = pick("which NF(s) to test",
+                     ["all", "amf", "smf", "nrf", "ausf", "udm", "udr", "pcf"], "all")
 
     core: dict = {}
     drivers: dict = {}

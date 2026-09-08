@@ -176,7 +176,7 @@ upfbench dashboard                                # live web UI over campaigns/ 
 ### Dashboard
 A live, view-only **Plotly Dash** app over `campaigns/` (`make dashboard`). Pages:
 Overview, **Control plane**, UPFs, Runs, Compare, Findings, Test catalog, Methodology, the
-Control-plane page and the Test catalog now cover **both** the control plane (44 tests across five
+Control-plane page and the Test catalog now cover **both** the control plane (57 tests across seven
 NFs) and the user plane, and each run surfaces its CNTC scorecard + certificate. See
 [dashboard/README.md](dashboard/README.md).
 
@@ -195,8 +195,10 @@ its **SCAS** security-assurance spec.
 | **NRF** | TS 29.510 (Nnrf) | TS 33.518 | SBI client (HTTP/2 + TLS + OAuth2) |
 | **AUSF** | TS 29.509 (Nausf) | TS 33.516 | SBI client + transitive via registration |
 | **UDM** | TS 29.503 (Nudm) | TS 33.514 | SBI client + transitive via registration |
+| **UDR** | TS 29.504 / 29.505 (Nudr) · TS 29.519 (policy data) | TS 33.501 | SBI client, each data type fetched directly |
+| **PCF** | TS 29.507 (Npcf AM) · TS 29.512 (Npcf SM) | TS 33.501 | SBI client, association lifecycle driven directly |
 
-- **Two certification levels.** **Level 1, Conformance & Observable Security** (44 tests, 26
+- **Two certification levels.** **Level 1, Conformance & Observable Security** (57 tests, 34
   essential) is **shipped**: everything provable with a spec-compliant peer + observation
   (registration, 5G-AKA, NAS ciphering/integrity, no-auth-bypass, SBI TLS/OAuth2, malformed →
   reject). **Level 2, Adversarial Robustness** (20 tests) is on the roadmap as data-only catalogs.
@@ -305,7 +307,7 @@ the UE, are documented in [docs/RANBENCH-RIG.md](docs/RANBENCH-RIG.md).
   - Requirements that cannot be judged are never promoted. A procedure the core never asked for,
     a path the rig cannot interrupt, and an interface that never leaves the host all record `na`
     with the reason, and a class with an unjudged essential is INCOMPLETE, never certified.
-- **Control plane (`cpbench`), Stage 2, shipped:** 44 Level-1 tests across AMF/SMF/NRF/AUSF/UDM,
+- **Control plane (`cpbench`), Stage 2, shipped:** 57 Level-1 tests across AMF/SMF/NRF/AUSF/UDM/UDR/PCF,
   verified against a live **free5GC** on both **docker-compose** and **Kubernetes**. On docker,
   AMF/AUSF/UDM certify; on Kubernetes, AMF certifies (full in-cluster registration + 5G-AKA + NAS
   security + negative attach) and the SBI checks surface real findings (no-TLS / token-less

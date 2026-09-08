@@ -52,7 +52,7 @@ distort a Level 1 verdict.
 > network function earns its certificate **only if *all* of its essential tests PASS**; if any
 > essential test FAILS, or cannot be judged (`na`), **no certificate is issued** for that NF.
 > Normal/bonus tests are scored and reported but never block certification. The whole-core
-> ("composite") certificate is issued only when **all five NFs** pass their essential sets.
+> ("composite") certificate is issued only when **every NF** passes its essential set.
 
 ---
 
@@ -192,7 +192,7 @@ is attached once, not five times.
 **Grading rule (per NF):** every **essential** test must **PASS** → the NF is certified. An
 essential **FAIL** → no certificate. An essential that could not be judged → **`na` →
 INCOMPLETE** (never a silent pass). A **composite** control-plane certificate is issued only
-when all five NFs pass.
+when every NF passes.
 
 ---
 
@@ -200,7 +200,7 @@ when all five NFs pass.
 
 - **Per-NF certificate**: issued when every *essential* test in that NF's catalog passes
   (e.g. AMF needs all 9 essentials; UDM all 4). Mirrors the SCAS/NESAS per-NF-class model.
-- **Composite "5G Core Control-Plane" certificate**: issued only when **all five NF profiles
+- **Composite "5G Core Control-Plane" certificate**: issued only when **every NF profile
   PASS** on the same core build.
 - **Performance** (registration rate, latency, capacity) never gates, it is graded relative to
   a baseline on the same rig class.

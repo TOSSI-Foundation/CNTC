@@ -178,7 +178,7 @@ test suite runs correctly against a cleartext-SBI docker core and a TLS-SBI Kube
 
 ## 5. The full test catalog
 
-### 5.1 Control plane: Level 1 "Conformance & Observable Security" (44 tests, 26 essential)
+### 5.1 Control plane: Level 1 "Conformance & Observable Security" (57 tests, 34 essential)
 
 Every test is anchored to a clause of that NF's own 3GPP spec (protocol + SCAS security).
 `●` = **essential** (must PASS to certify); `○` = supporting (informs the scorecard, does not gate).
@@ -369,7 +369,7 @@ For the blog + release video, the highest-value diagrams, all fully specified ab
 1. **Two-layer architecture** (§1), engines *measure* → `results.json` → umbrella *judges* →
    scorecard + certificate. *This is the hero diagram.*
 2. **Control-plane run pipeline** (§3), the 8-step flow from config to certificate.
-3. **Stimulus/observe topology** (§3a), UERANSIM (N1/N2) + SBI client vs the five NFs, with the
+3. **Stimulus/observe topology** (§3a), UERANSIM (N1/N2) + SBI client vs the control-plane NFs, with the
    N2/N4 wire captures.
 4. **Adapter/driver plug-in model** (§4), the pluggable edges (docker vs k8s adapters; UERANSIM
    vs SBI drivers) around a fixed suite/verdict core.

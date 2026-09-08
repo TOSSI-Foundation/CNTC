@@ -13,7 +13,8 @@ from cntc.verdict import evaluate
 
 # Level 1 (shipped, every test implemented) + Level 2 (adversarial roadmap) + performance
 NF_PROFILES = ["amf-conformance", "smf-conformance", "nrf-conformance",
-               "ausf-conformance", "udm-conformance", "cp-performance",
+               "ausf-conformance", "udm-conformance", "udr-conformance",
+               "pcf-conformance", "cp-performance",
                "amf-adversarial", "smf-adversarial", "nrf-adversarial", "ausf-adversarial"]
 
 
@@ -69,7 +70,8 @@ def test_single_essential_fail_is_fail():
 def test_essential_counts_match_design():
     # locks the Level-1 certification bar per NF so a careless catalog edit is caught
     expected = {"amf-conformance": 9, "smf-conformance": 7, "nrf-conformance": 3,
-                "ausf-conformance": 3, "udm-conformance": 4}
+                "ausf-conformance": 3, "udm-conformance": 4, "udr-conformance": 4,
+                "pcf-conformance": 4}
     for profile, n in expected.items():
         cat = load_catalog(profile)
         ess = sum(1 for t in cat["tests"] if t.get("class") == "essential")

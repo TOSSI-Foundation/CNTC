@@ -133,7 +133,7 @@ def layout(**_):
     cp_tests = sum(t for t, _ in cpc.values())
     cp_ess = sum(e for _, e in cpc.values())
     sub = html.P("Standards-graded certification for the whole 5G core, the control plane "
-                 "(AMF/SMF/NRF/AUSF/UDM over N1/N2 + SBI) and the user plane (the UPF over "
+                 "(AMF/SMF/NRF/AUSF/UDM/UDR/PCF over N1/N2 + SBI) and the user plane (the UPF over "
                  "N3 / N4), conformance, observable security, performance and robustness.",
                  className="muted small", style={"margin": "2px 0 18px", "maxWidth": "720px"})
     quad = html.Div(className="kpi-quad", children=[
