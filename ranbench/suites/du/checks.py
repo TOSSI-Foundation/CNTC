@@ -11,7 +11,7 @@ from __future__ import annotations
 import time
 
 from cntc_common.results import TestResult
-from ranbench.adapters.ocudu import F1C_SCTP_PORT
+from ranbench.ports import F1C_SCTP_PORT
 from ranbench.suites import ran_common as rc
 from ranbench.suites.base import RanTestCase, RunContext
 

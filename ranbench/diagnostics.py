@@ -83,7 +83,7 @@ def sctp_reachable(host: str, port: int, timeout: float = 4.0) -> bool | None:
 def _log_errors(ran, target: str, limit: int = 3) -> list[str]:
     """The most recent lines from a product's log that look like a failure."""
     try:
-        path = ran._cfg_yaml(target).get("log", {}).get("filename")  # noqa: SLF001
+        path = next(iter((ran.log_paths(target) or {}).values()), "")
     except Exception:  # noqa: BLE001
         return []
     if not path:
@@ -104,9 +104,7 @@ def collect(cfg, ran, obs: dict | None = None,
     # the AMF the CU-CP is configured to reach, and whether it answers
     amf = ""
     try:
-        amf_cfg = (ran._cfg_yaml("cucp").get("cu_cp") or {}).get("amf") or {}  # noqa: SLF001
-        addrs = amf_cfg.get("addrs")
-        amf = str(addrs[0] if isinstance(addrs, (list, tuple)) and addrs else (addrs or ""))
+        amf = ran.amf_address()
     except Exception:  # noqa: BLE001
         pass
     if amf:

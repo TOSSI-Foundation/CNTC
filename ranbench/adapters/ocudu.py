@@ -31,6 +31,7 @@ import time
 from pathlib import Path
 from typing import Any
 
+from ranbench import ports
 from ranbench.adapters.base import RanAdapter
 from ranbench.config import expand_user_path
 
@@ -41,10 +42,12 @@ NODES = {
     "du":   ("odu",   "O-DU"),
 }
 
-F1C_SCTP_PORT = 38472       # TS 38.472
-E1_SCTP_PORT = 38462        # TS 38.462
-GTPU_UDP_PORT = 2152        # TS 29.281
-NGAP_SCTP_PORT = 38412      # TS 38.412 (N2)
+# The interface ports are 3GPP assignments, not OCUDU's: they live in ranbench.ports. Re-exported
+# here only so an existing import of this module keeps resolving; new code imports ranbench.ports.
+F1C_SCTP_PORT = ports.F1C_SCTP_PORT
+E1_SCTP_PORT = ports.E1_SCTP_PORT
+GTPU_UDP_PORT = ports.GTPU_UDP_PORT
+NGAP_SCTP_PORT = ports.NGAP_SCTP_PORT
 
 
 class Adapter(RanAdapter):
@@ -61,16 +64,9 @@ class Adapter(RanAdapter):
             self.bins[tgt] = (expand_user_path(override) if override
                               else self.bin_dir / _APP_DIR[tgt] / proc)
         self.configs = {k: expand_user_path(v) for k, v in (e.get("configs") or {}).items()}
-        self.use_sudo = bool(e.get("sudo", True))
         self._yaml_cache: dict[str, dict] = {}
 
     # --- process plumbing -----------------------------------------------------
-    def _run(self, *args: str, timeout: int = 15) -> subprocess.CompletedProcess:
-        cmd = (["sudo", "-n"] if self.use_sudo else []) + list(args)
-        self.store.record_command(" ".join(cmd))
-        return subprocess.run(cmd, capture_output=True, text=True,
-                              stdin=subprocess.DEVNULL, timeout=timeout)
-
     def _pid(self, target: str) -> str:
         proc = NODES[target][0]
         r = subprocess.run(["pgrep", "-x", proc], capture_output=True, text=True,
@@ -220,52 +216,6 @@ class Adapter(RanAdapter):
             time.sleep(0.5)
         return False
 
-    def has_association(self, port: int) -> bool:
-        """Is an SCTP association ESTABLISHED on this port right now?
-
-        A point observation, for deciding whether something that was up has gone away. Reading
-        the socket is the only reliable way to ask OCUDU anything about its state while it runs:
-        the O-CU-CP block-buffers its log and writes nothing at all until it exits, so a marker
-        line for an event that has genuinely happened is simply not in the file yet.
-        """
-        r = self._run("ss", "-an", "--sctp", timeout=10)
-        return any("ESTAB" in line and f":{port}" in line
-                   for line in (r.stdout or "").splitlines())
-
-    def wait_for_association(self, port: int, timeout: float = 60.0) -> bool:
-        """Block until an SCTP association is ESTABLISHED on a port, or the timeout expires.
-
-        Preferred over waiting for a log line. OCUDU buffers its logs, so a procedure can have
-        completed well before the line that announces it reaches the file, and polling the log
-        then reports failure for something that actually worked. The socket state cannot lie.
-        """
-        deadline = time.time() + timeout
-        while time.time() < deadline:
-            r = self._run("ss", "-an", "--sctp", timeout=10)
-            for line in (r.stdout or "").splitlines():
-                if "ESTAB" in line and f":{port}" in line:
-                    return True
-            time.sleep(1)
-        return False
-
-    def wait_for_listen(self, port: int, timeout: float = 45.0) -> bool:
-        """Block until something is LISTENing on an SCTP port, or the timeout expires.
-
-        The CU-CP is the only listener in the split, and the O-DU and O-CU-UP are its clients.
-        Starting a client before that listener is bound gets it "Connection refused" and the
-        product exits, so the whole run then measures a stack that never assembled. Judged on
-        the socket for the same reason as ``wait_for_association``: OCUDU buffers its logs, and
-        its own start-up lines can reach the file minutes later, at shutdown.
-        """
-        deadline = time.time() + timeout
-        while time.time() < deadline:
-            r = self._run("ss", "-anl", "--sctp", timeout=10)
-            for line in (r.stdout or "").splitlines():
-                if "LISTEN" in line and f":{port}" in line:
-                    return True
-            time.sleep(1)
-        return False
-
     def interface_addrs(self, iface: str) -> list[str]:
         """The addresses a named RAN interface actually runs between, from the running configs.
 
@@ -293,6 +243,15 @@ class Adapter(RanAdapter):
         if "N3" in key:
             out += [_socket_bind(_dig(self._cfg_yaml("cuup"), "cu_up", "ngu", "socket"))]
         return [a for a in out if a]
+
+    def amf_address(self) -> str:
+        """The AMF address out of the CU-CP's own config."""
+        return _first(_dig(self._cfg_yaml("cucp"), "cu_cp", "amf", "addrs")) or ""
+
+    def log_paths(self, target: str) -> dict[str, str]:
+        """The log file this product was configured to write, from its own ``log:`` block."""
+        path = _dig(self._cfg_yaml(target), "log", "filename")
+        return {"main": str(path)} if path else {}
 
     def pcap_paths(self, target: str) -> dict[str, str]:
         """The per-interface pcaps this product writes, from its own ``pcap:`` config block.

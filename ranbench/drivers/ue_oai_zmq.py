@@ -26,7 +26,7 @@ from pathlib import Path
 from typing import Any
 
 from ranbench.config import expand_user_path
-from ranbench.adapters.ocudu import E1_SCTP_PORT, F1C_SCTP_PORT, NGAP_SCTP_PORT
+from ranbench.ports import E1_SCTP_PORT, F1C_SCTP_PORT, NGAP_SCTP_PORT
 from ranbench.drivers.base import Driver as BaseDriver
 
 _PROCEDURES = {"attach", "register", "pdu_session", "data_path"}

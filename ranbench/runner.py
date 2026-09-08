@@ -373,15 +373,16 @@ def _keep_product_logs(store, cfg, ran) -> None:
     import shutil
     for tgt in cfg.targets:
         try:
-            path = (ran._cfg_yaml(tgt).get("log") or {}).get("filename")  # noqa: SLF001
+            paths = ran.log_paths(tgt) or {}
         except Exception:  # noqa: BLE001
             continue
-        if not path or not Path(path).exists():
-            continue
-        try:
-            shutil.copy2(path, store.raw / f"ocudu-{tgt}.log")
-        except OSError:
-            pass
+        for name, path in paths.items():
+            if not path or not Path(path).exists():
+                continue
+            try:
+                shutil.copy2(path, store.raw / f"{ran.name}-{tgt}-{name}.log")
+            except OSError:
+                pass
 
 
 def _root_fault(facts: dict | None) -> str:

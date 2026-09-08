@@ -10,7 +10,7 @@ from __future__ import annotations
 import time
 
 from cntc_common.results import TestResult
-from ranbench.adapters.ocudu import NGAP_SCTP_PORT
+from ranbench.ports import NGAP_SCTP_PORT
 from ranbench.suites import ran_common as rc
 from ranbench.suites.base import RanTestCase, RunContext
 
@@ -150,15 +150,11 @@ class CucpNgap08(RanTestCase):
 
 
 def _amf_address(ctx: RunContext) -> str:
-    """The AMF the CU-CP is configured to reach, read from its own config."""
+    """The AMF the CU-CP is configured to reach, asked of the adapter."""
     try:
-        cfg = ctx.ran._cfg_yaml("cucp")        # noqa: SLF001, adapter-specific by design
+        return ctx.ran.amf_address()
     except Exception:  # noqa: BLE001
         return ""
-    addrs = ((cfg.get("cu_cp") or {}).get("amf") or {}).get("addrs")
-    if isinstance(addrs, (list, tuple)):
-        return str(addrs[0]) if addrs else ""
-    return str(addrs or "")
 
 
 # --- F1AP / F1-C, CU side (TS 38.473) --------------------------------------------
