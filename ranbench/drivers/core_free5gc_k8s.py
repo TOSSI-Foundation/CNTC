@@ -13,6 +13,7 @@ every test downstream of registration records "the attach never completed" witho
 from __future__ import annotations
 
 import json
+import os
 import socket
 import subprocess
 import time
@@ -21,6 +22,7 @@ import urllib.parse
 import urllib.request
 from typing import Any
 
+from ranbench.config import expand_user_path
 from ranbench.drivers.base import Driver as BaseDriver
 
 NGAP_SCTP_PORT = 38412
@@ -39,18 +41,42 @@ class Driver(BaseDriver):
         # Opt-in by design. ranbench does not own the core, and restarting one is disruptive:
         # it may be shared with other testers, or serving traffic that is not ours.
         self.reset_amf = bool(e.get("reset_amf", False))
+        self.kubeconfig = e.get("kubeconfig", "")
 
     def capabilities(self) -> set[str]:
         return {"provision_subscribers", "amf_reachable", "reset_ue_contexts",
                 "subscriber_data_ready"}
 
     # --- plumbing -------------------------------------------------------------
+    def _env(self) -> dict[str, str]:
+        """The environment kubectl runs in, with a KUBECONFIG that survives sudo.
+
+        A ranbench run is documented as ``sudo python3 -m ranbench.cli run`` because tcpdump and
+        the RAN processes need root. Under sudo ``$HOME`` becomes ``/root``, and root here has
+        no kubeconfig at all, so every kubectl call returns nothing and the driver concludes the
+        cluster holds no AMF. Nothing errors: the AMF is simply never reset, the core keeps the
+        previous run's UE context, and the next Registration Request is dropped. The campaign
+        then records "the attach never completed" across most of the catalog for a reason that
+        has nothing to do with the RAN under test.
+
+        So resolve the kubeconfig against the *invoking* user, the same way the config module
+        resolves ``~``. An explicit ``core.kubeconfig`` wins, then an inherited KUBECONFIG.
+        """
+        env = dict(os.environ)
+        if self.kubeconfig:
+            env["KUBECONFIG"] = str(expand_user_path(self.kubeconfig))
+        elif not env.get("KUBECONFIG"):
+            cand = expand_user_path("~/.kube/config")
+            if cand.exists():
+                env["KUBECONFIG"] = str(cand)
+        return env
+
     def _kubectl(self, *args: str, timeout: int = 30) -> str:
         cmd = [self.kubectl, "-n", self.namespace, *args]
         self.store.record_command(" ".join(cmd))
         try:
             r = subprocess.run(cmd, capture_output=True, text=True,
-                               stdin=subprocess.DEVNULL, timeout=timeout)
+                               stdin=subprocess.DEVNULL, timeout=timeout, env=self._env())
         except (OSError, subprocess.TimeoutExpired):
             return ""
         return r.stdout.strip() if r.returncode == 0 else ""
