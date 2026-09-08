@@ -32,6 +32,12 @@ _NF = [
     {"logo": "UDM", "key": "udm", "name": "UDM", "full": "Unified Data Management",
      "iface": "SBI (Nudm)", "driver": "SBI client + transitive (via registration)",
      "specs": ["TS 29.503", "TS 33.501", "TS 33.514"]},
+    {"logo": "UDR", "key": "udr", "name": "UDR", "full": "Unified Data Repository",
+     "iface": "SBI (Nudr)", "driver": "SBI client",
+     "specs": ["TS 29.504", "TS 29.505", "TS 29.503", "TS 29.519", "TS 33.501"]},
+    {"logo": "PCF", "key": "pcf", "name": "PCF", "full": "Policy Control",
+     "iface": "SBI (Npcf)", "driver": "SBI client",
+     "specs": ["TS 29.507", "TS 29.512", "TS 29.513", "TS 33.501"]},
 ]
 
 # verdict result -> (label, pill modifier)

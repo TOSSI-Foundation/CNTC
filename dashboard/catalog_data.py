@@ -49,10 +49,27 @@ _CP_NF = {
     "ausf": (T.WARN,     "AUSF · Authentication Server (SBI)"),
     "udm":  ("#0e7490",  "UDM · Unified Data Management (SBI)"),
     "nrf":  (T.GOOD,     "NRF · NF Repository (SBI)"),
+    "udr":  ("#7c3aed",  "UDR · Unified Data Repository (SBI)"),
+    "pcf":  ("#b13a77",  "PCF · Policy Control (SBI)"),
 }
 # One-line "what it measures" per test id (supplements the catalog name; falls back to the
 # name if an id ever appears here without an entry: so a new test still shows, never hides).
 _CP_WHAT = {
+    # UDR, driven over Nudr; assertions taken from the published schemas
+    "UDR-DR-01": "serves access and mobility subscription data",
+    "UDR-DR-02": "serves session management subscription data (singleNssai required)",
+    "UDR-DR-03": "serves SMF selection subscription data",
+    "UDR-DR-04": "serves the 5G-AKA authentication subscription",
+    "UDR-DR-05": "serves access and mobility policy data",
+    "UDR-SEC-01": "Nudr rejects a request with no valid token",
+    "UDR-NEG-01": "unknown SUPI is refused, repository stays up",
+    # PCF, the policy association lifecycle over Npcf
+    "PCF-AM-01": "creates an association from the mandatory members alone",
+    "PCF-AM-02": "the association is retrievable where it said it would be",
+    "PCF-AM-03": "release frees the association, and it is then gone",
+    "PCF-SM-01": "creates an SM policy association for a PDU session",
+    "PCF-SEC-01": "Npcf rejects a request with no valid token",
+    "PCF-NEG-01": "malformed policy request refused, PCF stays up",
     "AMF-REG-01": "UE completes initial registration",
     "AMF-AUTH-01": "AMF runs 5G-AKA with the UE",
     "AMF-AUTH-02": "NAS security-mode command / complete",
