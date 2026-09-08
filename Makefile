@@ -47,10 +47,10 @@ cp-configure:  ## interactive wizard -> control-plane campaign config (docker or
 cp-doctor:  ## preflight the control-plane rig  (CONFIG=)
 > python3 -m cpbench.cli doctor --config $(CONFIG)
 
-cp-run:  ## run the control-plane suite  (CONFIG= NF=all|amf|smf|nrf|ausf|udm CAMPAIGN=)
+cp-run:  ## run one NF or all  (CONFIG= NF=all|amf|smf|nrf|ausf|udm|udr|pcf CAMPAIGN=)
 > python3 -m cpbench.cli run --config $(CONFIG) --nf $(or $(NF),all) $(if $(CAMPAIGN),--campaign $(CAMPAIGN),)
 
-cp-certify:  ## issue a control-plane certificate  (CAMPAIGN= NF=amf|smf|nrf|ausf|udm)
+cp-certify:  ## issue a control-plane certificate  (CAMPAIGN= NF=amf|smf|nrf|ausf|udm|udr|pcf)
 > python3 -m cntc.cli certify campaigns/$(CAMPAIGN)/results.json --profile $(or $(NF),amf)-conformance
 
 # --- RAN (ranbench) ------------------------------------------------------------
@@ -119,8 +119,9 @@ profiles:  ## list CNTC requirement profiles
 lint:  ## validate the requirement catalogs
 > python3 -m cntc.cli lint
 
-test:  ## run the verdict-engine unit tests
-> python3 tests/test_verdict.py
+test:  ## run the unit tests (verdict engine, catalogs, smoke)
+> @if python3 -c "import pytest" 2>/dev/null; then python3 -m pytest -q tests/; \
+>  else echo "pytest not installed, running the verdict engine tests only"; python3 tests/test_verdict.py; fi
 
 # --- kubernetes ---------------------------------------------------------------
 k8s-deploy:  ## deploy the live dashboard in kubernetes (edit deploy/k8s first)
