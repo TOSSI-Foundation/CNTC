@@ -1,0 +1,65 @@
+version: 1.0.0
+profile: pcf-conformance
+title: "5G PCF, CNTC Level 1 (Conformance & Observable Security)"
+
+# The Policy Control Function is judged on the policy association lifecycle it actually
+# performs over Npcf: create, retrieve, delete. Each is driven directly and read from the
+# response, so a pass means the PCF did the thing, not that some other function's success
+# implied it might have.
+standards:
+  - "3GPP TS 29.507 (Npcf_AMPolicyControl service)"
+  - "3GPP TS 29.512 (Npcf_SMPolicyControl service)"
+  - "3GPP TS 29.513 (Policy and charging control framework)"
+  - "3GPP TS 33.501 (5G security architecture, SBI protection)"
+
+# Requirement provenance: the resource paths, response codes and mandatory members
+# asserted by this profile were taken from the published 3GPP OpenAPI definitions for
+# the services named above, not from the behaviour of any one implementation. Where a
+# schema declares no mandatory member, the profile asserts only that the resource is
+# served in the declared shape, and the test note says so.
+
+defaults:
+  class: normal
+gate:
+  essential: all
+
+tests:
+  # --- Npcf_AMPolicyControl, the association lifecycle (TS 29.507) --------------------
+  - id: PCF-AM-01
+    name: "AM policy association creation returns a policy and a Location"
+    category: protocol
+    class: essential
+    verdict: status_pass
+
+  - id: PCF-AM-02
+    name: "AM policy association is retrievable at the Location it returned"
+    category: protocol
+    class: essential
+    verdict: status_pass
+
+  # Releasing an association matters as much as creating one: a PCF that never frees them
+  # accumulates state until it fails.
+  - id: PCF-AM-03
+    name: "AM policy association delete releases it, and it is then gone"
+    category: protocol
+    class: essential
+    verdict: status_pass
+
+  # --- Npcf_SMPolicyControl (TS 29.512) -----------------------------------------------
+  - id: PCF-SM-01
+    name: "SM policy association creation for a PDU session"
+    category: protocol
+    class: essential
+    verdict: status_pass
+
+  # --- security (TS 33.501 §13) -------------------------------------------------------
+  - id: PCF-SEC-01
+    name: "Npcf requires TLS and a valid OAuth2 token"
+    category: security
+    verdict: status_pass
+
+  # --- robustness ---------------------------------------------------------------------
+  - id: PCF-NEG-01
+    name: "Malformed policy request rejected, PCF stays up"
+    category: robustness
+    verdict: status_pass

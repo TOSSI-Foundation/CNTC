@@ -1,0 +1,69 @@
+version: 1.0.0
+profile: udr-conformance
+title: "5G UDR, CNTC Level 1 (Conformance & Observable Security)"
+
+# The Unified Data Repository is the system of record behind the UDM, the PCF and the NEF.
+# Every requirement below is judged on the Nudr_DataRepository service the UDR actually
+# exposes, driven over its SBI and read from the response, never inferred from the fact that
+# some other network function appeared to work.
+standards:
+  - "3GPP TS 29.504 (Nudr_DataRepository service)"
+  - "3GPP TS 29.503 (Nudm_SDM, which defines the subscription data schemas)"
+  - "3GPP TS 29.505 (Usage of the Unified Data Repository for subscription data)"
+  - "3GPP TS 29.519 (Policy data)"
+  - "3GPP TS 33.501 (5G security architecture, SBI protection)"
+
+# Requirement provenance: the resource paths, response codes and mandatory members
+# asserted by this profile were taken from the published 3GPP OpenAPI definitions for
+# the services named above, not from the behaviour of any one implementation. Where a
+# schema declares no mandatory member, the profile asserts only that the resource is
+# served in the declared shape, and the test note says so.
+
+defaults:
+  class: normal
+gate:
+  essential: all
+
+tests:
+  # --- Nudr_DataRepository, subscription data (TS 29.505) ----------------------------
+  - id: UDR-DR-01
+    name: "Access and Mobility subscription data retrieval (am-data)"
+    category: protocol
+    class: essential
+    verdict: status_pass
+
+  - id: UDR-DR-02
+    name: "Session Management subscription data retrieval (sm-data)"
+    category: protocol
+    class: essential
+    verdict: status_pass
+
+  - id: UDR-DR-03
+    name: "SMF selection subscription data retrieval"
+    category: protocol
+    verdict: status_pass
+
+  # The authentication subscription is what lets the UDM build an AV, so 5G-AKA depends on it.
+  - id: UDR-DR-04
+    name: "Authentication subscription data retrieval (5G-AKA credentials)"
+    category: protocol
+    class: essential
+    verdict: status_pass
+
+  - id: UDR-DR-05
+    name: "Policy data retrieval for a UE (am-policy-data)"
+    category: protocol
+    verdict: status_pass
+
+  # --- security (TS 33.501 §13) -------------------------------------------------------
+  - id: UDR-SEC-01
+    name: "Nudr requires TLS and a valid OAuth2 token"
+    category: security
+    verdict: status_pass
+
+  # --- robustness ---------------------------------------------------------------------
+  - id: UDR-NEG-01
+    name: "Unknown SUPI returns 404 ProblemDetails, no crash"
+    category: robustness
+    class: essential
+    verdict: status_pass

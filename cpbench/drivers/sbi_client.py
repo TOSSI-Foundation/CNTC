@@ -64,8 +64,12 @@ class Driver(BaseDriver):
                 problem = body
         except Exception:  # noqa: BLE001, non-JSON body
             body = r.text[:500]
+        # Response headers are evidence, not decoration: TS 29.501 makes Location mandatory on
+        # a 201, and without it a created resource is unaddressable. Returned lower-cased so
+        # callers need not guess at the casing a given NF used.
         return {"ok": 200 <= r.status_code < 300, "status": r.status_code,
-                "http_version": r.http_version, "body": body, "problem_details": problem}
+                "http_version": r.http_version, "body": body, "problem_details": problem,
+                "headers": {k.lower(): v for k, v in r.headers.items()}}
 
     def tls_probe(self, host: str, port: int) -> dict[str, Any]:
         """Is the SBI endpoint served over TLS? Attempt an HTTPS handshake; a connect/TLS

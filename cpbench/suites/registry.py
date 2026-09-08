@@ -22,6 +22,11 @@ NF_REQUIRES = {
     "nrf":  {"gnb": None,       "sbi": True,  "observer": False},
     "ausf": {"gnb": "ueransim", "sbi": True,  "observer": False},
     "udm":  {"gnb": "ueransim", "sbi": True,  "observer": False},
+    # UDR is the system of record behind the UDM, PCF and NEF. Its data types are
+    # individually addressable over Nudr, so it needs no UE and no gNB: the SBI alone.
+    "udr":  {"gnb": None,       "sbi": True,  "observer": False},
+    # PCF policy associations are created and released over Npcf directly, so no UE either.
+    "pcf":  {"gnb": None,       "sbi": True,  "observer": False},
 }
 
 

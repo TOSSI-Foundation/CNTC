@@ -2,9 +2,10 @@
 # Deltas from the chart defaults that this single-node RKE2 box needs:
 #   - single UPF (simpler + reliable; ULCL needs extra N9 plumbing)
 #   - N6 (UPF internet side) ipvlan master forced to eth0 (this node has no eth1)
-#   - mongo PV corrected for THIS node: the chart ships a `local` PV pinned to a node named
-#     "ubuntu" at /home/ubuntu/mongodbdb; this box is "node1", so we replace it with a
-#     hostPath PV on node1 (mongo runs as uid 1001: chown /data/free5gc-mongo to 1001:1001).
+#   - mongo PV replaced: the chart ships a `local` PV at /home/ubuntu/mongodbdb pinned to a
+#     fixed node name, which does not survive a cluster rebuild. We use a hostPath PV at
+#     /data/free5gc-mongo instead (mongo runs as uid 1001, so chown it 1001:1001) and pin it
+#     to the node this cluster actually has. Check `kubectl get nodes` before deploying.
 global:
   userPlaneArchitecture: single
   upf:
@@ -36,4 +37,69 @@ mongodb:
                   - key: kubernetes.io/hostname
                     operator: In
                     values:
-                      - node1
+                      - ubuntu
+
+# The SMF chart hardcodes a three-UPF ULCL topology in `smf.configuration.configuration`, and
+# ignores `global.userPlaneArchitecture`. Left alone, the SMF tries to associate with
+# PSAUPF1_SERVICE_NAME and PSAUPF2_SERVICE_NAME, which do not exist, holds no PFCP association,
+# and every CreateSmContext returns 500. So the whole config block is replaced here with a
+# single-UPF topology pointing at the UPF service this release actually creates.
+#
+# NOTE: the nodeID below embeds the Helm release name. Installed as `free5gc-helm`, so the
+# service is `free5gc-helm-free5gc-upf-upf-service`. Change it if you install under another name.
+#
+# SMF is a subchart with no alias, so its values nest under `free5gc-smf`. Putting them at the
+# top level silently does nothing: helm accepts them and the chart default still renders.
+free5gc-smf:
+  smf:
+    configuration:
+      configuration: |-
+        smfName: SMF
+        snssaiInfos:
+          - sNssai:
+              sst: 1
+              sd: 010203
+            dnnInfos: # DNN information list
+              - dnn: internet # Data Network Name
+                dnaiList:
+                  - mec
+                dns: # the IP address of DNS
+                  ipv4: 8.8.8.8
+                  ipv6: 2001:4860:4860::8888
+        plmnList: # the list of PLMN IDs that this SMF belongs to (optional, remove this key when unnecessary)
+          - mcc: 208 # Mobile Country Code (3 digits string, digit: 0~9)
+            mnc: 93 # Mobile Network Code (2 or 3 digits string, digit: 0~9)
+        userplaneInformation:
+          upNodes:
+            gNB1:
+              type: AN
+            UPF1:
+              type: UPF
+              nodeID: free5gc-helm-free5gc-upf-upf-service
+              sNssaiUpfInfos:
+                - sNssai:
+                    sst: 1
+                    sd: 010203
+                  dnnUpfInfoList:
+                    - dnn: internet
+                      pools:
+                      - cidr: 10.60.0.0/16
+              interfaces:
+                - interfaceType: N3
+                  endpoints:
+                    - free5gc-helm-free5gc-upf-upf-service
+                  networkInstances:
+                    - internet
+          links:
+            - A: gNB1
+              B: UPF1
+        locality: area1 # Name of the location where a set of AMF, SMF and UPFs are located
+        t3591:
+          enable: true # true or false
+          expireTime: 16s # default is 6 seconds
+          maxRetryTimes: 3 # the max number of retransmission
+        # retransmission timer for pdu session release command
+        t3592:
+          enable: true # true or false
+          expireTime: 16s # default is 6 seconds
+          maxRetryTimes: 3 # the max number of retransmission

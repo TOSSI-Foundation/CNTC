@@ -14,7 +14,7 @@ from typing import Any
 
 import yaml
 
-NFS = ("amf", "smf", "nrf", "ausf", "udm")
+NFS = ("amf", "smf", "nrf", "ausf", "udm", "udr", "pcf")
 VALID_TARGETS = NFS + ("all",)
 
 
@@ -48,7 +48,7 @@ class CoreConfig:
 @dataclasses.dataclass
 class Campaign:
     campaign: str
-    target_nf: str                            # amf|smf|nrf|ausf|udm|all
+    target_nf: str                            # amf|smf|nrf|ausf|udm|udr|pcf|all
     sut: dict[str, Any]
     core: CoreConfig
     drivers: dict[str, str] = dataclasses.field(default_factory=dict)   # role -> driver name
