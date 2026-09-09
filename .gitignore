@@ -42,3 +42,8 @@ docs/VIDEO-DEMO-SCRIPT.md
 
 # archived campaign runs (kept locally, never part of the repo)
 campaigns_archive/
+
+# OAI writes these stats files into the working directory it is started from
+nrL1_stats.log
+nrMAC_stats.log
+nrRRC_stats.log

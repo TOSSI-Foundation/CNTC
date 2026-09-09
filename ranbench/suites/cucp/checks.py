@@ -360,8 +360,13 @@ class CucpSec03(RanTestCase):
         conf_req = s["confidentiality_indication"] in ("required", "preferred")
         integ_req = s["integrity_indication"] in ("required", "preferred")
         problems = []
-        if s["integrity_null"]:
-            problems.append("NIA0 (null integrity) selected")
+        # Conditioned on the signalled policy, exactly as the ciphering check below is. NIA0 is
+        # not a defect in itself: when the core signals user-plane integrity as "not-needed",
+        # selecting the null algorithm is the correct response, and reporting it as a downgrade
+        # states something untrue about a conformant gNB.
+        if s["integrity_null"] and integ_req:
+            problems.append(f"NIA0 (null integrity) selected while integrity is "
+                            f"{s['integrity_indication']}")
         if s["ciphering_null"] and conf_req:
             problems.append(f"NEA0 (null ciphering) selected while confidentiality is "
                             f"{s['confidentiality_indication']}")

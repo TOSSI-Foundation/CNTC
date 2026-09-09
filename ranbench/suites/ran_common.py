@@ -88,6 +88,27 @@ def release_procedure(ctx: RunContext, tid: str, name: str, slot: str,
         return _na(tid, name, "the core never sent an NGAP UE Context Release Command, so the "
                               "gNB was never asked to release the UE context (core behaviour, "
                               f"not a RAN result) [{spec}]")
+
+    # A release asked for after the judged link was already torn down cannot have been carried
+    # on it. On this rig the core issues no release when the UE deregisters; the one that does
+    # appear is triggered by the teardown itself, and lands about three seconds after the F1
+    # association has shut down. Reading that absence as "the CU-CP never released the UE
+    # context over F1" accuses the product of skipping a step the harness had already made
+    # impossible, so it is 'na' and says exactly that.
+    pcaps = (o.get("pcaps") or {})
+    tgt, _, iface = slot.partition(".")
+    slot_pcap = (pcaps.get(tgt) or {}).get(iface, "")
+    ngap_pcap = (pcaps.get("cucp") or {}).get("ngap", "")
+    obs = getattr(ctx, "observer", None)
+    if slot_pcap and ngap_pcap and obs is not None and iface != "ngap":
+        asked = obs.event_time(ngap_pcap, "UEContextReleaseCommand")
+        gone = obs.event_time(slot_pcap, "SHUTDOWN")
+        if asked is not None and gone is not None and asked > gone:
+            return _na(tid, name,
+                       f"the release was requested {asked - gone:.1f}s after the {iface} "
+                       f"association had already shut down, so there was no link left to carry "
+                       f"it. This is a property of how the deployment was torn down, not of the "
+                       f"product [{spec}]")
     return procedures(ctx, tid, name, slot, expected, spec)
 
 

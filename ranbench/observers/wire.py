@@ -65,15 +65,37 @@ class WireObserver:
         return lines or None
 
     # --- procedure presence ---------------------------------------------------
+    # A trailing PDCP MAC turns "RRC Reconfiguration" into "RRC Reconfiguration MAC=0x...".
+    _INFO_MAC = re.compile(r"\s+MAC=0x[0-9a-fA-F]+$")
+
     def procedures(self, pcap: str) -> set[str] | None:
         """The distinct protocol messages seen, e.g. {'NGSetupRequest', 'InitialUEMessage'}.
 
-        The info column is ``Message[, detail[, detail]]``; the leading token is the ASN.1
-        procedure name, which is what the catalog is written against."""
+        **Every** comma-separated token counts, not just the leading one. SCTP bundles chunks,
+        so one frame can carry a SACK and the DATA chunk holding the procedure, and Wireshark
+        renders that as ``SACK (Ack=2, Arwnd=106496) , UEContextSetupResponse``. Reading only
+        the first token returned "SACK (Ack=2" as the procedure and lost the message entirely.
+
+        This did not show up against a stack that writes its own per-interface captures, where
+        frames are not bundled that way. It appears the moment the capture is taken off the
+        wire independently, and it made five procedures that are plainly present in the pcap
+        grade as absent, which is a false accusation against the product.
+
+        Tokens are normalised by dropping a parenthesised suffix and a trailing PDCP MAC, so
+        "SACK (Ack=2" reduces to "SACK" and "RRC Reconfiguration MAC=0x.." to the message name
+        the catalog is written against.
+        """
         lines = self.info_lines(pcap)
         if lines is None:
             return None
-        return {l.split(",")[0].strip() for l in lines}
+        out: set[str] = set()
+        for line in lines:
+            for tok in line.split(","):
+                tok = self._INFO_MAC.sub("", tok.strip())
+                tok = tok.split(" (")[0].strip()
+                if tok:
+                    out.add(tok)
+        return out
 
     def has(self, pcap: str, *names: str) -> bool | None:
         """True iff every named procedure appears in the capture."""
@@ -81,6 +103,27 @@ class WireObserver:
         if procs is None:
             return None
         return all(n in procs for n in names)
+
+    def event_time(self, pcap: str, needle: str) -> float | None:
+        """Capture-relative time of the first frame whose info mentions ``needle``.
+
+        Used to tell "the product did not do X" apart from "X was asked for after the link it
+        would have crossed was already gone", which are the same absence in a capture and very
+        different claims about a product.
+        """
+        out = self._tshark(pcap, "-T", "fields", "-e", "frame.time_relative",
+                           "-e", "_ws.col.Info")
+        if out is None:
+            return None
+        low = needle.lower()
+        for line in out.splitlines():
+            t, _, info = line.partition("\t")
+            if low in info.lower():
+                try:
+                    return float(t)
+                except ValueError:
+                    return None
+        return None
 
     def detail_lines(self, pcap: str, needle: str) -> list[str] | None:
         """Info lines mentioning ``needle`` (case-insensitive), for the NAS names and RRC
@@ -109,12 +152,22 @@ class WireObserver:
             return None
         smp_idx = next((i for i, l in enumerate(lines)
                         if "security mode complete" in l.lower()), None)
+        # The AS Security Mode Command, not the NAS one. Both render as "security mode command",
+        # and the NAS message is carried inside an Information Transfer, so that is what tells
+        # them apart. Picking the NAS one puts the boundary in the wrong place entirely.
         smc_idx = next((i for i, l in enumerate(lines)
-                        if "security mode command" in l.lower()), None)
+                        if "security mode command" in l.lower()
+                        and "information transfer" not in l.lower()), None)
+        # The boundary is the AS SMC itself, not Security Mode Complete. TS 33.501 §6.7.4 has
+        # the gNB integrity protect the Security Mode Command with the new AS key, which is how
+        # the UE checks the network holds it. Treating the SMC as "before protection" therefore
+        # counts a correctly protected message as a violation: it fails a conformant gNB and
+        # passes one that sends its SMC unprotected, which is exactly backwards.
+        boundary = smc_idx if smc_idx is not None else smp_idx
         pre = [m.group(1) for i, l in enumerate(lines)
-               if (smp_idx is None or i < smp_idx) for m in [self._MAC_RE.search(l)] if m]
+               if (boundary is None or i < boundary) for m in [self._MAC_RE.search(l)] if m]
         post = [m.group(1) for i, l in enumerate(lines)
-                if smp_idx is not None and i >= smp_idx
+                if boundary is not None and i >= boundary
                 for m in [self._MAC_RE.search(l)] if m]
         nonzero_post = [m for m in post if m != "00000000"]
         # Ciphering is judged separately, by rrc_ciphering(): whether the NAS message name
@@ -126,6 +179,7 @@ class WireObserver:
             "smp": smp_idx is not None,
             "pre_smc_macs": sorted(set(pre)),
             "post_smc_macs": sorted(set(nonzero_post)),
+            "boundary": "as-smc" if smc_idx is not None else ("smp" if smp_idx is not None else ""),
             "integrity_activated": bool(nonzero_post) and all(m == "00000000" for m in pre),
         }
 
