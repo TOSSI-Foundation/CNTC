@@ -125,6 +125,17 @@ class RanAdapter(abc.ABC):
         """
         return False
 
+    def wait_for_cell(self, timeout: float = 60.0) -> bool:
+        """Block until the DU's cell is serving, so the UE has something to find.
+
+        Sequencing, not a verdict: launching the UE before the cell is up wastes the whole
+        attach budget on a UE that has nothing to synchronise to. How a stack announces this
+        differs (a DU log line, a CU-CP admitting the cell, a radio socket), so it belongs to
+        the adapter. False means the adapter cannot tell, and the caller proceeds and records
+        that it could not confirm the cell rather than pretending it did.
+        """
+        return False
+
     # --- socket observation (generic: this is the OS, not the stack) ----------
     def _sctp_lines(self, listening: bool = False) -> list[str]:
         try:
@@ -164,11 +175,33 @@ class RanAdapter(abc.ABC):
             time.sleep(1)
         return False
 
+    # --- evidence lifecycle ---------------------------------------------------
+    def begin_evidence(self) -> None:
+        """Called once before the products start, to open whatever the adapter must open.
+
+        A stack that writes its own captures does nothing here. A stack that writes none has
+        ranbench capture the interfaces on its behalf, and this is where that starts, before
+        anything is running, so NG Setup and F1 Setup are on the wire inside the window rather
+        than just before it.
+        """
+
+    def end_evidence(self) -> None:
+        """Called once after the products stop, to close and flush the same."""
+
     # --- evidence -------------------------------------------------------------
     def pcap_paths(self, target: str) -> dict[str, str]:
         """``{interface: path}`` for this target's captures (ngap/f1ap/e1ap/f1u/n3).
         Empty when there are none, the affected tests then grade 'na'."""
         return {}
+
+    def planned_evidence(self, target: str) -> list[str]:
+        """The interfaces this target will have evidence for, named before the run starts.
+
+        Separate from ``pcap_paths`` because a preflight runs before anything is capturing. A
+        stack that writes its own captures already has them and answers with those; a stack
+        ranbench captures on behalf of has none yet and answers with what it will collect.
+        """
+        return sorted(self.pcap_paths(target))
 
     def log_paths(self, target: str) -> dict[str, str]:
         """``{name: path}`` for the product's own log files, for diagnosis only.

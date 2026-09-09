@@ -67,7 +67,15 @@ class Driver(BaseDriver):
         self.ssb = int(d.get("ssb", 0))
         self.zmq_tx = d.get("zmq_tx", "tcp://127.0.0.1:4557")
         self.zmq_rx = d.get("zmq_rx", "tcp://127.0.0.1:4556")
+        # Which virtual radio joins the UE to the DU. OCUDU exposes a ZeroMQ device; OAI ships
+        # its own rfsimulator, in which the DU is the server and the UE dials it. Everything
+        # else about the UE, and every milestone parsed out of its log, is identical.
+        self.radio = str(d.get("radio", "zmq")).lower()
+        self.rfsim_server = d.get("rfsim_server", "127.0.0.1")
         self.attach_timeout = float(d.get("attach_timeout_s", 150))
+        # How long to let a network-initiated UE Context Release finish before tearing the
+        # deployment down. Sized for the core, not the RAN: see _stop_all.
+        self.release_settle_s = float(d.get("release_settle_s", 30))
         self.ping_target = d.get("ping_target", "8.8.8.8")
         sub = (cfg.subscribers or [{}])[0]
         self.imsi = str(sub.get("supi", "")).replace("imsi-", "")
@@ -107,9 +115,12 @@ class Driver(BaseDriver):
             # with; OAI wants it as a number
             sd = self.sd[2:] if self.sd.lower().startswith("0x") else self.sd
             argv += ["--uicc0.pdu_sessions.[0].nssai_sd", f"0x{sd}"]
-        argv += ["--zmq.[0].tx_channels", self.zmq_tx,
-                 "--zmq.[0].rx_channels", self.zmq_rx,
-                 "--device.name", "oai_zmqdevif"]
+        if self.radio == "rfsim":
+            argv += ["--rfsim", "--rfsimulator.[0].serveraddr", str(self.rfsim_server)]
+        else:
+            argv += ["--zmq.[0].tx_channels", self.zmq_tx,
+                     "--zmq.[0].rx_channels", self.zmq_rx,
+                     "--device.name", "oai_zmqdevif"]
         if self.uecap:
             # without a declared UE capability set OAI asserts (max_mimo_layers > 0) right
             # after RRC Setup, so this is not optional in practice
@@ -145,8 +156,12 @@ class Driver(BaseDriver):
             for attempt in (1, 2):
                 obs["attempt"] = attempt
                 self._bring_up(ran, obs)
-                if obs.get("cell_active"):
-                    self._attach(ue_log, obs)
+                # Attach regardless of whether the cell could be confirmed. cell_active is a
+                # recorded fact, not a gate: an adapter that cannot observe cell activation
+                # would otherwise skip the stimulus entirely and the campaign would measure a
+                # gNB it had just spent minutes bringing up. The attach is itself the decisive
+                # test of whether a cell is there.
+                self._attach(ue_log, obs)
                 if obs.get("registration_accept"):
                     break
                 if attempt == 1:
@@ -176,7 +191,16 @@ class Driver(BaseDriver):
         # empty until the process exits. So allow a fixed settling window for the procedure to
         # complete on the wire, then stop the products, which is what flushes the pcaps the
         # release cases are actually judged from.
-        time.sleep(8)
+        #
+        # The window has to outlast the *core*, not the RAN. Measured on this rig: the UE
+        # deregisters immediately, but free5GC's AMF took roughly 11 s to issue the NGAP UE
+        # Context Release Command. With an 8 s window the DU was stopped first, F1 was shut
+        # down at t=20.5 s and the release arrived at t=23.8 s, so the CU-CP had no F1 left to
+        # release over. The catalog then recorded "missing UEContextReleaseComplete" against
+        # the CU-CP and the DU for a procedure this harness had made impossible. Accusing a
+        # product of skipping a step we prevented is the worst failure this framework can have,
+        # so the window is sized for the slow peer.
+        time.sleep(float(self.release_settle_s))
         for tgt in ("du", "cuup", "cucp"):
             try:
                 ran.stop(tgt)
@@ -184,6 +208,12 @@ class Driver(BaseDriver):
             except Exception:  # noqa: BLE001
                 pass
         time.sleep(2)
+        # Close it only now. The products' own shutdown carries the UE Context Release the
+        # release cases are judged on, so the window has to outlast them.
+        try:
+            ran.end_evidence()
+        except Exception:  # noqa: BLE001
+            pass
 
     def _bring_up(self, ran, obs: dict) -> None:
         """Start CU-CP, CU-UP then O-DU, waiting for each to reach its milestone."""
@@ -191,6 +221,11 @@ class Driver(BaseDriver):
         for tgt in ("du", "cuup", "cucp"):
             ran.stop(tgt)
         time.sleep(5)
+
+        # Open the evidence window before the first product, not after: NG Setup, F1 Setup and
+        # E1 Setup all happen during bring-up, and a capture started later misses the very
+        # procedures the setup cases are judged on. A stack that captures itself ignores this.
+        ran.begin_evidence()
 
         ran.start("cucp")
         # Wait for the F1-C listener to be BOUND before starting anything that dials it. The
@@ -227,10 +262,14 @@ class Driver(BaseDriver):
                   "will refuse to admit the UE; the attach is attempted anyway.")
 
         ran.start("du")
-        # The one log wait that is sound. Unlike the CU-CP, the O-DU is chatty enough to push
-        # past its buffer, so its file tracks reality while it runs (verified: 12 KB written and
-        # the marker present after 20 s). Cell activation also has no socket to observe.
-        obs["cell_active"] = ran.wait_for_log("du", "Cell was activated", 60)
+        # How a stack says "the cell is serving" is the stack's business, so ask the adapter.
+        # Hardcoding one vendor's wording here meant the UE was never launched against any other
+        # stack: the marker never appeared, cell_active stayed false, and the run spent its whole
+        # budget bringing a gNB up and then measuring nothing.
+        obs["cell_active"] = ran.wait_for_cell(60)
+        if not obs["cell_active"]:
+            print("[ranbench] warning: could not confirm the cell is serving; the UE is "
+                  "launched anyway and the attach will show whether it found one.")
 
     def _attach(self, ue_log: Path, obs: dict) -> None:
         """Launch the UE and wait for the attach milestones to appear in its log."""

@@ -1,0 +1,73 @@
+# CNTC RANCert: a campaign against an OAI split gNB (O-CU-CP / O-CU-UP / O-DU).
+#
+#   ranbench doctor --config configs/oai-ran.yaml
+#   ranbench run    --config configs/oai-ran.yaml --target all
+#
+# Addresses are NOT listed here. The adapter reads them out of the .conf files each OAI process
+# actually runs with (ran.configs below), so re-addressing the rig needs no edit in this file.
+# See docs/OAI-RIG.md for how the rig is built and run by hand.
+domain: ran
+campaign: OAI-RAN-001
+target: all                    # du | cucp | cuup | all
+
+ran:
+  adapter: oai                 # ranbench/adapters/oai.py
+  bin_dir: ~/openairinterface5g/cmake_targets/ran_build/build
+  sudo: true
+  # nr-softmodem is BOTH the CU-CP and the DU, so the config file is the only thing that says
+  # which product a process is. The adapter identifies every process by these paths.
+  configs:
+    cucp: configs/oai/cucp.conf
+    cuup: configs/oai/cuup.conf
+    du:   configs/oai/du.conf
+  # The DU drives the radio simulator; the CU-CP and CU-UP have no radio.
+  args:
+    du: ["--rfsim"]
+
+# The 5G core the RAN peers with (N2 to the AMF, N3 to the UPF). Bring-your-own: it is a peer,
+# not the subject of the certificate.
+core:
+  adapter: free5gc_k8s
+  namespace: free5gc
+  webui: http://localhost:30500
+  # Reset the AMF before the campaign so every run starts from a defined registration state.
+  # Killing a UE leaves context behind, and the next Registration Request is then dropped with
+  # no error anywhere: the UE reaches RRC_CONNECTED and stops.
+  reset_amf: true
+
+# The UE that stimulates the RAN. Same OAI binary as the OCUDU rig, different radio transport:
+# OAI's own rfsimulator rather than the ZeroMQ device.
+#
+# The cell parameters below MUST match what the DU broadcasts, or the UE never finds the cell.
+# They are not free choices: the DU prints the exact UE command line it expects on startup
+# ("Command line parameters for OAI UE: ..."), and these are read from there.
+drivers:
+  ue: ue_oai_zmq
+  ue_bin: ~/openairinterface5g/cmake_targets/ran_build/build/nr-uesoftmodem
+  uecap_file: ~/openairinterface5g/targets/PROJECTS/GENERIC-NR-5GC/CONF/uecap_ports1.xml
+  prb: 106                    # 40 MHz at SCS 30 kHz
+  numerology: 1
+  band: 78
+  centre_freq_hz: 3619200000  # = the DU's absoluteFrequencySSB 641280
+  ssb: 516                    # the DU's SSB start subcarrier; 0 makes the UE scan at 0 Hz
+  radio: rfsim
+  rfsim_server: 127.0.0.1     # the DU runs the rfsimulator server
+  attach_timeout_s: 150
+  ping_target: 8.8.8.8
+
+# 5G-AKA subscribers provisioned into the core. These MUST match the core's PLMN and the slice
+# the CU-CP advertises at NG Setup, or the UE is rejected: free5GC here serves mcc 208 / mnc 93,
+# S-NSSAI sst 1 / sd 010203, DNN internet.
+subscribers:
+  - supi: "imsi-208930000000001"
+    ki: "8baf473f2f8fd09487cccbd7097c6862"
+    opc: "8e27b6af0e692e750f32667a3b14605d"
+    plmn: "20893"
+    sst: 1
+    sd: "010203"
+    dnn: "internet"
+
+sut:
+  rig_class: "shared-vm"
+  cpu: ""
+  ran_release: ""             # filled live by the adapter from `<binary> --version`

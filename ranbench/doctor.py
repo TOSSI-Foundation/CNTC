@@ -82,10 +82,12 @@ def run(config_path: str) -> int:
                      "running" if alive else ("not running (the run will start it)"
                                               if alive is False else
                                               "CANNOT OBSERVE, crash detection impossible")))
-        pcaps = ran.pcap_paths(tgt)
-        rows.append((f"pcap:{tgt}", bool(pcaps),
-                     ", ".join(sorted(pcaps)) if pcaps else
-                     "no pcaps enabled, protocol/security tests will grade 'na'"))
+        # What evidence the run will have, which is not the same as what exists right now:
+        # a stack ranbench captures for has no files until the run opens them.
+        planned = ran.planned_evidence(tgt)
+        rows.append((f"pcap:{tgt}", bool(planned),
+                     ", ".join(planned) if planned else
+                     "no evidence available, protocol/security tests will grade 'na'"))
 
     # the core peer
     core_ok = bool(cfg.core.adapter)

@@ -244,6 +244,15 @@ class Adapter(RanAdapter):
             out += [_socket_bind(_dig(self._cfg_yaml("cuup"), "cu_up", "ngu", "socket"))]
         return [a for a in out if a]
 
+    def wait_for_cell(self, timeout: float = 60.0) -> bool:
+        """The O-DU announces cell activation in its own log.
+
+        Sound here despite OCUDU's buffering: unlike the CU-CP, the O-DU is chatty enough to
+        push past the buffer, so its file tracks reality while it runs. Cell activation also has
+        no socket to observe, so there is nothing better to watch.
+        """
+        return self.wait_for_log("du", "Cell was activated", timeout)
+
     def amf_address(self) -> str:
         """The AMF address out of the CU-CP's own config."""
         return _first(_dig(self._cfg_yaml("cucp"), "cu_cp", "amf", "addrs")) or ""
