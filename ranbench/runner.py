@@ -224,7 +224,19 @@ def _exclusive_rig():
     """
     import fcntl
     lock = Path(tempfile.gettempdir()) / "ranbench-rig.lock"
-    fh = open(lock, "w")
+    try:
+        fh = open(lock, "a+")
+    except OSError as e:
+        # The lock file outlives the run that made it, and the temp directory is shared and
+        # sticky, so a file left by one user is not necessarily writable by the next. Left as a
+        # bare traceback this reads like a broken installation and blocks every campaign on the
+        # machine; say what it is and how to clear it.
+        raise SystemExit(
+            f"[ranbench] cannot open the rig lock at {lock}: {e}\n"
+            "[ranbench] The lock is a plain file and holds no state worth keeping. It is\n"
+            "[ranbench] usually left by a run under a different user, so removing it is safe\n"
+            "[ranbench] once no campaign is running:\n"
+            f"[ranbench]     sudo rm -f {lock}") from None
     try:
         try:
             fcntl.flock(fh.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -235,6 +247,8 @@ def _exclusive_rig():
                 "[ranbench] and writes to the same capture files, so concurrent runs destroy\n"
                 "[ranbench] each other's evidence. Wait for the first to finish, then re-run.\n"
                 f"[ranbench] (lock: {lock})") from None
+        fh.seek(0)
+        fh.truncate()
         fh.write(str(os.getpid()))
         fh.flush()
         yield

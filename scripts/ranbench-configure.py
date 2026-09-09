@@ -106,25 +106,55 @@ def main() -> int:
     print("The RAN under test and the 5G core are bring-your-own; this only describes them.\n")
 
     print("RAN under test:")
-    adapter = ask("adapter (ranbench/adapters/<name>.py)", "ocudu", ni)
-    bin_dir = ask("binary directory", "~/ocudu/build/apps", ni)
-    cucp_cfg = ask("O-CU-CP config file", "configs/ocudu/cu_cp.yml", ni)
-    cuup_cfg = ask("O-CU-UP config file", "configs/ocudu/cu_up.yml", ni)
-    du_cfg = ask("O-DU config file", "configs/ocudu/du_zmq.yml", ni)
+    adapter = ask("adapter (ocudu | oai)", "ocudu", ni).strip().lower()
+    # Each stack keeps its products and its configuration in its own shape, so the defaults
+    # follow the choice. Offering one stack's paths for the other produced a config that looked
+    # complete and could not start anything.
+    if adapter == "oai":
+        d_bin = "~/openairinterface5g/cmake_targets/ran_build/build"
+        d_cucp, d_cuup, d_du = ("configs/oai/cucp.conf", "configs/oai/cuup.conf",
+                                "configs/oai/du.conf")
+    else:
+        d_bin = "~/ocudu/build/apps"
+        d_cucp, d_cuup, d_du = ("configs/ocudu/cu_cp.yml", "configs/ocudu/cu_up.yml",
+                                "configs/ocudu/du_zmq.yml")
+    bin_dir = ask("binary directory", d_bin, ni)
+    cucp_cfg = ask("O-CU-CP config file", d_cucp, ni)
+    cuup_cfg = ask("O-CU-UP config file", d_cuup, ni)
+    du_cfg = ask("O-DU config file", d_du, ni)
 
     # --- derive the UE's radio parameters from the DU's own cell configuration -------
-    du = load_yaml(Path(du_cfg).expanduser())
-    cell = du.get("cell_cfg") or {}
-    ru = du.get("ru_sdr") or {}
-    arfcn = int(cell.get("dl_arfcn", 632628))
-    band = int(cell.get("band", 78))
-    scs = int(cell.get("common_scs", 30))
-    bw = int(cell.get("channel_bandwidth_MHz", 20))
-    plmn = str(cell.get("plmn", "00101"))
-    tac = cell.get("tac", 1)
+    # OAI configures itself with libconfig rather than YAML, and names the same quantities
+    # differently, so the DU is read according to the stack it belongs to.
+    ru: dict = {}
+    ssb_sc = 0
+    if adapter == "oai":
+        sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+        from ranbench.adapters import _libconfig as lc
+        c = lc.read(Path(du_cfg).expanduser())
+        g = lambda k, d: lc.first(c, k, str(d))
+        arfcn = int(g("absoluteFrequencySSB", 641280))
+        band = int(g("dl_frequencyBand", 78))
+        scs = {0: 15, 1: 30, 2: 60, 3: 120}.get(int(g("dl_subcarrierSpacing", 1)), 30)
+        prb_cfg = int(g("dl_carrierBandwidth", 106))
+        mcc, mnc = g("mcc", 208), g("mnc", 93)
+        plmn = f"{mcc}{mnc}"
+        tac = int(g("tracking_area_code", 1))
+        bw = 0                      # OAI states the PRB count directly, so no lookup is needed
+    else:
+        du = load_yaml(Path(du_cfg).expanduser())
+        cell = du.get("cell_cfg") or {}
+        ru = du.get("ru_sdr") or {}
+        arfcn = int(cell.get("dl_arfcn", 632628))
+        band = int(cell.get("band", 78))
+        scs = int(cell.get("common_scs", 30))
+        bw = int(cell.get("channel_bandwidth_MHz", 20))
+        plmn = str(cell.get("plmn", "00101"))
+        tac = cell.get("tac", 1)
+        prb_cfg = None
     freq_hz = arfcn_to_hz(arfcn)
     numerology = scs_to_numerology(scs)
-    prb = prb_for(scs, bw)
+    prb = prb_cfg if prb_cfg else prb_for(scs, bw)
     ue_tx, ue_rx = zmq_ports(str(ru.get("device_args", "")))
 
     print(f"\nderived from {du_cfg}:")
@@ -133,17 +163,31 @@ def main() -> int:
           f"{prb if prb else '?'} PRB")
     print(f"  ZMQ: UE tx {ue_tx} / rx {ue_rx}  (mirror of the DU's)")
     print(f"  cell PLMN {plmn}, TAC {tac}")
+    if adapter == "oai":
+        # Deliberately asked rather than computed. It follows from absoluteFrequencySSB and
+        # pointA, but getting it wrong is silent: the UE scans at the wrong offset, never finds
+        # the cell, and the campaign reports a RAN that failed to serve one. The DU prints the
+        # exact value on startup ("Command line parameters for OAI UE: ... --ssb N"), so the
+        # right move is to read it from there rather than to guess it here.
+        print("  the O-DU prints the UE's --ssb on startup; take it from that line")
+        ssb_sc = int(ask("UE ssb start subcarrier (--ssb)", "516", ni))
     if prb is None:
         print("  !! could not derive the PRB count for that bandwidth/SCS, set drivers.prb by hand")
         prb = 51
 
     # cross-check the DU's cell against what the CU-CP tells the AMF; a mismatch here is
     # rejected at NG Setup or at registration, and the error is not obvious
-    cucp = load_yaml(Path(cucp_cfg).expanduser())
-    areas = ((cucp.get("cu_cp") or {}).get("amf") or {}).get("supported_tracking_areas") or []
+    if adapter == "oai":
+        cc = lc.read(Path(cucp_cfg).expanduser())
+        cp_plmns = [f'{lc.first(cc, "mcc", "")}{lc.first(cc, "mnc", "")}'] if cc else []
+        cp_tacs = [int(lc.first(cc, "tracking_area_code", 0) or 0)] if cc else []
+        areas = bool(cc)
+    else:
+        cucp = load_yaml(Path(cucp_cfg).expanduser())
+        areas = ((cucp.get("cu_cp") or {}).get("amf") or {}).get("supported_tracking_areas") or []
+        cp_plmns = [p.get("plmn") for a in areas for p in (a.get("plmn_list") or [])] if areas else []
+        cp_tacs = [a.get("tac") for a in areas] if areas else []
     if areas:
-        cp_plmns = [p.get("plmn") for a in areas for p in (a.get("plmn_list") or [])]
-        cp_tacs = [a.get("tac") for a in areas]
         if plmn not in [str(x) for x in cp_plmns if x is not None]:
             print(f"  !! the O-DU cell broadcasts PLMN {plmn} but the O-CU-CP advertises "
                   f"{cp_plmns}, the UE will be rejected")
@@ -153,6 +197,16 @@ def main() -> int:
     print("\n5G core (the N2/N3 peer, bring your own):")
     core_adapter = ask("core adapter", "free5gc_k8s", ni)
     namespace = ask("kubernetes namespace", "free5gc", ni)
+    # Asked, and defaulted on, because leaving it out is not a neutral choice. A UE context
+    # left in the AMF by the previous campaign makes it drop the next Registration Request
+    # without an error anywhere: the UE reaches RRC_CONNECTED and stops, and the run records
+    # "the attach never completed" across most of the catalog. Measured here, a config without
+    # it graded 23 tests na for a reason that had nothing to do with the RAN. Say no only if
+    # the core is shared or you manage its state yourself.
+    print("  restarting the AMF before each run clears stale UE context;")
+    print("  without it a second run silently fails to register")
+    reset_amf = ask("reset the AMF before each campaign (yes/no)", "yes", ni).strip().lower()
+    reset_amf = reset_amf not in ("n", "no", "false", "0")
 
     print("\nUE simulator (installed by scripts/bootstrap_ranbench.sh):")
     default_ue = "~/openairinterface5g/cmake_targets/ran_build/build/nr-uesoftmodem"
@@ -177,11 +231,15 @@ def main() -> int:
         "target": "all",
         "ran": {"adapter": adapter, "bin_dir": bin_dir, "sudo": True,
                 "configs": {"cucp": cucp_cfg, "cuup": cuup_cfg, "du": du_cfg}},
-        "core": {"adapter": core_adapter, "namespace": namespace},
+        "core": {"adapter": core_adapter, "namespace": namespace,
+                 "reset_amf": reset_amf},
         "drivers": {"ue": "ue_oai_zmq", "ue_bin": ue_bin, "uecap_file": uecap,
                     "prb": prb, "numerology": numerology, "band": band,
-                    "centre_freq_hz": freq_hz, "ssb": 0,
-                    "zmq_tx": ue_tx, "zmq_rx": ue_rx,
+                    "centre_freq_hz": freq_hz, "ssb": ssb_sc,
+                    # The virtual radio joining the UE to the DU: OCUDU exposes a ZeroMQ
+                    # device, OAI serves its own rfsimulator from the DU.
+                    **({"radio": "rfsim", "rfsim_server": "127.0.0.1"} if adapter == "oai"
+                       else {"zmq_tx": ue_tx, "zmq_rx": ue_rx}),
                     "attach_timeout_s": 150, "ping_target": "8.8.8.8"},
         "subscribers": [{k: v for k, v in
                          (("supi", supi), ("ki", ki), ("opc", opc), ("plmn", plmn),

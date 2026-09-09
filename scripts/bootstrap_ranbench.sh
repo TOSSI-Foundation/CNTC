@@ -65,6 +65,8 @@ python3 -m pip install -e . \
 
 # ---------------------------------------------------------------------------
 echo ">>> [3/4] OAI nr-UE + ZeroMQ radio (fetched + built into your environment, not bundled)"
+# The UE is the stimulus for every RAN campaign. OAI as a *product under test* additionally
+# needs the gNB binaries, which OAI_GNB=1 builds below.
 if [ "${SKIP_UE:-0}" = "1" ]; then
   echo "    SKIP_UE=1 -> skipping"
 elif [ -x "$OAI_BUILD/nr-uesoftmodem" ] && [ -f "$OAI_BUILD/liboai_zmqdevif.so" ] && [ "${FORCE_UE:-0}" != "1" ]; then
@@ -84,6 +86,21 @@ else
   # O-DU at all ("unknown target oai_zmqdevif").
   echo "    enabling and building the ZeroMQ radio (-DOAI_ZMQ=ON)"
   ( cd "$OAI_BUILD" && sudo cmake . -DOAI_ZMQ=ON && sudo cmake --build . --target oai_zmqdevif )
+fi
+
+# The gNB binaries, only when OAI is the stack under test rather than just the UE.
+# Off by default: this is a long build, and a rig that certifies OCUDU needs only the UE above.
+# Note the 5gdefault cmake preset does NOT include nr-cuup, so the targets are named directly.
+if [ "${OAI_GNB:-0}" = "1" ]; then
+  echo ">>> [3b/4] OAI gNB (nr-softmodem + nr-cuup), for certifying OAI itself"
+  if [ -x "$OAI_BUILD/nr-softmodem" ] && [ -x "$OAI_BUILD/nr-cuup" ] && [ "${FORCE_UE:-0}" != "1" ]; then
+    echo "    already built -> skipping"
+  else
+    echo "    building nr-softmodem and nr-cuup (long: ~1400 compile steps)"
+    ( cd "$OAI_BUILD" && sudo ninja nr-softmodem nr-cuup )
+  fi
+else
+  echo "    (set OAI_GNB=1 to also build nr-softmodem + nr-cuup and certify OAI itself)"
 fi
 
 # ---------------------------------------------------------------------------
