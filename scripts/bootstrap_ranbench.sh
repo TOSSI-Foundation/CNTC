@@ -27,10 +27,27 @@
 #   SKIP_APT=1                      skip the apt step (deps already present)
 #   SKIP_UE=1                       skip the UE build (using another UE simulator)
 #   FORCE_UE=1                      rebuild the UE even if the binaries already exist
+#   FAPI=1                          build the UE for the L1/L2 split (nFAPI) rig instead of
+#                                   the CU/DU rig. The two rigs need different UE builds:
+#                                     * CU/DU  reaches the O-DU over the ZeroMQ virtual radio,
+#                                       so it needs stock OAI plus the oai_zmqdevif plugin.
+#                                     * L1/L2  reaches the PNF over the rfsimulator, and its
+#                                       single-antenna (1T1R) cell needs an rfsim fix that stock
+#                                       OAI does not carry. The stock UE connects to the
+#                                       simulator but never synchronises to the cell. The fix is
+#                                       public on the TOSSI fork, branch rfsim_ocudu, so FAPI=1
+#                                       points the defaults there and skips the ZMQ plugin
+#                                       (rfsim is built into nr-uesoftmodem, no plugin needed).
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
+# FAPI mode changes only the *default* repo/ref/dir; an explicit OAI_* env var still wins.
+if [ "${FAPI:-0}" = "1" ]; then
+  OAI_DIR="${OAI_DIR:-$HOME/OAI-RAN}"      # separate tree, so it does not clobber a CU/DU clone
+  OAI_REPO="${OAI_REPO:-https://github.com/TOSSI-Foundation/OAI-RAN.git}"
+  OAI_REF="${OAI_REF:-rfsim_ocudu}"
+fi
 OAI_DIR="${OAI_DIR:-$HOME/openairinterface5g}"
 OAI_REPO="${OAI_REPO:-https://gitlab.eurecom.fr/oai/openairinterface5g.git}"
 OAI_BUILD="$OAI_DIR/cmake_targets/ran_build/build"
@@ -67,25 +84,51 @@ python3 -m pip install -e . \
 echo ">>> [3/4] OAI nr-UE + ZeroMQ radio (fetched + built into your environment, not bundled)"
 # The UE is the stimulus for every RAN campaign. OAI as a *product under test* additionally
 # needs the gNB binaries, which OAI_GNB=1 builds below.
+# The FAPI rig reaches the PNF over the rfsimulator, which is built into nr-uesoftmodem, so it
+# needs no ZeroMQ device plugin. The CU/DU rig does. "already built" and the ZMQ step below
+# both key off this.
+if [ "${FAPI:-0}" = "1" ]; then
+  NEED_ZMQ=0
+else
+  NEED_ZMQ=1
+fi
+_ue_built() {
+  [ -x "$OAI_BUILD/nr-uesoftmodem" ] || return 1
+  [ "$NEED_ZMQ" = "1" ] && [ ! -f "$OAI_BUILD/liboai_zmqdevif.so" ] && return 1
+  return 0
+}
+
 if [ "${SKIP_UE:-0}" = "1" ]; then
   echo "    SKIP_UE=1 -> skipping"
-elif [ -x "$OAI_BUILD/nr-uesoftmodem" ] && [ -f "$OAI_BUILD/liboai_zmqdevif.so" ] && [ "${FORCE_UE:-0}" != "1" ]; then
+elif _ue_built && [ "${FORCE_UE:-0}" != "1" ]; then
   echo "    already built at $OAI_BUILD (set FORCE_UE=1 to rebuild) -> skipping"
 else
   if [ ! -d "$OAI_DIR/.git" ]; then
-    echo "    cloning $OAI_REPO -> $OAI_DIR  (shallow)"
-    git clone --depth 1 "$OAI_REPO" "$OAI_DIR"
-  fi
-  if [ -n "${OAI_REF:-}" ]; then
-    ( cd "$OAI_DIR" && git fetch --all --tags && git checkout "$OAI_REF" )
+    # Clone the requested ref directly. A shallow clone of the default branch cannot then
+    # `checkout` a different branch (its objects were never fetched), so when OAI_REF is a
+    # branch it has to be named at clone time.
+    if [ -n "${OAI_REF:-}" ]; then
+      echo "    cloning $OAI_REPO ($OAI_REF) -> $OAI_DIR  (shallow)"
+      git clone --depth 1 -b "$OAI_REF" "$OAI_REPO" "$OAI_DIR"
+    else
+      echo "    cloning $OAI_REPO -> $OAI_DIR  (shallow)"
+      git clone --depth 1 "$OAI_REPO" "$OAI_DIR"
+    fi
+  elif [ -n "${OAI_REF:-}" ]; then
+    # Existing clone: fetch the ref specifically (works whether it is a tag or a branch).
+    ( cd "$OAI_DIR" && git fetch --depth 1 origin "$OAI_REF" && git checkout FETCH_HEAD )
   fi
   echo "    building nr-uesoftmodem (installs OAI's own deps; this takes a while)"
   ( cd "$OAI_DIR/cmake_targets" && sudo ./build_oai -I --nrUE -w SIMU --ninja )
-  # OAI gates its ZeroMQ radio behind a cmake option that defaults OFF, so the device target
-  # does not exist until the build tree is reconfigured. Without it the UE cannot reach the
-  # O-DU at all ("unknown target oai_zmqdevif").
-  echo "    enabling and building the ZeroMQ radio (-DOAI_ZMQ=ON)"
-  ( cd "$OAI_BUILD" && sudo cmake . -DOAI_ZMQ=ON && sudo cmake --build . --target oai_zmqdevif )
+  if [ "$NEED_ZMQ" = "1" ]; then
+    # OAI gates its ZeroMQ radio behind a cmake option that defaults OFF, so the device target
+    # does not exist until the build tree is reconfigured. Without it the UE cannot reach the
+    # O-DU at all ("unknown target oai_zmqdevif"). The FAPI rig uses --rfsim instead and skips this.
+    echo "    enabling and building the ZeroMQ radio (-DOAI_ZMQ=ON)"
+    ( cd "$OAI_BUILD" && sudo cmake . -DOAI_ZMQ=ON && sudo cmake --build . --target oai_zmqdevif )
+  else
+    echo "    FAPI=1 -> rfsim is built into nr-uesoftmodem; skipping the ZeroMQ device"
+  fi
 fi
 
 # The gNB binaries, only when OAI is the stack under test rather than just the UE.
@@ -120,8 +163,12 @@ else
   ok=0
 fi
 if [ "${SKIP_UE:-0}" != "1" ]; then
-  if [ -x "$OAI_BUILD/nr-uesoftmodem" ] && [ -f "$OAI_BUILD/liboai_zmqdevif.so" ]; then
-    echo "    OAI UE OK ($OAI_BUILD/nr-uesoftmodem + liboai_zmqdevif.so)"
+  if _ue_built; then
+    if [ "$NEED_ZMQ" = "1" ]; then
+      echo "    OAI UE OK ($OAI_BUILD/nr-uesoftmodem + liboai_zmqdevif.so)"
+    else
+      echo "    OAI UE OK ($OAI_BUILD/nr-uesoftmodem, rfsim built in)"
+    fi
   else
     echo "!! OAI UE binaries missing at $OAI_BUILD"; ok=0
   fi
@@ -145,5 +192,10 @@ Next (separate from this script, bring your own RAN and core):
        make ran-doctor  CONFIG=configs/ocudu-ran.yaml            # must say READY
        make ran-run     CONFIG=configs/ocudu-ran.yaml TARGET=all CAMPAIGN=MY-RAN-001
        make ran-certify CAMPAIGN=MY-RAN-001 TARGET=cuup          # cert iff every essential passed
+
+For the L1/L2 split (PNF / VNF over nFAPI) instead of the CU/DU rig, this script was run
+with FAPI=1, which built the UE from the fork the rfsimulator cell needs. Use
+configs/fapi-split.yaml, set drivers.ue_bin to $OAI_BUILD/nr-uesoftmodem, and follow
+docs/FAPI-SPLIT-RIG.md. The stock OAI UE does not synchronise to that 1T1R cell.
 DONE
 [ "$ok" = "1" ] || { echo "!! some checks failed, see above"; exit 1; }
