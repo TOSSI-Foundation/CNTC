@@ -1,0 +1,134 @@
+# CNTC requirement catalog: VNF LEVEL 1 "Conformance & Observable Security"
+#
+# Product class: VNF (Virtual Network Function), the L2/L3 end of the nFAPI interface. The VNF
+# is whatever terminates nFAPI northbound of the PNF and drives the PHY: it owns the P5 setup
+# sequence and issues the P7 slot requests.
+#
+# SCOPE, AND WHY IT IS NOT A 3GPP SCAS CATALOG. As with pnf-conformance.yaml, 3GPP defines no
+# product class here and there is no SCAS for the L1/L2 split. The anchors are:
+#
+#   SCF222  5G FAPI: PHY API Specification, 10th edition, July 2025
+#   SCF225  5G nFAPI specifications
+#
+# A certificate issued against this catalog asserts CONFORMANCE TO AN SCF INTERFACE
+# SPECIFICATION IN THE VNF ROLE. It is not a 3GPP SCAS product class certificate.
+#
+# A NOTE ON WHAT "VNF" DOES AND DOES NOT MEAN HERE. VNF is a role on the nFAPI interface, not
+# a claim about which layers a product hosts. In a deployment where the VNF role is filled by a
+# translator in front of a separate L2, this catalog judges the translator, because it is the
+# thing that speaks nFAPI. Calling the VNF a "DU-High" would be wrong in the general case: the
+# SCF role says nothing about whether RRC and PDCP sit behind it.
+#
+# THE LIMIT OF THIS CATALOG, STATED UP FRONT. A VNF has two sides. Its southbound nFAPI link is
+# on the wire and is judged here. Its northbound side is not part of this interface and is not
+# claimed. Where a deployment carries the VNF's other side over shared memory or any transport
+# that cannot be captured, that side is not evidenced by anything in this catalog and no
+# requirement here should be read as covering it.
+#
+# EVIDENCE. The same single nFAPI capture that pnf-conformance.yaml is judged from, read in the
+# VNF -> PNF direction. One wire, two product classes, exactly as F1-C is read once and judged
+# twice for the O-DU and the O-CU-CP.
+#
+# DECODING. The 5G NR nFAPI message IDs overlap the LTE nFAPI IDs with different meanings, so a
+# dissector written for LTE names NR messages confidently and wrongly. Message identity is read
+# from the header bytes against the SCF222 NR message set, never from an LTE dissector's label.
+#
+# Gate: all ESSENTIAL tests must PASS -> certificate. An essential that cannot be judged is
+# 'na' -> INCOMPLETE, never a silent pass.
+version: 1.0.0
+profile: vnf-conformance
+title: "VNF (nFAPI L2 driver), CNTC Level 1. SCF interface conformance, not a 3GPP SCAS product class"
+standards:
+- "SCF222 5G FAPI: PHY API Specification, 10th edition (July 2025)"
+- SCF225 5G nFAPI specifications
+defaults:
+  class: normal
+gate:
+  essential: all
+tests:
+# --- P5: driving the PNF and PHY setup sequence (SCF225 P5) ------------------------------
+- id: VNF-P5-01
+  name: "PNF_PARAM.request issued to discover PNF device capabilities (SCF225 P5)"
+  category: protocol
+  class: essential
+  verdict: status_pass
+- id: VNF-P5-02
+  name: "PNF_CONFIG.request issued with well-formed TLVs, accepted by the PNF (SCF225 P5)"
+  category: protocol
+  class: essential
+  verdict: status_pass
+- id: VNF-P5-03
+  name: "PNF_START.request issued only after a successful PNF_CONFIG.response (SCF225 P5)"
+  category: protocol
+  class: essential
+  verdict: status_pass
+- id: VNF-P5-04
+  name: "Per-PHY PARAM -> CONFIG -> START issued in that order (SCF222.10 Table 2-25)"
+  category: protocol
+  class: essential
+  verdict: status_pass
+  # The interoperability requirement the interface exists for. PARAM.response states what the
+  # PHY supports; a CONFIG.request that asks for something outside it is a VNF fault, and the
+  # capture shows which side was wrong. Configuring a PUCCH format the PHY never advertised is
+  # the concrete case (SCF222.10 Table 3-9, tag 0x0011).
+- id: VNF-P5-05
+  name: "CONFIG.request stays inside the capabilities the PNF advertised in PARAM.response (SCF222.10 Table 3-9)"
+  category: protocol
+  class: essential
+  verdict: status_pass
+- id: VNF-P5-06
+  name: "STOP.request issued on orderly teardown (SCF222.10)"
+  category: protocol
+  class: normal
+  verdict: status_pass
+- id: VNF-P5-07
+  name: "P5 carried on the transport SCF225 specifies (SCTP) (SCF225 transport)"
+  category: protocol
+  class: normal
+  verdict: status_pass
+# --- P7: driving the slot loop (SCF225 P7) ------------------------------------------------
+- id: VNF-P7-01
+  name: "DL_TTI.request delivered for the slot it targets, ahead of that slot (SCF225 delay management)"
+  category: protocol
+  class: essential
+  verdict: status_pass
+- id: VNF-P7-02
+  name: "UL_TTI.request delivered for the slot it targets, ahead of that slot (SCF225 delay management)"
+  category: protocol
+  class: essential
+  verdict: status_pass
+- id: VNF-P7-03
+  name: "TX_DATA.request issued for every DL_TTI.request that schedules a PDSCH (SCF222.10)"
+  category: dataplane
+  class: normal
+  verdict: status_pass
+- id: VNF-P7-04
+  name: "UL_DCI.request issued for scheduled uplink grants (SCF222.10)"
+  category: protocol
+  class: normal
+  verdict: status_pass
+  # A request for a slot that has already elapsed cannot be served and is discarded by the PHY.
+  # It is the VNF running late, and it is directly visible by comparing the SFN/slot the
+  # request names against the SLOT.indication the PNF had already issued.
+- id: VNF-P7-05
+  name: "No TTI request issued for an SFN/slot the PNF has already passed (SCF225 delay management)"
+  category: timing
+  class: essential
+  verdict: status_pass
+# --- P7 synchronisation (SCF225) ------------------------------------------------------------
+- id: VNF-SYNC-01
+  name: "DL_NODE_SYNC issued and node synchronisation maintained with the PNF (SCF225 delay management)"
+  category: timing
+  class: normal
+  verdict: status_pass
+# --- Robustness and transport ----------------------------------------------------------------
+- id: VNF-NEG-01
+  name: "Malformed nFAPI datagram on P5 / P7 -> dropped or rejected, no VNF crash"
+  category: robustness
+  class: essential
+  verdict: status_pass
+- id: VNF-SEC-01
+  name: "nFAPI P5 / P7 transport confidentiality and integrity (deployment property; SCF225 defines none)"
+  category: security
+  class: normal
+  verdict: status_pass

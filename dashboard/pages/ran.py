@@ -29,7 +29,22 @@ _TARGETS = [
      "iface": "E1 (E1AP) · F1-U (GTP-U) · N3 (GTP-U)",
      "driver": "CU-CP over E1 + UE traffic, with F1-U/N3 capture",
      "specs": ["TS 38.463", "TS 38.425", "TS 38.415", "TS 33.523"]},
+    # A second cut, at the FAPI boundary rather than F1. These two anchor to the Small Cell
+    # Forum, not 3GPP: there is no SCAS product class for an L1, so the certificate says
+    # "SCF interface conformance", not "3GPP SCAS product class".
+    {"logo": "PNF", "key": "pnf", "name": "PNF", "full": "L1 / PHY over nFAPI",
+     "iface": "nFAPI P5 (SCTP) · P7 (UDP)",
+     "driver": "VNF drives the PHY; one nFAPI capture read PNF→VNF",
+     "specs": ["SCF222", "SCF225"]},
+    {"logo": "VNF", "key": "vnf", "name": "VNF", "full": "L2 driver over nFAPI",
+     "iface": "nFAPI P5 (SCTP) · P7 (UDP)",
+     "driver": "same capture read VNF→PNF",
+     "specs": ["SCF222", "SCF225"]},
 ]
+
+# Product classes that certify against an SCF interface spec rather than a 3GPP SCAS class. The
+# distinction is stated on the certificate, so it is stated on the card too.
+_SCF_CLASSES = {"pnf", "vnf"}
 
 # verdict result -> (label, pill modifier)
 _RESULT_PILL = {"PASS": ("PASS", "pass"), "FAIL": ("FAIL", "fail"),
@@ -71,7 +86,12 @@ def _card(target, counts, runs):
                            children=[html.Span(className="dotc"), "Ready"])
 
     specs = [html.Span(s, className="pill pill--neutral") for s in target["specs"]]
-    body = [
+    body = []
+    if target["key"] in _SCF_CLASSES:
+        body.append(html.Div("SCF interface conformance, not a 3GPP SCAS product class",
+                             className="muted small", style={"gridColumn": "1/-1",
+                             "fontFamily": "var(--sans)", "fontStyle": "italic"}))
+    body += [
         _fact("Interfaces", target["iface"]),
         _fact("Level-1 tests", f"{total}", sub=f"{ess} essential (gate the certificate)"),
         html.Div(className="upf-fact", style={"gridColumn": "1/-1"}, children=[
@@ -112,13 +132,15 @@ def layout(**_):
                 html.Span(f"{len(_TARGETS)} product classes", className="pill pill-lg pill--neutral"),
                 html.Span(f"{total_tests} Level-1 tests", className="pill pill-lg pill--neutral"),
                 html.Span(f"{total_ess} essential", className="pill pill-lg pill--pass")])]),
-        html.P(["The NG-RAN node, certified the way 3GPP TS 33.523 decomposes it, one catalog "
-                "and one certificate per product class (O-CU-CP, O-CU-UP, O-DU), each driven "
-                "over its own interfaces and graded against its protocol + SCAS spec. In a "
-                "CU/DU split every RRC message crosses F1 inside an F1AP container, so RRC and "
-                "AS-security activation are observable on the wire without touching the radio. "
-                "A class earns a certificate only when all of its essential tests pass, "
-                "INCOMPLETE (never a pass) when a case cannot be judged."],
+        html.P(["The NG-RAN node, cut two ways. The CU/DU split (O-CU-CP, O-CU-UP, O-DU) is "
+                "certified the way 3GPP TS 33.523 decomposes it, one catalog and one certificate "
+                "per product class, each driven over its own interfaces and graded against its "
+                "protocol + SCAS spec. The L1/L2 split (PNF, VNF) cuts lower, at the FAPI "
+                "boundary, and anchors to the Small Cell Forum (SCF222 / SCF225): 3GPP defines "
+                "no product class for an L1, so those two certificates assert SCF interface "
+                "conformance, not a SCAS product class. A class earns a certificate only when "
+                "all of its essential tests pass, INCOMPLETE (never a pass) when a case cannot "
+                "be judged."],
                className="muted small", style={"margin": "2px 0 0"}),
         html.Div(cards, className="upf-grid"),
     ])

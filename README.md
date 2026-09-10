@@ -267,10 +267,52 @@ three-process split against free5GC on Kubernetes, with an OAI nr-UE over a Zero
 radio. 58 of 58 tests execute. The rig, and the parameters that must agree between the O-DU and
 the UE, are documented in [docs/RANBENCH-RIG.md](docs/RANBENCH-RIG.md).
 
+### A second RAN cut: the L1/L2 split over nFAPI (PNF / VNF)
+
+The CU/DU split above cuts the gNB at F1. `ranbench` also certifies the **L1/L2 split**, which
+cuts it lower, at the FAPI boundary between the physical layer and the MAC. This is a different
+kind of certificate, and the difference is stated on it: 3GPP defines no product class for an L1
+and there is no SCAS for this split, so the two products and their requirements come from the
+**Small Cell Forum** instead.
+
+| Product class | Interface | Specs | Level-1 tests |
+|----|----------|------|-----------|
+| **PNF** (L1 / PHY) | nFAPI P5 (SCTP) · P7 (UDP) | SCF222 (10th ed.) · SCF225 | 26 (14 essential) |
+| **VNF** (L2 driver) | nFAPI P5 · P7, the other end | SCF222 · SCF225 | 15 (9 essential) |
+
+A **PNF or VNF certificate asserts conformance to an SCF interface specification in that role.
+It is not a 3GPP SCAS product class certificate**, and that sentence is carried in the catalog,
+the scorecard and the certificate. The physical layer (TS 38.211 to 38.214) is deliberately not
+anchored: the nFAPI wire carries what the PHY reports, not what it transmitted.
+
+**One capture, two products.** The PNF and the VNF are the two ends of one interface, so a single
+nFAPI capture is read in both directions: the PNF -> VNF messages judge the PNF, the VNF -> PNF
+messages judge the VNF. This is the same arrangement F1-C uses for the O-DU and the O-CU-CP.
+
+**nFAPI has its own decoder, and it must.** Every other RAN interface is decoded with tshark.
+5G NR nFAPI reuses the LTE message ids with different meanings, and Wireshark 3.6.2 renames NR
+messages to their LTE homonyms rather than failing (`SLOT.indication` reads back as
+`SUBFRAME_INDICATION`, seven of nine wrong). `ranbench/observers/nfapi.py` reads the message id
+from the header bytes against the SCF222 set, and was validated against the bridge's own message
+record.
+
+```bash
+make ran-doctor CONFIG=configs/fapi-split.yaml            # must say READY, rfsim port included
+make ran-run    CONFIG=configs/fapi-split.yaml TARGET=all CAMPAIGN=FAPI-001
+make ran-certify CAMPAIGN=FAPI-001 TARGET=vnf             # or TARGET=pnf
+```
+
+**Verified against a cross-vendor stack**: an OAI L1 (PNF) bridged by xFAPI (VNF, coRAN Labs) to
+an OCUDU L2, with an OCUDU CU and an OAI UE against free5GC. The reference run grades the **VNF
+PASS** (9 of 9 essential, certificate issued) and the **PNF FAIL** on one ordering requirement:
+the PHY emitted P7 slot traffic 49 ms before it answered `START.response`. The rig, the build
+steps and the hard-won facts are in [docs/FAPI-SPLIT-RIG.md](docs/FAPI-SPLIT-RIG.md).
+
 ---
 
 ## Docs
-- [docs/RANBENCH-RIG.md](docs/RANBENCH-RIG.md): the RAN rig, building the stack and the UE, and the parameters that must agree.
+- [docs/RANBENCH-RIG.md](docs/RANBENCH-RIG.md): the CU/DU RAN rig, building the stack and the UE, and the parameters that must agree.
+- [docs/FAPI-SPLIT-RIG.md](docs/FAPI-SPLIT-RIG.md): the L1/L2 split rig (PNF / VNF over nFAPI), building the four-component cross-vendor stack, and the developer's guide to running it.
 - [docs/config-reference.md](docs/config-reference.md): which config fields to change per UPF/mode.
 - [docs/benchmarking-guide.md](docs/benchmarking-guide.md): **start here**: run, pick suites, reproduce baselines.
 - [docs/dpdk-testing-guide.md](docs/dpdk-testing-guide.md): kernel-bypass (DPDK/AF_XDP/CNDP) testing with TRex.
@@ -280,7 +322,7 @@ the UE, are documented in [docs/RANBENCH-RIG.md](docs/RANBENCH-RIG.md).
 - **Engine:** all four suites validated end-to-end on SD-Core BESS-UPF (DPDK) and OAI-UPF
   (simpleswitch); the n3neg suite found a **real remote-DoS crash** (malformed N3 GTP-U
   segfaults bessd in `GtpuDecap::ProcessBatch`).
-- **Verdict layer (M0–M4 complete):**
+- **Verdict layer (M0-M4 complete):**
   - **M0** conformance profile, CF-01..05 + NT-01..03 graded, essential gate, `verdict` in
     `results.json`, `cntc verdict` re-grades past runs.
   - **M1** scorecard everywhere, `scorecard.md` + `scorecard.html` (dep-free), a CNTC-verdict
@@ -307,6 +349,14 @@ the UE, are documented in [docs/RANBENCH-RIG.md](docs/RANBENCH-RIG.md).
   - Requirements that cannot be judged are never promoted. A procedure the core never asked for,
     a path the rig cannot interrupt, and an interface that never leaves the host all record `na`
     with the reason, and a class with an unjudged essential is INCOMPLETE, never certified.
+- **RAN L1/L2 split (`ranbench`), nFAPI, shipped:** 41 Level-1 tests across the **PNF** (26) and
+  the **VNF** (15), anchored to SCF222 and SCF225, graded from one nFAPI capture read in both
+  directions. Verified against a cross-vendor stack: an OAI L1, xFAPI as the bridge, an OCUDU L2
+  and CU, and an OAI UE against free5GC. The reference run certifies the **VNF** (9 of 9
+  essential) and fails the **PNF** on `PNF-P5-07`, the PHY starting its slot loop 49 ms before
+  answering `START.response`. A dedicated nFAPI decoder reads message ids from the header bytes,
+  because Wireshark 3.6.2 mislabels every NR message as its LTE homonym. These certificates state
+  that they are SCF interface conformance, not 3GPP SCAS product-class certificates.
 - **Control plane (`cpbench`), Stage 2, shipped:** 57 Level-1 tests across AMF/SMF/NRF/AUSF/UDM/UDR/PCF,
   verified against a live **free5GC** on both **docker-compose** and **Kubernetes**. On docker,
   AMF/AUSF/UDM certify; on Kubernetes, AMF certifies (full in-cluster registration + 5G-AKA + NAS

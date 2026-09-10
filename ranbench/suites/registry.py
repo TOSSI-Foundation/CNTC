@@ -22,6 +22,13 @@ TARGET_REQUIRES = {
     "cucp": {"ue": True, "core": True, "observer": True},
     "cuup": {"ue": True, "core": True, "observer": True},
     "du":   {"ue": True, "core": True, "observer": True},
+    # The nFAPI split. "observer" here means the tshark wire observer, which these suites do
+    # NOT use: nFAPI is decoded by ranbench.observers.nfapi, wired up by the UE driver, because
+    # tshark's nfapi dissector names NR messages after their LTE homonyms. It is still requested
+    # so the runner's plumbing is identical, and the F1/N2 captures of the same rig stay
+    # readable by anything that wants them.
+    "pnf":  {"ue": True, "core": True, "observer": True},
+    "vnf":  {"ue": True, "core": True, "observer": True},
 }
 
 

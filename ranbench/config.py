@@ -18,9 +18,22 @@ from typing import Any
 
 import yaml
 
-# The split-gNB product classes we certify, in pipeline order (DU -> CU-CP -> CU-UP).
-TARGETS = ("du", "cucp", "cuup")
-VALID_TARGETS = TARGETS + ("all",)
+# Two different cuts through a gNB, each with its own product classes. They are kept apart
+# because "all" must mean "every class of THIS deployment": a CU/DU rig has no PNF, and asking
+# a FAPI-split rig for a CU-UP suite would measure a product that is not there.
+#
+#   cu-du   the 3GPP TS 33.523 split: CU-CP / CU-UP / DU over F1 and E1
+#   fapi    the SCF split 6: VNF / PNF over nFAPI P5 and P7
+CUDU_TARGETS = ("du", "cucp", "cuup")     # pipeline order (DU -> CU-CP -> CU-UP)
+FAPI_TARGETS = ("pnf", "vnf")
+
+# Kept under the old name: every existing config and caller means the CU/DU set by "TARGETS".
+TARGETS = CUDU_TARGETS
+ALL_TARGETS = CUDU_TARGETS + FAPI_TARGETS
+VALID_TARGETS = ALL_TARGETS + ("all",)
+
+# Which family a campaign belongs to, selected by `split:` in the campaign file.
+SPLITS = {"cu-du": CUDU_TARGETS, "fapi": FAPI_TARGETS}
 
 
 def expand_user_path(p: str | Path) -> Path:
@@ -71,11 +84,19 @@ class Campaign:
     knobs: dict[str, Any] = dataclasses.field(default_factory=dict)     # per-target suite knobs
     baseline: str | None = None
     domain: str = "ran"
+    split: str = "cu-du"                      # cu-du | fapi, see SPLITS above
 
     @property
     def targets(self) -> list[str]:
-        """Expand the 'all' selector into the concrete target list, in a stable order."""
-        return list(TARGETS) if self.target == "all" else [self.target]
+        """Expand the 'all' selector into the concrete target list, in a stable order.
+
+        'all' means every product class of *this* split, not every class ranbench knows. A
+        campaign against a FAPI-split rig that expanded to the CU/DU classes would spend its
+        time measuring products the deployment does not contain and record 'na' for all of them.
+        """
+        if self.target != "all":
+            return [self.target]
+        return list(SPLITS.get(self.split, CUDU_TARGETS))
 
     @staticmethod
     def profile_for(target: str) -> str:
@@ -89,6 +110,12 @@ def load(path: str | Path) -> Campaign:
     target = raw.get("target", "all")
     if target not in VALID_TARGETS:
         raise ValueError(f"target must be one of {VALID_TARGETS}, got {target!r}")
+    split = raw.get("split", "cu-du")
+    if split not in SPLITS:
+        raise ValueError(f"split must be one of {sorted(SPLITS)}, got {split!r}")
+    if target != "all" and target not in SPLITS[split]:
+        raise ValueError(f"target {target!r} does not belong to the {split!r} split "
+                         f"(its classes are {SPLITS[split]})")
 
     ran_raw = raw.get("ran") or {}
     if "adapter" not in ran_raw:
@@ -118,6 +145,7 @@ def load(path: str | Path) -> Campaign:
         knobs=raw.get("knobs", {}) or {},
         baseline=raw.get("baseline"),
         domain=raw.get("domain", "ran"),
+        split=split,
     )
 
 

@@ -1,0 +1,98 @@
+# CNTC RANCert: an L1/L2 split gNB certified across nFAPI (SCF split 6).
+#
+#   ranbench doctor --config configs/fapi-split.yaml
+#   ranbench run    --config configs/fapi-split.yaml --target all
+#
+# The certified pair are the two ends of the nFAPI interface. The L2 and the CU below are peers
+# the deployment needs in order to assemble, not subjects: they are started and stopped by the
+# run and nothing grades them. Their catalogs, if wanted, are the existing CU/DU ones.
+#
+#   UE --rfsim--> PNF (L1) <--nFAPI P5/P7--> VNF <--FAPI--> L2 <--F1--> CU <--N2/N3--> 5G core
+#                 ^^^ target                 ^^^ target      peer       peer
+#
+# Bring-up order is CU, VNF, PNF, L2 and it is enforced by the products rather than preferred:
+# the VNF creates the shared memory region the L2 attaches to, and the L2 asks for its PHY
+# parameters exactly once, so it must follow a PNF that has already completed its P5 handshake.
+# The adapter owns that order. See ranbench/adapters/fapi_split.py.
+domain: ran
+campaign: FAPI-SPLIT-001
+split: fapi                    # selects the PNF/VNF product classes for `--target all`
+target: all                    # pnf | vnf | all
+
+ran:
+  adapter: fapi_split
+  sudo: true
+  # DPDK file prefix owned by the VNF. Removed before every run: a campaign that ends abruptly
+  # leaves the hugepage region behind and the next VNF then attaches to the stale one instead
+  # of creating a fresh one, which nothing reports.
+  dpdk_file_prefix: gnb0
+  nfapi_host: 127.0.0.1
+  nfapi_ports:
+    p5_pnf: 50000
+    p5_vnf: 50001              # the VNF listens here (SCTP); the PNF dials it
+    p7_pnf: 50010
+    p7_vnf: 50011
+  procs:
+    cu:
+      bin:  ~/kriish/fapi_split_ocudu/build/apps/cu/ocu
+      args: ["-c", "~/kriish/fix_fapi_issue/configs/cu.yml"]
+      proc: ocu
+    vnf:
+      # A launcher script that execs the real binary, and it resolves conf/ and bin/ relative
+      # to its own directory, so the working directory is part of the invocation.
+      bin:  ~/kriish/xFAPI/run_xfapi.sh
+      cwd:  ~/kriish/xFAPI
+      proc: xfapi_main
+    pnf:
+      bin:  ~/kriish/oai_ocudu_oai/cmake_targets/ran_build/build/nr-softmodem
+      args: ["-O", "~/kriish/oai_ocudu_oai/cmake_targets/gnb-pnf.band78.rfsim.conf",
+             "--nfapi", "PNF", "--rfsim", "--thread-pool", "0,1,2,3"]
+      proc: nr-softmodem
+      # Pinning is not tuning. The host boots isolcpus=0-13, so an unpinned real-time thread
+      # lands on a housekeeping core beside the OS and the UE and misses slot deadlines.
+      # Budget: 0-6 PNF, 7-8 VNF, 9-13 L2, 14-17 OS and UE.
+      cpus: "0-6"
+    l2:
+      bin:  ~/kriish/fix_fapi_issue/build_fapi/apps/fapi_split/odu_high
+      args: ["-c", "~/kriish/fix_fapi_issue/configs/odu_high_xfapi_rfsim.yaml"]
+      proc: odu_high
+      cpus: "9-13"
+
+# The 5G core the CU peers with. Bring-your-own: a peer, never the subject. free5GC in Docker
+# here, which ranbench does not manage, so nothing is probed or provisioned on its behalf.
+core:
+  adapter: manual
+
+drivers:
+  ue: ue_oai_fapi
+  ue_bin:  ~/OAI_RAN/cmake_targets/ran_build/build/nr-uesoftmodem
+  # The SIM lives in the OAI config, so the campaign does not restate it and the two cannot
+  # disagree about which subscriber is under test.
+  ue_conf: ~/OAI_RAN/cmake_targets/nrue.rfsim.conf
+  rfsim_server: 127.0.0.1
+  # These must match the cell the L2 configures, or the UE never finds it.
+  prb: 273                     # 100 MHz at SCS 30 kHz
+  numerology: 1
+  band: 78
+  centre_freq_hz: 3450720000
+  ssb: 1518
+  attach_timeout_s: 150
+  ping_target: 8.8.8.8
+
+# Per-target knobs. These are declarations about the deployment, not tuning of the product.
+knobs:
+  pnf:
+    # The slot clock here is the radio simulator's, so absolute cadence and jitter measure the
+    # simulation and the host rather than the PHY. Set this to "hardware" on a real radio and
+    # PNF-P7-01 and PNF-TIME-01 start grading instead of recording.
+    radio: simulated
+    nominal_slot_rate_hz: 2000        # numerology 1: 0.5 ms slots
+    # ra-ResponseWindow the L2 is configured with, in slots. PNF-TIME-02 needs it to know how
+    # late a RACH.indication may be before the RAR can no longer be scheduled.
+    ra_response_window_slots: 20
+  vnf:
+    radio: simulated
+
+sut:
+  rig_class: "bare-metal-isolcpus"
+  cpu: ""

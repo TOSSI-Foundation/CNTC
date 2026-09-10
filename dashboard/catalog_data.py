@@ -122,6 +122,9 @@ _RAN_TARGET = {
     "du":   (T.ACCENT2, "O-DU · Distributed Unit (F1-C / F1-U + the cell)"),
     "cucp": (T.ACCENT,  "O-CU-CP · Centralised Unit, control plane (N2 · F1-C · E1 · RRC)"),
     "cuup": ("#0e7490", "O-CU-UP · Centralised Unit, user plane (E1 · F1-U · N3)"),
+    # The L1/L2 split over nFAPI (SCF222/SCF225), a different cut and not a 3GPP SCAS class.
+    "pnf":  ("#7c3aed", "PNF · L1 / PHY over nFAPI (P5 · P7), SCF interface conformance"),
+    "vnf":  ("#b45309", "VNF · L2 driver over nFAPI (P5 · P7), SCF interface conformance"),
 }
 # One-line "what it proves" per RAN test id (falls back to the catalog name).
 _RAN_WHAT = {
@@ -186,6 +189,7 @@ _RAN_WHAT = {
 }
 
 _SPEC_RE = re.compile(r"\b(\d{2}\.\d{3})\b")
+_SCF_RE = re.compile(r"\b(SCF\s?\d{3})")  # the nFAPI split anchors to SCF, not 3GPP
 _CLAUSE_RE = re.compile(r"\s*\((?:[^)]*(?:§|\d{2}\.\d{3})[^)]*)\)\s*$")  # trailing spec clause only
 
 
@@ -197,6 +201,10 @@ def _clean_name(name: str) -> str:
 def _standard_for(name: str, primary: str) -> str:
     """Per-test standard string: spec numbers mentioned in the name, else the NF's primary spec."""
     specs = []
+    for s in _SCF_RE.findall(name):          # SCF first: the nFAPI names cite it explicitly
+        tok = s.replace(" ", "")
+        if tok not in specs:
+            specs.append(tok)
     for s in _SPEC_RE.findall(name):
         tok = f"TS {s}"
         if tok not in specs:
@@ -205,7 +213,16 @@ def _standard_for(name: str, primary: str) -> str:
 
 
 def _primary_spec(standards: list[str]) -> str:
-    """The NF's headline spec, as a 'TS xx.xxx' token, from the catalog's standards list."""
+    """The catalog's headline spec token. SCF for the nFAPI split, else a 'TS xx.xxx'.
+
+    SCF is checked first and deliberately: labelling a PNF or VNF requirement '3GPP' would be
+    exactly the misattribution these catalogs exist to avoid, since 3GPP defines no product
+    class for this split.
+    """
+    for s in standards:
+        m = _SCF_RE.search(s)
+        if m:
+            return m.group(1).replace(" ", "")
     for s in standards:
         m = _SPEC_RE.search(s)
         if m:

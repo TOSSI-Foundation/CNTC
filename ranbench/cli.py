@@ -15,15 +15,20 @@ import sys
 
 from ranbench import __version__, config as cfgmod
 
-_LABELS = {"cucp": "O-CU-CP", "cuup": "O-CU-UP", "du": "O-DU"}
+_LABELS = {"cucp": "O-CU-CP", "cuup": "O-CU-UP", "du": "O-DU",
+           "pnf": "PNF", "vnf": "VNF"}
 
 
 def _cmd_list(_args) -> int:
     from cntc.standards import load_catalog
     from ranbench.suites.registry import build_suite
     from ranbench.suites.base import StubCase
-    print("ranbench, split-gNB product classes and their CNTC catalogs:")
-    for tgt in cfgmod.TARGETS:
+    print("ranbench, product classes and their CNTC catalogs:")
+    print("  -- CU/DU split (3GPP TS 33.523) --")
+    for tgt in cfgmod.CUDU_TARGETS + ("|fapi|",) + cfgmod.FAPI_TARGETS:
+        if tgt == "|fapi|":
+            print("  -- L1/L2 split over nFAPI (SCF222 / SCF225, not a 3GPP SCAS class) --")
+            continue
         try:
             cat = load_catalog(cfgmod.Campaign.profile_for(tgt))
         except FileNotFoundError:

@@ -47,3 +47,9 @@ campaigns_archive/
 nrL1_stats.log
 nrMAC_stats.log
 nrRRC_stats.log
+
+# The FAPI-split products write these into whatever directory ranbench was started from:
+# the OCUDU L2 writes odu_high.log next to its cwd, and xFAPI writes its message statistics
+# into generated_logs/. Both are the products' own output, kept for diagnosis, never committed.
+odu_high.log
+generated_logs/

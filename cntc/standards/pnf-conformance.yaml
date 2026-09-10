@@ -1,0 +1,208 @@
+# CNTC requirement catalog: PNF LEVEL 1 "Conformance & Observable Security"
+#
+# Product class: PNF (Physical Network Function), the L1/PHY end of the nFAPI interface.
+#
+# SCOPE, AND WHY IT IS NOT A 3GPP SCAS CATALOG. Every other RAN catalog in CNTC anchors to
+# 3GPP TS 33.523, which defines gNB-CU-CP, gNB-CU-UP and gNB-DU as product classes with
+# security assurance requirements. 3GPP defines no product class for an L1, and there is no
+# SCAS for the L1/L2 split. The anchors here are the Small Cell Forum's, and the PNF and VNF
+# names are the Small Cell Forum's own:
+#
+#   SCF222  5G FAPI: PHY API Specification, 10th edition, July 2025
+#           P5 (configuration) and P7 (slot) message definitions and procedures
+#   SCF225  5G nFAPI specifications
+#           the networked form of SCF222: transport, framing, PNF-level procedures.
+#           SCF225 wraps SCF222 to form the split 6 interface between an S-DU and an S-RU.
+#
+# A certificate issued against this catalog asserts CONFORMANCE TO AN SCF INTERFACE
+# SPECIFICATION IN THE PNF ROLE. It is not a 3GPP SCAS product class certificate, and it must
+# never be presented as one.
+#
+# WHAT IS DELIBERATELY ABSENT. TS 38.211 to 38.214 describe the physical layer the PNF
+# implements. They are NOT anchored here, because this catalog is judged from the nFAPI wire
+# and the nFAPI wire carries what the PNF *reports*, not what it transmitted. Certifying the
+# physical layer needs a radio-side capture this evidence model does not have. Adding those
+# specs to the anchor list would claim a coverage the method cannot deliver.
+#
+# EVIDENCE. One capture of the nFAPI P5 and P7 links. Every requirement below is judged on
+# messages in the PNF -> VNF direction, or on an exchange whose PNF half is on the wire. The
+# VNF's own behaviour is judged separately, by vnf-conformance.yaml, from the same capture in
+# the opposite direction. One wire, two product classes, exactly as F1-C is read once and
+# judged twice for the O-DU and the O-CU-CP.
+#
+# DECODING. The 5G NR nFAPI message IDs overlap the LTE nFAPI IDs with different meanings, so a
+# dissector written for LTE names NR messages confidently and wrongly. Message identity here is
+# read from the P7/P5 header bytes against the SCF222 NR message set, never from an LTE
+# dissector's label.
+#
+# LEVEL 1 = provable by driving the PNF with a spec-compliant VNF and observing the interface.
+# No forged, replayed or downgraded protocol state: that is Level 2.
+#
+# Gate: all ESSENTIAL tests must PASS -> certificate. An essential FAIL -> no certificate. A
+# test that cannot be judged is 'na' -> INCOMPLETE, never a silent pass.
+version: 1.0.0
+profile: pnf-conformance
+title: "PNF (nFAPI L1 / PHY), CNTC Level 1. SCF interface conformance, not a 3GPP SCAS product class"
+standards:
+- "SCF222 5G FAPI: PHY API Specification, 10th edition (July 2025)"
+- SCF225 5G nFAPI specifications
+defaults:
+  class: normal
+gate:
+  essential: all
+tests:
+# --- P5: the PNF and PHY instance setup state machine (SCF225 P5, SCF222 clause 3) ------
+# SCF225 P5 configures the PNF device at the device level (PNF_* messages) and then each
+# static PHY instance within it (PARAM / CONFIG / START). Both halves must complete, in that
+# order, before the PHY instance is RUNNING and P7 may begin.
+- id: PNF-P5-01
+  name: "PNF_PARAM.request -> PNF_PARAM.response; PNF device capabilities advertised (SCF225 P5)"
+  category: protocol
+  class: essential
+  verdict: status_pass
+- id: PNF-P5-02
+  name: "PNF_CONFIG.request -> PNF_CONFIG.response; PHY instances configured (SCF225 P5)"
+  category: protocol
+  class: essential
+  verdict: status_pass
+- id: PNF-P5-03
+  name: "PNF_START.request -> PNF_START.response; PNF device reaches RUNNING (SCF225 P5)"
+  category: protocol
+  class: essential
+  verdict: status_pass
+- id: PNF-P5-04
+  name: "PARAM.request -> PARAM.response; PHY capability TLVs and phy_state reported (SCF222.10 Table 3-9)"
+  category: protocol
+  class: essential
+  verdict: status_pass
+- id: PNF-P5-05
+  name: "CONFIG.request -> CONFIG.response with error_code MSG_OK (SCF222.10 Table 2-25)"
+  category: protocol
+  class: essential
+  verdict: status_pass
+- id: PNF-P5-06
+  name: "START.request -> START.response; PHY instance enters RUNNING (SCF222.10.04 §3.2)"
+  category: protocol
+  class: essential
+  verdict: status_pass
+  # The ordering requirement, and the one that is a conformance test rather than a liveness
+  # check. A PHY that emits P7 before it has answered START is not in the state it claims.
+- id: PNF-P5-07
+  name: "No P7 traffic emitted before START.response; PHY state order IDLE -> CONFIGURED -> RUNNING respected (SCF222.10 Table 2-25)"
+  category: protocol
+  class: essential
+  verdict: status_pass
+- id: PNF-P5-08
+  name: "STOP.request -> STOP.response / STOP.indication on teardown (SCF222.10)"
+  category: protocol
+  class: normal
+  verdict: status_pass
+  # SCF225 specifies SCTP for P5, for reliable delivery of configuration. A deployment that
+  # carries P5 on another transport is reported as observed, not quietly accepted.
+- id: PNF-P5-09
+  name: "P5 carried on the transport SCF225 specifies (SCTP) (SCF225 transport)"
+  category: protocol
+  class: normal
+  verdict: status_pass
+# --- P7: the slot loop (SCF225 P7, SCF222 clause 3) -------------------------------------
+- id: PNF-P7-01
+  name: "SLOT.indication issued every slot at the configured numerology's rate (SCF222.10)"
+  category: protocol
+  class: essential
+  verdict: status_pass
+- id: PNF-P7-02
+  name: "SFN and slot monotonic and wrapping correctly (SFN 0..1023) (SCF222.10)"
+  category: protocol
+  class: essential
+  verdict: status_pass
+- id: PNF-P7-03
+  name: "DL_TTI.request acted on; SSB transmitted at the configured periodicity (SCF222.10)"
+  category: protocol
+  class: essential
+  verdict: status_pass
+- id: PNF-P7-04
+  name: "UL_TTI.request accepted without ERROR.indication (SCF222.10)"
+  category: protocol
+  class: normal
+  verdict: status_pass
+- id: PNF-P7-05
+  name: "TX_DATA.request accepted for each scheduled PDSCH (SCF222.10)"
+  category: dataplane
+  class: normal
+  verdict: status_pass
+- id: PNF-P7-06
+  name: "RACH.indication raised on preamble detection, carrying preamble index and TA (SCF222.10)"
+  category: protocol
+  class: essential
+  verdict: status_pass
+- id: PNF-P7-07
+  name: "CRC.indication returned for each scheduled PUSCH (SCF222.10)"
+  category: dataplane
+  class: essential
+  verdict: status_pass
+- id: PNF-P7-08
+  name: "RX_DATA.indication carries the decoded uplink payload (SCF222.10)"
+  category: dataplane
+  class: essential
+  verdict: status_pass
+  # A PHY that never returns UCI leaves the scheduler blind: no CSI, no HARQ feedback, and
+  # link adaptation running open loop. Normal rather than essential because a stimulus that
+  # schedules no PUCCH cannot exercise it, which grades 'na'.
+- id: PNF-P7-09
+  name: "UCI.indication returned for each scheduled PUCCH (SCF222.10)"
+  category: protocol
+  class: normal
+  verdict: status_pass
+# --- P7 synchronisation and delay management (SCF225) ------------------------------------
+- id: PNF-SYNC-01
+  name: "DL_NODE_SYNC -> UL_NODE_SYNC exchanged; PNF reports its timing offset (SCF225 delay management)"
+  category: timing
+  class: normal
+  verdict: status_pass
+- id: PNF-SYNC-02
+  name: "TIMING_INFO issued to the VNF (SCF225 delay management)"
+  category: timing
+  class: normal
+  verdict: status_pass
+- id: PNF-TIME-01
+  name: "SLOT.indication jitter stays inside the P7 timing budget (SCF225 delay management)"
+  category: timing
+  class: normal
+  verdict: status_pass
+  # Not a message-presence test. An indication that is correct but late is useless: a
+  # RACH.indication that reaches the scheduler after the RAR window has closed cannot be
+  # answered, and the attach fails for a PHY that detected the preamble perfectly.
+- id: PNF-TIME-02
+  name: "RACH.indication delivered in time for the RAR to be scheduled inside ra-ResponseWindow (SCF225 delay management / TS 38.321)"
+  category: timing
+  class: normal
+  verdict: status_pass
+# --- Capability integrity ----------------------------------------------------------------
+  # The PNF states what it supports in PARAM.response. Claiming a capability it cannot serve
+  # is a defect the interface exists to prevent, and it is observable: the VNF configures what
+  # was advertised, and the PNF either serves it or fails.
+- id: PNF-CAP-01
+  name: "The PNF honours the capabilities it advertised in PARAM.response, PUCCH formats included (SCF222.10 Table 3-9, tag 0x0011)"
+  category: protocol
+  class: normal
+  verdict: status_pass
+# --- Error handling and robustness --------------------------------------------------------
+- id: PNF-ERR-01
+  name: "ERROR.indication returned for a message received in an invalid state, rather than silence (SCF222.10 Table 2-25)"
+  category: robustness
+  class: normal
+  verdict: status_pass
+- id: PNF-NEG-01
+  name: "Malformed nFAPI datagram on P5 / P7 -> dropped or rejected, no PNF crash"
+  category: robustness
+  class: essential
+  verdict: status_pass
+# --- Transport protection ------------------------------------------------------------------
+  # SCF225 defines no security for nFAPI, so this states the deployment fact rather than a
+  # spec violation: an unprotected P5 carries the cell configuration and an unprotected P7
+  # carries user payload. Judged the same way the F1 and E1 cases are.
+- id: PNF-SEC-01
+  name: "nFAPI P5 / P7 transport confidentiality and integrity (deployment property; SCF225 defines none)"
+  category: security
+  class: normal
+  verdict: status_pass

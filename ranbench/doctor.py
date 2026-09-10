@@ -12,12 +12,14 @@ Returns non-zero if any HARD check fails, so it is CI-friendly. Nothing here mut
 """
 from __future__ import annotations
 
+import re
 import shutil
 import tempfile
 from pathlib import Path
 
 from cntc_common.results import Store
 from ranbench import config as cfgmod
+from ranbench.config import expand_user_path
 from ranbench.adapters.base import load_adapter
 
 
@@ -39,6 +41,19 @@ def _check_external() -> list[tuple[str, bool, str]]:
         p = shutil.which(tool)
         out.append((f"cli:{tool}", bool(p), p or f"MISSING on PATH, needed to {why}"))
     return out
+
+
+_IMSI_RE = re.compile(r'imsi\s*=\s*"?([0-9]{5,15})"?')
+
+
+def _imsi_from_ue_conf(path) -> str:
+    """The subscriber identity out of an OAI UE config, or empty if it cannot be read."""
+    try:
+        text = expand_user_path(path).read_text(errors="ignore")
+    except OSError:
+        return ""
+    m = _IMSI_RE.search(text)
+    return m.group(1) if m else ""
 
 
 def run(config_path: str) -> int:
@@ -89,14 +104,43 @@ def run(config_path: str) -> int:
                      ", ".join(planned) if planned else
                      "no evidence available, protocol/security tests will grade 'na'"))
 
+    # Rig conditions an adapter can detect that would make a run meaningless. Reported as a
+    # preflight failure so it is caught in a second rather than after a full campaign that
+    # blames the product for a port someone else is holding.
+    if hasattr(ran, "rfsim_conflict"):
+        try:
+            holder = ran.rfsim_conflict()
+        except Exception as e:  # noqa: BLE001
+            holder = f"probe failed: {e}"
+        rows.append(("rfsim port", not holder,
+                     f"free for the PNF to bind" if not holder else
+                     f"HELD by {holder}. The PNF will fail to bind it and transmit void "
+                     f"samples, so no UE can synchronise and nothing measured describes "
+                     f"the PHY"))
+
     # the core peer
     core_ok = bool(cfg.core.adapter)
     rows.append(("core", core_ok,
                  f"{cfg.core.adapter} (N2/N3 peer)" if core_ok else
                  "no core.adapter set, the RAN has nothing to attach to"))
 
+    # A campaign may carry the subscriber itself, or point the UE at a config file that holds
+    # it. The second form is deliberate on rigs where the SIM is part of the UE's own
+    # configuration: restating it in the campaign creates two places to disagree about which
+    # subscriber is under test. Reporting it as missing would fail a rig that is correctly set
+    # up, so the file is read rather than the campaign block trusted as the only source.
     n = len(cfg.subscribers)
-    rows.append(("subscribers", n > 0, f"{n} in config" if n else "none, 5G-AKA will fail"))
+    ue_conf = (cfg.drivers or {}).get("ue_conf")
+    if n:
+        rows.append(("subscribers", True, f"{n} in the campaign config"))
+    elif ue_conf:
+        imsi = _imsi_from_ue_conf(ue_conf)
+        rows.append(("subscribers", bool(imsi),
+                     f"imsi-{imsi} from {Path(ue_conf).name}" if imsi else
+                     f"{ue_conf} declares no imsi, so 5G-AKA will fail"))
+    else:
+        rows.append(("subscribers", False,
+                     "none in the campaign and no drivers.ue_conf, so 5G-AKA will fail"))
 
     # Contact the core rather than trusting the config. Both of these break the run in ways that
     # look like RAN faults: an unreachable AMF stops the attach at NG Setup, and a UDM that

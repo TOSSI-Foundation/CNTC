@@ -63,13 +63,13 @@ ran-configure:  ## wizard -> RAN campaign config (derives the UE radio params fr
 ran-list:  ## list the split-gNB product classes + their catalogs
 > python3 -m ranbench.cli list
 
-ran-doctor:  ## preflight the RAN rig  (CONFIG=configs/ocudu-ran.yaml)
+ran-doctor:  ## preflight the RAN rig  (CONFIG=configs/ocudu-ran.yaml | configs/fapi-split.yaml)
 > python3 -m ranbench.cli doctor --config $(CONFIG)
 
-ran-run:  ## run the RAN suite  (CONFIG= TARGET=all|cucp|cuup|du CAMPAIGN=)
+ran-run:  ## run the RAN suite  (CONFIG= TARGET=all|cucp|cuup|du|pnf|vnf CAMPAIGN=)
 > python3 -m ranbench.cli run --config $(CONFIG) --target $(or $(TARGET),all) $(if $(CAMPAIGN),--campaign $(CAMPAIGN),)
 
-ran-certify:  ## issue a RAN certificate  (CAMPAIGN= TARGET=cucp|cuup|du)
+ran-certify:  ## issue a RAN certificate  (CAMPAIGN= TARGET=cucp|cuup|du|pnf|vnf)
 > python3 -m cntc.cli certify campaigns/$(CAMPAIGN)/results.json --profile $(or $(TARGET),cucp)-conformance
 
 # --- run ----------------------------------------------------------------------
