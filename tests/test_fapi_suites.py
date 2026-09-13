@@ -168,3 +168,47 @@ def test_tti_lead_tolerates_one_slot_of_capture_skew_but_records_it():
     assert r.status == "pass"
     assert "within_capture_resolution" in r.metrics
     assert r.metrics["late"] == 0
+
+
+# --- the host-jitter guard on tti_lead (VNF-P7-01/02/05) -----------------------------
+def _slotslot(sfn: int, slot: int) -> bytes:
+    return sfn.to_bytes(2, "big") + slot.to_bytes(2, "big")
+
+
+def _late_tti_obs(gap_max_ms: float):
+    """An observation with one DL_TTI naming a slot the PHY has passed by three, and a slot
+    stream whose worst gap is `gap_max_ms`. Everything else the suite needs is absent, so only
+    tti_lead is exercised."""
+    from ranbench.observers.nfapi import Msg
+    msgs = [
+        Msg(0.0, 0x82, "SLOT.indication", "pnf->vnf", "udp", _slotslot(0, 0)),
+        Msg(0.9, 0x82, "SLOT.indication", "pnf->vnf", "udp", _slotslot(0, 10)),
+        Msg(0.9, 0x80, "DL_TTI.request", "vnf->pnf", "udp", _slotslot(0, 7)),   # PHY at 10
+    ]
+
+    class _FakeNf:
+        def messages(self, _p):    return msgs
+        def slot_timing(self, _p): return {"gap_max_ms": gap_max_ms, "gap_p50_ms": 1.0}
+
+    return {"ok": True, "pcaps": {"p7": "x"}, "nfapi": _FakeNf()}
+
+
+def test_tti_lead_is_na_not_fail_when_the_host_stalled_the_slot_loop():
+    """A late TTI on a non-isolated host, where the SLOT stream shows multi-hundred-ms stalls,
+    is the OS descheduling the stack, not the VNF. It must record na, never fail, or the check
+    blames the product for the rig."""
+    from ranbench.suites import fapi_common as fc
+    r = fc.tti_lead(_ctx("vnf", _late_tti_obs(835.0)), "VNF-P7-01", "x",
+                    "DL_TTI.request", "SCF225 delay management")
+    assert r.status == "na"
+    assert "host stalls" in (r.notes or "")
+
+
+def test_tti_lead_still_fails_a_late_tti_on_a_clean_slot_loop():
+    """Same lateness, but no host stall (an isolated rig): the guard is a no-op and the late
+    request is a real VNF fault that must fail."""
+    from ranbench.suites import fapi_common as fc
+    r = fc.tti_lead(_ctx("vnf", _late_tti_obs(1.2)), "VNF-P7-01", "x",
+                    "DL_TTI.request", "SCF225 delay management")
+    assert r.status == "fail"
+    assert r.metrics.get("late") == 1

@@ -354,6 +354,33 @@ def tti_lead(ctx: RunContext, tid: str, name: str, message: str, spec: str) -> T
     metrics = {"message": message, "checked": total, "late": late,
                "within_capture_resolution": marginal, "worst_lead_slots": worst}
     if late:
+        # Host descheduling contaminates this, and measuring in slots does not protect against
+        # it. Measuring in slots defends against a simulated *cadence* (the slot clock running
+        # slow but evenly). It does not defend against a non-isolated host freezing the PNF and
+        # the VNF independently: when the PHY thread is scheduled while the VNF thread is still
+        # descheduled, the PHY's slot clock advances and the VNF's in-flight requests then name
+        # slots it skipped. That is the OS scheduler, not the VNF, and it is exactly what the
+        # PNF's own PNF-TIME-01 already refuses to grade on a simulated radio.
+        #
+        # So only fail the VNF for lateness when there is no evidence the whole stack was
+        # stalled. The SLOT.indication stream is that evidence: a conformant 0.5 ms slot loop
+        # never gaps by tens of slots, so a gap far beyond the slot period is a host freeze that
+        # desynchronised the two independently captured directions. On an isolated rig
+        # (isolcpus + CPU pinning) or a real radio, no such gap exists and this fails normally.
+        simulated = str((ctx.knobs or {}).get("radio", "simulated")).lower() != "hardware"
+        slot_ms = 1000.0 / float((ctx.knobs or {}).get("nominal_slot_rate_hz", 2000) or 2000)
+        st = nf.slot_timing(paths["p7"]) or {}
+        max_gap, p50 = st.get("gap_max_ms"), st.get("gap_p50_ms")
+        stall_ms = max(10.0, slot_ms * 20)         # 20 skipped slots: no real-time loop does this
+        if simulated and max_gap and max_gap > stall_ms:
+            metrics.update({"slot_gap_max_ms": max_gap, "slot_gap_p50_ms": p50})
+            return _na(tid, name,
+                       f"{late} of {total} {message} named a slot the PHY had passed (worst "
+                       f"{worst}), but the SLOT.indication stream shows host stalls up to "
+                       f"{max_gap:.0f} ms against a {p50:.2f} ms median on a simulated radio, so "
+                       f"the PHY and the VNF were descheduled together by a non-isolated host and "
+                       f"the lateness cannot be attributed to the VNF. On an isolated rig "
+                       f"(isolcpus + CPU pinning) or a real radio this test grades normally [{spec}]")
         return TestResult(tid, name, "fail", metrics=metrics,
                           notes=f"{late} of {total} {message} named a slot the PHY had already "
                                 f"passed by two or more (worst {worst}), so the PHY could not "
