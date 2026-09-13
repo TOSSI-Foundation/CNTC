@@ -1,0 +1,89 @@
+# CNTC RANCert: a pure-OAI L1/L2 split gNB certified across nFAPI (SCF split 6).
+#
+#   ranbench doctor --config configs/fapi-oai.yaml
+#   ranbench run    --config configs/fapi-oai.yaml --target all
+#
+# Both ends of the nFAPI interface are OAI nr-softmodem. The VNF is a full gNB (MAC/RLC/PDCP/RRC)
+# and terminates N2/N3 to the core itself, so unlike the xFAPI stack there is no separate L2, no
+# CU, and no F1 on any wire. Two processes only.
+#
+#   UE --rfsim--> PNF (OAI L1) <--nFAPI P5(SCTP)/P7(UDP)--> VNF (OAI L2+L3) --N2/N3--> free5GC
+#                 ^^^ target                                ^^^ target                 peer
+#
+# The catalogs (pnf-conformance, vnf-conformance), the nFAPI observer and the suites are the same
+# as configs/fapi-split.yaml: all of them judge the interface, which is identical whichever
+# implementation fills the VNF role. See ranbench/adapters/fapi_oai.py for the two-process
+# bring-up. The cell parameters and the SIM must match the ones in configs/oai-fapi/vnf.conf.
+domain: ran
+campaign: FAPI-OAI-001
+split: fapi                    # selects the PNF/VNF product classes for `--target all`
+target: all                    # pnf | vnf | all
+
+ran:
+  adapter: fapi_oai
+  sudo: true
+  nfapi_host: 127.0.0.1
+  nfapi_ports:
+    p5_pnf: 50000
+    p5_vnf: 50001              # the VNF listens here (SCTP); the PNF dials it
+    p7_pnf: 50010
+    p7_vnf: 50011
+  rfsim_port: 4043            # the PNF binds this; guarded so a stale holder is caught, not blamed
+  procs:
+    vnf:
+      bin:  ~/openairinterface5g/cmake_targets/ran_build/build/nr-softmodem
+      args: ["-O", "~/cntc_ran/configs/oai-fapi/vnf.conf", "--nfapi", "VNF"]
+      proc: nr-softmodem
+    pnf:
+      bin:  ~/openairinterface5g/cmake_targets/ran_build/build/nr-softmodem
+      args: ["-O", "~/cntc_ran/configs/oai-fapi/pnf.conf", "--nfapi", "PNF", "--rfsim"]
+      proc: nr-softmodem
+
+# The 5G core the VNF peers with over N2/N3. free5GC on Kubernetes here, so ranbench resets the
+# AMF before the run (stale UE context otherwise makes it drop the next Registration Request) and
+# checks the subscriber is provisioned.
+core:
+  adapter: free5gc_k8s
+  namespace: free5gc
+  reset_amf: true
+
+drivers:
+  ue: ue_oai_fapi_pure
+  ue_bin: ~/openairinterface5g/cmake_targets/ran_build/build/nr-uesoftmodem
+  uecap_file: ~/openairinterface5g/targets/PROJECTS/GENERIC-NR-5GC/CONF/uecap_ports1.xml
+  radio: rfsim
+  rfsim_server: 127.0.0.1
+  # These must match the cell configs/oai-fapi/vnf.conf configures, or the UE never finds it.
+  # The DU prints the exact --ssb on startup; 641280 -> 3619.2 MHz, 106 PRB, SCS 30 kHz.
+  prb: 106
+  numerology: 1
+  band: 78
+  centre_freq_hz: 3619200000
+  ssb: 516
+  attach_timeout_s: 150
+  ping_target: 8.8.8.8
+
+# 5G-AKA subscriber, provisioned in free5GC (PLMN 20893, sst 1 sd 0x010203, dnn internet).
+subscribers:
+  - supi: "imsi-208930000000001"
+    ki: "8baf473f2f8fd09487cccbd7097c6862"
+    opc: "8e27b6af0e692e750f32667a3b14605d"
+    plmn: "20893"
+    sst: 1
+    sd: "010203"
+    dnn: "internet"
+
+knobs:
+  pnf:
+    # The slot clock here is the radio simulator's, so absolute cadence and jitter measure the
+    # simulation and the host rather than the PHY. Set to "hardware" on a real radio and
+    # PNF-P7-01 / PNF-TIME-01 start grading instead of recording 'na'.
+    radio: simulated
+    nominal_slot_rate_hz: 2000
+    ra_response_window_slots: 20
+  vnf:
+    radio: simulated
+
+sut:
+  rig_class: "shared-vm"
+  cpu: ""

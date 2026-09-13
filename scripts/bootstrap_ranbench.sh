@@ -38,6 +38,11 @@
 #                                       public on the TOSSI fork, branch rfsim_ocudu, so FAPI=1
 #                                       points the defaults there and skips the ZMQ plugin
 #                                       (rfsim is built into nr-uesoftmodem, no plugin needed).
+#                                   FAPI=1 is for the cross-vendor L1/L2 rig (OAI PNF + xFAPI +
+#                                   OCUDU L2). The pure-OAI L1/L2 split (configs/fapi-oai.yaml,
+#                                   both ends OAI nr-softmodem, cell from the OAI VNF config) does
+#                                   NOT need the fork UE: use OAI_GNB=1 instead, which builds
+#                                   nr-softmodem plus the stock rfsim UE, and that is all it needs.
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

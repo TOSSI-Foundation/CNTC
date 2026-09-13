@@ -19,7 +19,7 @@ export PATH := $(PATH):/var/lib/rancher/rke2/bin:$(HOME)/.local/bin
 
 .DEFAULT_GOAL := help
 .PHONY: help prereqs doctor configure cp-configure cp-doctor cp-run cp-certify \
-        ran-prereqs ran-configure ran-list ran-doctor ran-run ran-certify run run-conformance run-perf run-n3neg \
+        ran-prereqs ran-configure ran-list ran-doctor ran-run ran-certify ran-oai-fapi-doctor ran-oai-fapi-run run run-conformance run-perf run-n3neg \
         eupf-run eupf-certify verdict certify \
         dashboard dashboard-bg dashboard-stop profiles lint test k8s-deploy k8s-run k8s-clean clean
 
@@ -63,7 +63,7 @@ ran-configure:  ## wizard -> RAN campaign config (derives the UE radio params fr
 ran-list:  ## list the split-gNB product classes + their catalogs
 > python3 -m ranbench.cli list
 
-ran-doctor:  ## preflight the RAN rig  (CONFIG=configs/ocudu-ran.yaml | configs/fapi-split.yaml)
+ran-doctor:  ## preflight the RAN rig  (CONFIG=configs/ocudu-ran.yaml | fapi-split.yaml | fapi-oai.yaml)
 > python3 -m ranbench.cli doctor --config $(CONFIG)
 
 ran-run:  ## run the RAN suite  (CONFIG= TARGET=all|cucp|cuup|du|pnf|vnf CAMPAIGN=)
@@ -71,6 +71,13 @@ ran-run:  ## run the RAN suite  (CONFIG= TARGET=all|cucp|cuup|du|pnf|vnf CAMPAIG
 
 ran-certify:  ## issue a RAN certificate  (CAMPAIGN= TARGET=cucp|cuup|du|pnf|vnf)
 > python3 -m cntc.cli certify campaigns/$(CAMPAIGN)/results.json --profile $(or $(TARGET),cucp)-conformance
+
+# --- pure-OAI nFAPI split (OAI PNF + OAI VNF), convenience wrappers -------------
+ran-oai-fapi-doctor:  ## preflight the pure-OAI nFAPI split (PNF + VNF)
+> python3 -m ranbench.cli doctor --config configs/fapi-oai.yaml
+
+ran-oai-fapi-run:  ## run the pure-OAI nFAPI split  (TARGET=all|pnf|vnf CAMPAIGN=)
+> sudo -n python3 -u -m ranbench.cli run --config configs/fapi-oai.yaml --target $(or $(TARGET),all) $(if $(CAMPAIGN),--campaign $(CAMPAIGN),)
 
 # --- run ----------------------------------------------------------------------
 run:  ## full e2e: all + n3neg -> merge -> verdict -> certify  (CONFIG= CAMPAIGN=)

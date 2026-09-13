@@ -7,6 +7,38 @@ but are not. It does not cover building the stack.
 If you have never brought the stack up by hand, do that first (section 6). Everything else
 assumes it attaches a UE on its own.
 
+## Two stacks: cross-vendor (xFAPI) and pure OAI
+
+This guide's body covers the **cross-vendor** stack: an OAI PNF, an xFAPI VNF, and an OCUDU L2
+and CU. There is a second, simpler stack that the same catalogs, observer and suites certify
+without change, the **pure-OAI** stack, where both ends of nFAPI are OAI `nr-softmodem`:
+
+|  | cross-vendor (`configs/fapi-split.yaml`) | pure OAI (`configs/fapi-oai.yaml`) |
+|---|---|---|
+| PNF (L1) | OAI `nr-softmodem --nfapi PNF` | OAI `nr-softmodem --nfapi PNF` (same binary) |
+| VNF | xFAPI, in front of an OCUDU L2 | OAI `nr-softmodem --nfapi VNF` (carries L2 and L3) |
+| CU | OCUDU CU over F1 | none: the VNF terminates N2/N3 itself |
+| processes | four (CU, VNF, PNF, L2) | two (VNF, PNF) |
+| DPDK / xSM | yes, between VNF and L2 | none |
+| adapter | `fapi_split` | `fapi_oai` (subclasses `fapi_split`) |
+| build | `FAPI=1 ./scripts/bootstrap_ranbench.sh` (fork UE) | `OAI_GNB=1 ./scripts/bootstrap_ranbench.sh` |
+
+For the pure-OAI stack, run:
+
+```bash
+make ran-oai-fapi-doctor                                 # must print READY
+make ran-oai-fapi-run TARGET=all CAMPAIGN=FAPI-OAI-001
+make ran-certify CAMPAIGN=FAPI-OAI-001 TARGET=vnf        # or TARGET=pnf
+```
+
+The rest of this guide (the ports, the rig failures, reading the result, the by-hand appendix)
+applies to both, except that the pure-OAI config has only `vnf` and `pnf` under `ran.procs` and
+no `cu` or `l2`. Because the PNF is the same OAI L1 in both, its verdicts should match across the
+two, which is a useful cross-check. One caveat specific to a shared host: the VNF slot-timing
+requirements (VNF-P7-01/02/05) grade `na` when the SLOT.indication stream shows the host
+descheduled the stack, because lateness then cannot be attributed to the VNF. They are judgeable
+on a CPU-isolated, pinned rig or a real radio.
+
 ## What you need before you start
 
 - The four RAN components built and runnable on this host: an nFAPI **PNF** (L1), an nFAPI

@@ -308,6 +308,26 @@ PASS** (9 of 9 essential, certificate issued) and the **PNF FAIL** on one orderi
 the PHY emitted P7 slot traffic 49 ms before it answered `START.response`. The rig, the build
 steps and the hard-won facts are in [docs/FAPI-SPLIT-RIG.md](docs/FAPI-SPLIT-RIG.md).
 
+**Also certified as pure OAI (PNF and VNF both OAI):** the same two catalogs, observer and
+suites judge a stack where both ends of nFAPI are OAI `nr-softmodem`, the VNF carrying L2 and L3
+and terminating N2/N3 to the core itself, so there is no separate L2, no CU and no xFAPI. Two
+processes instead of four, and no DPDK. Only a two-process adapter and driver were added; the
+interface evidence path is unchanged.
+
+```bash
+OAI_GNB=1 ./scripts/bootstrap_ranbench.sh                 # builds nr-softmodem + the UE (once)
+make ran-oai-fapi-doctor                                  # or: ran-doctor CONFIG=configs/fapi-oai.yaml
+make ran-oai-fapi-run TARGET=all CAMPAIGN=FAPI-OAI-001
+make ran-certify CAMPAIGN=FAPI-OAI-001 TARGET=vnf         # or TARGET=pnf
+```
+
+The **PNF is the same OAI L1 binary as the cross-vendor stack**, and it reproduces the identical
+finding: P7 slot traffic 48 ms before `START.response`, PNF essential 12 pass / 1 fail / 1 na in
+both. So the same PHY defect is confirmed under two different harnesses and two different VNFs
+driving it. On a shared VM without CPU isolation the VNF's slot-timing requirements grade `na`
+(the host descheduled the stack, which cannot be attributed to the VNF); they are judgeable on an
+isolated, CPU-pinned rig or a real radio.
+
 ---
 
 ## Docs
