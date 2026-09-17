@@ -16,8 +16,8 @@ We are building it **outward from the data plane**, one layer at a time:
 | Stage | Scope | Status |
 |-------|-------|--------|
 | 1 | **UPF**: 5G user plane over N3/N4 (performance, load, PFCP conformance, N3 robustness) | ✅ **available today** |
-| 2 | **5G Core control plane**: AMF · SMF · NRF · AUSF · UDM (NAS/NGAP · N4/PFCP · SBI) | ✅ **available today** |
-| 3 | **RAN**: split gNB, O-CU-CP / O-CU-UP / O-DU (N2 · F1 · E1 · RRC) | ✅ **available today** |
+| 2 | **5G Core control plane**: AMF · SMF · NRF · AUSF · UDM · UDR · PCF (NAS/NGAP · N4/PFCP · SBI) | ✅ **available today** |
+| 3 | **RAN**: split gNB over F1/E1 (O-CU-CP / O-CU-UP / O-DU) and over nFAPI (PNF / VNF), on OCUDU and OAI | ✅ **available today** |
 | 4 | **SMO**: Service Management & Orchestration | 🗺️ roadmap |
 | 5 | **RIC**: Near-RT / Non-RT RIC · xApps / rApps (E2 · A1 · O1) | 🗺️ roadmap |
 | 6 | **Full O-RAN ecosystem**: end-to-end certification across the stack | 🎯 vision |
@@ -32,8 +32,8 @@ CNTC has two kinds of layer, **engines that measure**, and **one umbrella that j
 | Layer | What it is | Where |
 |-------|-----------|-------|
 | **Engine** (`upfbench`) | The **user-plane** engine that drives any open-source 5G UPF over N3/N4 (performance, load, PFCP conformance, N3 robustness). | [`upfbench/`](upfbench/) |
-| **Engine** (`cpbench`) | The **control-plane** engine that drives the 5G core NFs (AMF/SMF/NRF/AUSF/UDM) over N1/N2 (NAS/NGAP), N4 (PFCP) and the SBI, and captures the signalling on the wire. | [`cpbench/`](cpbench/) |
-| **Engine** (`ranbench`) | The **RAN** engine. Drives a split gNB (O-CU-CP, O-CU-UP, O-DU) over N2 (NGAP), F1-C (F1AP), E1 (E1AP), F1-U and N3 (GTP-U), with RRC read out of the F1AP containers. | [`ranbench/`](ranbench/) |
+| **Engine** (`cpbench`) | The **control-plane** engine that drives the 5G core NFs (AMF/SMF/NRF/AUSF/UDM/UDR/PCF) over N1/N2 (NAS/NGAP), N4 (PFCP) and the SBI, and captures the signalling on the wire. | [`cpbench/`](cpbench/) |
+| **Engine** (`ranbench`) | The **RAN** engine. Certifies the CU/DU split (O-CU-CP, O-CU-UP, O-DU) over N2 (NGAP), F1-C (F1AP), E1 (E1AP), F1-U and N3 (GTP-U) with RRC read out of the F1AP containers, and the L1/L2 split (PNF, VNF) over nFAPI (SCF222/225 P5 and P7). | [`ranbench/`](ranbench/) |
 | **Verdict** (`cntc`) | The umbrella: a **requirement catalog** per profile (`cntc/standards/*.yaml`) + a pure **verdict engine** that grades *any* engine's results and emits a **scorecard** + certificate. | [`cntc/`](cntc/) |
 
 The engines measure; the umbrella judges. They are decoupled, so `cntc.verdict` grades the
@@ -63,8 +63,9 @@ make dashboard                                      # live web UI over campaigns
 | `make run-perf` · `make run-n3neg` | performance + load + pfcp · N3 robustness only |
 | `make verdict` | (re)grade a campaign → scorecard (`--write-back`) |
 | `make certify` | issue a certificate **iff** the verdict is `PASS` |
-| `make cp-configure` · `make cp-doctor` · `make cp-run` | **control plane**: wizard · preflight · run AMF/SMF/NRF/AUSF/UDM (docker **or** Kubernetes) |
-| `make ran-prereqs` · `ran-configure` · `ran-doctor` · `ran-run` · `ran-certify` | **RAN**: install the tester · wizard · preflight · run O-CU-CP/O-CU-UP/O-DU · certify |
+| `make cp-configure` · `make cp-doctor` · `make cp-run` | **control plane**: wizard · preflight · run AMF/SMF/NRF/AUSF/UDM/UDR/PCF (docker **or** Kubernetes) |
+| `make ran-prereqs` · `ran-configure` · `ran-doctor` · `ran-run` · `ran-certify` | **RAN, CU/DU split**: install the tester · wizard · preflight · run O-CU-CP/O-CU-UP/O-DU · certify (OCUDU or OAI) |
+| `make ran-oai-fapi-doctor` · `make ran-oai-fapi-run` | **RAN, L1/L2 split**: preflight · run the pure-OAI PNF/VNF stack over nFAPI |
 | `make eupf-run` · `make eupf-certify` | free5GC + eUPF (eBPF/XDP): run · **dual** certificate (conformance + `upf-ebpf`) |
 | `make dashboard` · `dashboard-bg` · `dashboard-stop` | live Plotly dashboard: foreground · tmux · stop |
 | `make profiles` · `make lint` · `make test` | list profiles · validate catalogs · run verdict unit tests |
@@ -260,12 +261,18 @@ make ran-configure                                # wizard: derives the UE radio
 make ran-doctor CONFIG=configs/ocudu-ran.yaml     # preflight, must say READY
 make ran-run    CONFIG=configs/ocudu-ran.yaml TARGET=all CAMPAIGN=MY-RAN-001
 make ran-certify CAMPAIGN=MY-RAN-001 TARGET=cuup  # certificate only if every essential passed
+# for the OAI CU/DU stack instead: OAI_GNB=1 ./scripts/bootstrap_ranbench.sh, then CONFIG=configs/oai-ran.yaml
 ```
 
-**Verified against OCUDU** (the Linux Foundation CU/DU project, srsRAN lineage) running as a
-three-process split against free5GC on Kubernetes, with an OAI nr-UE over a ZeroMQ virtual
-radio. 58 of 58 tests execute. The rig, and the parameters that must agree between the O-DU and
-the UE, are documented in [docs/RANBENCH-RIG.md](docs/RANBENCH-RIG.md).
+**Verified against two independent CU/DU stacks.** **OCUDU** (the Linux Foundation CU/DU
+project, srsRAN lineage) as a three-process split against free5GC on Kubernetes, with an OAI
+nr-UE over a ZeroMQ virtual radio: 34 pass, 5 fail, 19 na, the O-DU certified. **OAI** (branch
+`develop`) as the same three product classes over rfsim, driven by `configs/oai-ran.yaml`: 39
+pass, 5 fail, 14 na. 53 of 58 verdicts are identical between the two stacks, and the five
+failures are the same on both (NEA0 null ciphering, no IPsec on N2/N3), which is the cross-stack
+confirmation that they are real. Both are reproducible: repeated runs give byte-identical
+verdicts. The rig, and the parameters that must agree between the O-DU and the UE, are documented
+in [docs/RANBENCH-RIG.md](docs/RANBENCH-RIG.md).
 
 ### A second RAN cut: the L1/L2 split over nFAPI (PNF / VNF)
 

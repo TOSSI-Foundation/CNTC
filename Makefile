@@ -63,7 +63,7 @@ ran-configure:  ## wizard -> RAN campaign config (derives the UE radio params fr
 ran-list:  ## list the split-gNB product classes + their catalogs
 > python3 -m ranbench.cli list
 
-ran-doctor:  ## preflight the RAN rig  (CONFIG=configs/ocudu-ran.yaml | fapi-split.yaml | fapi-oai.yaml)
+ran-doctor:  ## preflight the RAN rig  (CONFIG=ocudu-ran.yaml | oai-ran.yaml | fapi-split.yaml | fapi-oai.yaml)
 > python3 -m ranbench.cli doctor --config $(CONFIG)
 
 ran-run:  ## run the RAN suite  (CONFIG= TARGET=all|cucp|cuup|du|pnf|vnf CAMPAIGN=)
